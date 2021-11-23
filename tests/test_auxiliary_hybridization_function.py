@@ -1,7 +1,7 @@
 import pytest
 import sys
 import numpy as np
-sys.path.append('../src/')
+sys.path.append('./../src/')
 import auxiliary_hybridization_function as auxhyb
 
 
