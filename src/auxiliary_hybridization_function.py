@@ -83,8 +83,8 @@ class AuxiliarySystem:
         ts : array_like
             Hopping terms of the educed, auxiliary system
         """
-        assert len(es) == self.N
-        assert len(ts) == self.N - 1
+        assert len(es) == self.N, "es doesn't have size N"
+        assert len(ts) == self.N - 1, "ts doesn't have size N-1"
 
         offset = [-1, 0, 1]
         self.E = diags([ts, es, ts], offset, dtype=complex).toarray()
@@ -104,7 +104,7 @@ class AuxiliarySystem:
             Diagonal and upper triangular entries are equal to the diagonal of
             G_upper.
         """
-        G_adj = np.copy(np.transpose(np.conj(G_upper)))
+        G_adj = np.copy(G_upper.conj().T)
         G_adj[np.diag_indices(G_adj.shape[0])] = 0
         return G_upper + G_adj
 
@@ -130,8 +130,8 @@ class AuxiliarySystem:
             to a Markovian bath
         """
         assert self.N_gamma == len(
-            gamma), ("gamma has wrong length, should be (N-1)N/2,"
-                     + " with N = 2*self.Nb + 1")
+            gammas), ("gamma has wrong length, should be (N-1)N/2,"
+                      + " with N = 2*self.Nb + 1")
 
         Gamma = np.zeros((self.N, self.N), dtype=complex)
         n = 0
