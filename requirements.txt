@@ -2,3 +2,4 @@ numpy
 scipy
 flake8
 pytest
+matplotlib
