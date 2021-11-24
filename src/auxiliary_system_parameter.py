@@ -1,7 +1,6 @@
 # %%
 from scipy.sparse import diags
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class AuxiliarySystem:
@@ -204,68 +203,6 @@ class AuxiliarySystem:
         self.Gamma1 = self.get_Gamma_general(gamma1)
         self.Gamma2 = self.get_Gamma_general(gamma2)
 
-    def get_green_aux(self):
-        """Return the retarded and Keldysh Green's function of the impurity
-        site located at self.Nb from self.E, self.Gamma1, self.Gamma2
-
-        Returns
-        -------
-        G_R_aux : numpy.ndarray (self.N,)
-                 Retarded Green's function of the impurity site in frequency
-                 domane
-
-        G_K_aux : numpy.ndarray (self.Nb,)
-                 Keldysh Green's function of the impurity site in frequency
-                 domane
-
-        """
-
-        def z_aux(x):
-            Z_R_aux = np.linalg.inv(x * np.identity(self.N) - self.E +
-                                    1.0j * (self.Gamma2 + self.Gamma1))
-            Z_A_aux = np.linalg.inv(x * np.identity(self.N) - self.E -
-                                    1.0j * (self.Gamma2 + self.Gamma1))
-            Z_K_aux = 2.0j * \
-                (Z_R_aux.dot((self.Gamma2 - self.Gamma2).dot(Z_A_aux)))
-            return (Z_R_aux[self.Nb, self.Nb], Z_K_aux[self.Nb, self.Nb])
-
-        vec_z_aux = np.vectorize(z_aux)
-        G_aux = vec_z_aux(self.ws)
-        return G_aux[0], G_aux[1]  # G_R_aux,G_K_aux
-
-    def get_auxiliary_hybridization(self, G_R_aux, G_K_aux):
-        """Returns the retarded and Keldysh component of the self-energy
-        from the retarded and Keldysh Green's.
-
-        In case of no interacting self-energy the resulting self-energy is
-        the embeding self-energy or hybridization function.
-
-        Parameters
-        ----------
-        G_R_aux : numpy.ndarray (self.ws,)
-            Green's function
-
-        G_K_aux : numpy.ndarray (self.ws,)
-            Green's function
-
-        Returns
-        -------
-        hyb_R_aux : numpy.ndarray (self.N,)
-                 Retarded self-energy of given Green's functions
-
-        hyb_K_aux : numpy.ndarray (self.Nb,)
-                 Keldysh self-energy of given Green's functions
-        """
-
-        def get_hyb_aux(w, G_R, G_K):
-            hyb_R = w - self.E[self.Nb, self.Nb] - 1.0 / G_R
-            hyb_K = 1.0j * ((1 / (G_R * np.conj(G_R))) * G_K)
-            return hyb_R, hyb_K
-
-        vec_get_hyb_aux = np.vectorize(get_hyb_aux)
-        hyb_aux = vec_get_hyb_aux(self.ws, G_R_aux, G_K_aux)
-        return hyb_aux[0], hyb_aux[1]
-
 
 # %%
 if __name__ == "__main__":
@@ -287,31 +224,13 @@ if __name__ == "__main__":
     print("Gamma2: \n", aux.Gamma2)
     print("Gamma2-Gamma2: \n", (aux.Gamma2 - aux.Gamma1))
 
-    # G_aux = aux.get_green_aux()
-    G_R_aux, G_K_aux = aux.get_green_aux()
-
-    plt.figure()
-    plt.plot(aux.ws, G_R_aux.imag)
-    plt.plot(aux.ws, G_R_aux.real)
-    plt.xlabel(r"$\omega$")
-    plt.legend([r"$ImG^R(\omega)$", r"$ReG^R(\omega)$"])
-    plt.show()
-
-    hyb_R, hyb_K = aux.get_auxiliary_hybridization(G_R_aux, G_K_aux)
-
-    plt.figure()
-    plt.plot(aux.ws, hyb_R.imag)
-    plt.plot(aux.ws, hyb_R.real)
-    plt.xlabel(r"$\omega$")
-    plt.legend([r"$Im\Delta^R_{aux}(\omega)$", r"$Re\Delta^R_{aux}(\omega)$"])
-    plt.show()
 
 # TODO: The rest should be seperated
-#      2. Given matrices and frequencies ws the local Green's should be
+#       2. Given matrices and frequencies ws the local Green's should be
 #         calculated.
-#      3. From the Green's function the hybridization should be returned.
-#      4. A costfunction should be written.
-#      5. An optimization routine has to be written.
+#       3. From the Green's function the hybridization should be returned.
+#       4. A costfunction should be written.
+#       5. An optimization routine has to be written.
 #
 # TODO: In the non-particle-hole symmetric case Gamma1 and Gamma2 are
 #       Independent
