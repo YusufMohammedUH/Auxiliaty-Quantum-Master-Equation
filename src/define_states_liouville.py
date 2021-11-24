@@ -89,7 +89,24 @@ def cd_js_T(j, sigma, FL_state):
     return oper_js_FL(cd_js, j, sigma, True, FL_state)
 
 
-def dot_prod_FL(state_out, state_in):
+def op_chain_LF(state_in, oper_list):
+    """
+    Apply several operators one after the other to state_in.
+    Each element of oper_list is a list with:
+        - function : cd_js_T, cd_js_F, c_js_T or c_js_F
+        - site : int, site index
+        - orb : int, spin index
+    They are applied in the reversed order (to the right).
+    Return a state object.
+    """
+    state1 = deepcopy(state_in)
+    for arg in oper_list[::-1]:
+        oper, site, spin = arg
+        state1 = oper(site, spin, state1)
+    return state1
+
+
+def dot_prod_LF(state_out, state_in):
     """
     Given two LF_state objects, compute the dot product between them
     and return the corresponding value.

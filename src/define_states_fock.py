@@ -98,7 +98,7 @@ def dot_prod(bra: state, ket: state):
         raise TypeError(
             "states must be of type {}".format(
                 state))
-    if np.any(ket.occup) == -1 or np.any(bra.occup) == -1:
+    if np.any(ket.occup == -1) or np.any(bra.occup == -1):
         return 0.
     assert ket.orbs == bra.orbs and ket.len == bra.len
     result = 1.
