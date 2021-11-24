@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 
 class AuxiliarySystem:
     """The AuxiliarySystem class provides the matrices E, Gamma1, Gamma2
-    necessary for calculating the Liouvillian [1](https://link.aps.org/doi/10.1103/PhysRevB.89.165105).
+    necessary for calculating the Liouvillian
+    [1](https://link.aps.org/doi/10.1103/PhysRevB.89.165105).
     The Hybridization function can be extracted from the class.
 
     Parameters
@@ -83,8 +84,8 @@ class AuxiliarySystem:
         ts : array_like
             Hopping terms of the educed, auxiliary system
         """
-        assert len(es) == self.N
-        assert len(ts) == self.N - 1
+        assert len(es) == self.N, "es doesn't have size N"
+        assert len(ts) == self.N - 1, "ts doesn't have size N-1"
 
         offset = [-1, 0, 1]
         self.E = diags([ts, es, ts], offset, dtype=complex).toarray()
@@ -104,7 +105,7 @@ class AuxiliarySystem:
             Diagonal and upper triangular entries are equal to the diagonal of
             G_upper.
         """
-        G_adj = np.copy(np.transpose(np.conj(G_upper)))
+        G_adj = np.copy(G_upper.conj().T)
         G_adj[np.diag_indices(G_adj.shape[0])] = 0
         return G_upper + G_adj
 
@@ -130,8 +131,8 @@ class AuxiliarySystem:
             to a Markovian bath
         """
         assert self.N_gamma == len(
-            gamma), ("gamma has wrong length, should be (N-1)N/2,"
-                     + " with N = 2*self.Nb + 1")
+            gammas), ("gamma has wrong length, should be (N-1)N/2,"
+                      + " with N = 2*self.Nb + 1")
 
         Gamma = np.zeros((self.N, self.N), dtype=complex)
         n = 0
@@ -158,7 +159,8 @@ class AuxiliarySystem:
         Gamma2: numpy.ndarray (dim,dim)
             Coupling of auxiliary sites to the Markovian bath 2
         """
-        return np.array([[((-1)**(i + j)) * (Gamma1[((self.N - 1) - j), ((self.N - 1) - i)])
+        return np.array([[((-1)**(i + j)) * (Gamma1[((self.N - 1) - j),
+                                                    ((self.N - 1) - i)])
                           for i in range(self.N)] for j in range(self.N)])
 
     def set_ph_symmetric_aux(self, es, ts, gammas):
@@ -275,8 +277,8 @@ if __name__ == "__main__":
     ts = np.array([0.5])
     gamma = np.array([0.1 + 0.0j, 0.0 + 0.0j, 0.1 + 0.0j])
 
-    # initializing auxiliary system and E, Gamma1 and Gamma2 for a particle-hole
-    # symmetric system
+    # initializing auxiliary system and E, Gamma1 and Gamma2 for a
+    # particle-hole symmetric system
     aux = AuxiliarySystem(Nb, ws)
     aux.set_ph_symmetric_aux(es, ts, gamma)
 
@@ -292,7 +294,7 @@ if __name__ == "__main__":
     plt.plot(aux.ws, G_R_aux.imag)
     plt.plot(aux.ws, G_R_aux.real)
     plt.xlabel(r"$\omega$")
-    plt.legend(["$ImG^R(\omega)$", "$ReG^R(\omega)$"])
+    plt.legend([r"$ImG^R(\omega)$", r"$ReG^R(\omega)$"])
     plt.show()
 
     hyb_R, hyb_K = aux.get_auxiliary_hybridization(G_R_aux, G_K_aux)
@@ -301,7 +303,7 @@ if __name__ == "__main__":
     plt.plot(aux.ws, hyb_R.imag)
     plt.plot(aux.ws, hyb_R.real)
     plt.xlabel(r"$\omega$")
-    plt.legend(["$Im\Delta^R_{aux}(\omega)$", "$Re\Delta^R_{aux}(\omega)$"])
+    plt.legend([r"$Im\Delta^R_{aux}(\omega)$", r"$Re\Delta^R_{aux}(\omega)$"])
     plt.show()
 
 # TODO: The rest should be seperated
@@ -311,7 +313,8 @@ if __name__ == "__main__":
 #      4. A costfunction should be written.
 #      5. An optimization routine has to be written.
 #
-# TODO: in the non-particle-hole symmetric case Gamma1 and Gamma2 are independent
+# TODO: In the non-particle-hole symmetric case Gamma1 and Gamma2 are
+#       Independent
 # TODO: Later Extend this to multiorbital case
 
 # %%
