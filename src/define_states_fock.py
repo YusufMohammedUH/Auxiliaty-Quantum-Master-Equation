@@ -13,10 +13,10 @@ section.
 """
 import numpy as np
 from copy import deepcopy
-# from numba import jit --> CI does not like numba
+from numba import jit
 
 
-# @jit(nopython=True)
+@jit(nopython=True)
 def kron_delta(a, b):
     """
     Given two objects a and b with a == operator defined,
