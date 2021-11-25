@@ -226,9 +226,6 @@ if __name__ == "__main__":
 
 
 # TODO: The rest should be seperated
-#       2. Given matrices and frequencies ws the local Green's should be
-#         calculated.
-#       3. From the Green's function the hybridization should be returned.
 #       4. A costfunction should be written.
 #       5. An optimization routine has to be written.
 #
