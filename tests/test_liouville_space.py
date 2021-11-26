@@ -22,7 +22,7 @@ def test_state_creation_LF():
                       [1, 1]])   # second site
     occupt = np.array([[1, 0],    # first site
                       [1, 1]])   # second site
-    built_state = lfs.Liouville_state(2, 2, occup, occupt)
+    built_state = lfs.Liouville_basis_state(2, 2, occup, occupt)
     assert target_state == repr(built_state)
 
 
@@ -39,11 +39,11 @@ def test_dot_prod_LF():
                       [1]])   # second site
     occupt = np.array([[0],    # first site
                       [0]])   # second site
-    state_1 = lfs.Liouville_state(2, 1, occup, occupt)
+    state_1 = lfs.Liouville_basis_state(2, 1, occup, occupt)
     occupt[1, 0] += 1
-    state_2 = lfs.Liouville_state(2, 1, occup, occupt)
+    state_2 = lfs.Liouville_basis_state(2, 1, occup, occupt)
     occupt[1, 0] -= 2
-    state_3 = lfs.Liouville_state(2, 1, occup, occupt)
+    state_3 = lfs.Liouville_basis_state(2, 1, occup, occupt)
     dot_prod_11 = lfs.dot_prod_LF(state_1, state_1)
     dot_prod_12 = lfs.dot_prod_LF(state_1, state_2)
     dot_prod_33 = lfs.dot_prod_LF(state_3, state_3)
@@ -60,7 +60,7 @@ def test_c_js_LF():
                       [0]])   # second site
     occupt = np.array([[0],    # first site
                       [1]])   # second site
-    state_1 = lfs.Liouville_state(2, 1, occup, occupt)
+    state_1 = lfs.Liouville_basis_state(2, 1, occup, occupt)
     state_2 = lfs.c_js_T(0, 0, state_1)
     state_3 = lfs.c_js_T(1, 0, state_1)
     state_4 = lfs.c_js_F(0, 0, state_1)
@@ -83,7 +83,7 @@ def test_cd_js_LF():
                       [0]])   # second site
     occupt = np.array([[0],    # first site
                       [1]])   # second site
-    state_1 = lfs.Liouville_state(2, 1, occup, occupt)
+    state_1 = lfs.Liouville_basis_state(2, 1, occup, occupt)
     state_2 = lfs.cd_js_T(0, 0, state_1)
     state_3 = lfs.cd_js_T(1, 0, state_1)
     state_4 = lfs.cd_js_F(0, 0, state_1)
@@ -110,7 +110,7 @@ def test_operator_chain_density_LF():
                       [1]])   # second site
     occupt = np.array([[1],    # first site
                       [0]])   # second site
-    state_1 = lfs.Liouville_state(2, 1, occup, occupt)
+    state_1 = lfs.Liouville_basis_state(2, 1, occup, occupt)
     state_2 = lfs.op_chain_LF(state_1, ((lfs.cd_js_F, 0, 0),
                                         (lfs.c_js_F, 0, 0)))
     state_3 = lfs.op_chain_LF(state_1, ((lfs.cd_js_T, 0, 0),

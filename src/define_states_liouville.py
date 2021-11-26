@@ -10,13 +10,13 @@ advantage of the previously defined subroutines.
 """
 import numpy as np
 from copy import deepcopy
-from define_states_fock import state, c_js, cd_js, dot_prod
+from define_states_fock import basis_state, c_js, cd_js, dot_prod
 
 
-class Liouville_state:
+class Liouville_basis_state:
     def __init__(self, n_site, n_orb, occup, occup_tilde):
         """
-        Class for creation of a state in Fock space.
+        Class for creation of a basis_state in Fock space.
         Inputs :
         -------------
             n_site : int, number of sites
@@ -27,12 +27,12 @@ class Liouville_state:
                     -1 (null state), 0 (empty) or 1 (full)
         Members :
         --------------
-             st_fock : state object, Fock component of the state
-             st_tilde : state object, Tilde component of the state
+             st_fock : basis_state object, Fock component of the state
+             st_tilde : basis_state object, Tilde component of the state
         """
 
-        self.st_fock = state(n_site, n_orb, occup)
-        self.st_tilde = state(n_site, n_orb, occup_tilde)
+        self.st_fock = basis_state(n_site, n_orb, occup)
+        self.st_tilde = basis_state(n_site, n_orb, occup_tilde)
 
     def __repr__(self):
         return repr(self.st_fock) + " x " + repr(self.st_tilde)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
                 for sp_t in np.arange(n_orbs):
                     occup_t = np.zeros((n_sites, n_orbs), dtype=int)
                     occup_t[site_t, sp_t] = 1
-                    FL_state = Liouville_state(n_sites, n_orbs, occup, occup_t)
+                    FL_state = Liouville_basis_state(n_sites, n_orbs, occup, occup_t)
                     print("State", FL_state)
                     print(r"c_{00}"+repr(FL_state)+"=",
                           c_js_F(j, sigma, FL_state))
@@ -151,3 +151,4 @@ if __name__ == "__main__":
                     print(r"\tilde{cd}_{00}"+repr(FL_state)+"=",
                           cd_js_T(j, sigma, FL_state))
                     print("")
+

@@ -7,7 +7,7 @@ Created on Wed Nov 24 12:15:29 2021
 """
 import numpy as np
 from itertools import product
-from define_states_fock import state, dot_prod, op_chain, cd_js, c_js
+from define_states_fock import basis_state, dot_prod, op_chain, cd_js, c_js
 
 
 def Hubbard_atom(U, mu):
@@ -30,10 +30,10 @@ def Hubbard_atom(U, mu):
     """
 
     # It has 4 states
-    empty_state = state(1, 2, np.array([[0, 0]]))
-    spin_up = state(1, 2, np.array([[0, 1]]))
-    spin_do = state(1, 2, np.array([[1, 0]]))
-    spin_updo = state(1, 2, np.array([[1, 1]]))
+    empty_state = basis_state(1, 2, np.array([[0, 0]]))
+    spin_up = basis_state(1, 2, np.array([[0, 1]]))
+    spin_do = basis_state(1, 2, np.array([[1, 0]]))
+    spin_updo = basis_state(1, 2, np.array([[1, 1]]))
 
     # These are also eigenstates of the Hamiltonian with
     # eigenvalues: 0, -mu, -mu, U - 2*mu
@@ -86,7 +86,7 @@ def Hubbard_chain(t, U, mu, n_sites):
     for conf in product([0, 1], repeat=n_spins*n_sites):
         conf = np.asarray(conf)
         occup = conf.reshape(n_sites, n_spins)
-        state_in = state(n_sites, n_spins, occup)
+        state_in = basis_state(n_sites, n_spins, occup)
         # excl = False
         # for site in np.arange(2):
         #     if occup[site, 0] == 1 and occup[site, 1] == 1:

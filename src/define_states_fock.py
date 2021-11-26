@@ -30,7 +30,7 @@ def kron_delta(a, b):
 ###########################################################
 
 
-class state:
+class basis_state:
     """
     Class for creation of a state in Fock space.
     Inputs :
@@ -90,14 +90,15 @@ class state:
 #########################################################
 
 
-def dot_prod(bra: state, ket: state):
+def dot_prod(bra: basis_state, ket: basis_state):
     """
     Given two Fock states of type state, return their dot product.
     """
-    if (not isinstance(bra, state)) or (not isinstance(ket, state)):
+    if (not isinstance(bra, basis_state)) or (
+            not isinstance(ket, basis_state)):
         raise TypeError(
             "states must be of type {}".format(
-                state))
+                basis_state))
     if np.any(ket.occup == -1) or np.any(bra.occup == -1):
         return 0.
     assert ket.orbs == bra.orbs and ket.len == bra.len
@@ -118,10 +119,10 @@ def c_js(j, sigma, ket_in):
     return the state c_{js}|in> = |n_0, ... (n-1)_{j, sigma}, ...>.
     """
     ket_out = deepcopy(ket_in)
-    if not isinstance(ket_out, state):
+    if not isinstance(ket_out, basis_state):
         raise TypeError(
             "ket_out must be of type {} respectively".format(
-                state))
+                basis_state))
     if ket_out.occup[j, sigma] == -1:
         return ket_out
 
@@ -139,10 +140,10 @@ def cd_js(j, sigma, ket_in):
     return the state c^{\dagger}_{js}|in> = |n_0, ... (n+1)_{j, sigma}, ...>.
     """
     ket_out = deepcopy(ket_in)
-    if not isinstance(ket_out, state):
+    if not isinstance(ket_out, basis_state):
         raise TypeError(
             "ket_out must be of type {} respectively".format(
-                state))
+                basis_state))
     if ket_out.occup[j, sigma] == -1:
         return ket_out
     elif ket_out.occup[j, sigma] == 0 or ket_out.occup[j, sigma] == 1:
@@ -181,7 +182,7 @@ if __name__ == "__main__":
         for sp in np.arange(n_orbs):
             occup = np.zeros((n_sites, n_orbs), dtype=int)
             occup[site, sp] = 1
-            states_in.append(state(n_sites, n_orbs, occup))
+            states_in.append(basis_state(n_sites, n_orbs, occup))
             print(site, sp, states_in[-1])
     """
     states_out = deepcopy(states_in)
@@ -197,8 +198,8 @@ if __name__ == "__main__":
                 occ2 = np.zeros((n_sites, n_orbs), dtype=int)
                 occ1[n1, 0] = 1
                 occ2[n2, 0] = 1
-                state1 = state(n_sites, n_orbs, occ1)
-                state2 = state(n_sites, n_orbs, occ2)
+                state1 = basis_state(n_sites, n_orbs, occ1)
+                state2 = basis_state(n_sites, n_orbs, occ2)
                 # state1 = cd_js(n2, 0, c_js(n1, 0, state1))
                 state1 = op_chain(state1, [[cd_js, n2, 0], [c_js, n1, 0]])
                 matrix[n1, n2] = - dot_prod(state1, state2)

@@ -8,7 +8,7 @@ Created on Tue Nov 23 17:46:16 2021
 Application of the defined routines to the 2-level system.
 """
 import numpy as np
-from define_states_liouville import Liouville_state
+from define_states_liouville import Liouville_basis_state
 from define_states_liouville import c_js_F, c_js_T, cd_js_F, cd_js_T
 from define_states_liouville import dot_prod_LF
 from define_states_fock import kron_delta
@@ -37,7 +37,8 @@ def create_Liouvillian_2level(W, epsilon0, epsilon1, Gamma):
                 for sp_t in np.arange(n_orbs):
                     occup_t = np.zeros((n_sites, n_orbs), dtype=int)
                     occup_t[site_t, sp_t] = 1
-                    FL_state = Liouville_state(n_sites, n_orbs, occup, occup_t)
+                    FL_state = Liouville_basis_state(
+                        n_sites, n_orbs, occup, occup_t)
                     # print(site, sp, site_t, sp_t, FL_state)
                     FL_states.append(FL_state)
 

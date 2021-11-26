@@ -18,7 +18,7 @@ def test_state_creation():
     target_state = "|10>|11>"
     occup = np.array([[1, 0],    # first site
                       [1, 1]])   # second site
-    built_state = fs.state(2, 2, occup)
+    built_state = fs.basis_state(2, 2, occup)
     assert target_state == repr(built_state)
 
 
@@ -33,11 +33,11 @@ def test_dot_prod():
     """
     occup = np.array([[1, 0],    # first site
                       [1, 1]])   # second site
-    state_1 = fs.state(2, 2, occup)
+    state_1 = fs.basis_state(2, 2, occup)
     occup[1, 1] -= 1
-    state_2 = fs.state(2, 2, occup)
+    state_2 = fs.basis_state(2, 2, occup)
     occup[1, 1] -= 1
-    state_3 = fs.state(2, 2, occup)
+    state_3 = fs.basis_state(2, 2, occup)
     dot_prod_11 = fs.dot_prod(state_1, state_1)
     dot_prod_12 = fs.dot_prod(state_1, state_2)
     dot_prod_33 = fs.dot_prod(state_3, state_3)
@@ -53,7 +53,7 @@ def test_c_js():
     """
     occup = np.array([[1],    # first site
                       [0]])   # second site
-    state_1 = fs.state(2, 1, occup)
+    state_1 = fs.basis_state(2, 1, occup)
     state_2 = fs.c_js(0, 0, state_1)
     state_3 = fs.c_js(1, 0, state_1)
     test1 = (repr(state_1) == "|1>|0>")
@@ -71,7 +71,7 @@ def test_cd_js():
     """
     occup = np.array([[1],    # first site
                       [0]])   # second site
-    state_1 = fs.state(2, 1, occup)
+    state_1 = fs.basis_state(2, 1, occup)
     state_2 = fs.cd_js(0, 0, state_1)
     state_3 = fs.cd_js(1, 0, state_1)
     test1 = (repr(state_1) == "|1>|0>")
@@ -90,7 +90,7 @@ def test_operator_chain_density():
     """
     occup = np.array([[0],    # first site
                       [1]])   # second site
-    state_1 = fs.state(2, 1, occup)
+    state_1 = fs.basis_state(2, 1, occup)
     state_2 = fs.op_chain(state_1, ((fs.cd_js, 0, 0), (fs.c_js, 0, 0)))
     state_3 = fs.op_chain(state_1, ((fs.cd_js, 1, 0), (fs.c_js, 1, 0)))
     test1 = (fs.dot_prod(state_1, state_2) == 0.)
@@ -108,10 +108,10 @@ def test_operator_chain_ddoubleocc():
     """
     occup = np.array([[0],    # first site
                       [1]])   # second site
-    state_in1 = fs.state(2, 1, occup)
+    state_in1 = fs.basis_state(2, 1, occup)
     occup = np.array([[1],    # first site
                       [1]])   # second site
-    state_in2 = fs.state(2, 1, occup)
+    state_in2 = fs.basis_state(2, 1, occup)
     state_out1 = fs.op_chain(state_in1, ((fs.cd_js, 0, 0), (fs.c_js, 0, 0),
                                          (fs.cd_js, 1, 0), (fs.c_js, 1, 0)))
     state_out2 = fs.op_chain(state_in2, ((fs.cd_js, 0, 0), (fs.c_js, 0, 0),
