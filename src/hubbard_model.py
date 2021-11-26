@@ -123,5 +123,4 @@ def Hubbard_chain(t, U, mu, n_sites):
                                                            (c_js, site2, sp)))
                         Hamil[n1, n2] += t[site1, site2] * dot_prod(states[n2],
                                                                     state_next)
-
     return Hamil, states

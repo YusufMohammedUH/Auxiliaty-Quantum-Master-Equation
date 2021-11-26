@@ -14,7 +14,7 @@ from define_states_liouville import cd_js_F, c_js_F, cd_js_T, c_js_T, op_chain_L
 from liouville_decomposition import decompose_Liouville
 
 
-def Hamil_LF(space, states, t, U, mu, n_sites, n_spins=2):
+def Hubbard_hamil_LF(space, states, t, U, mu, n_sites):
     """
     Hamiltonian in Lioville-Fock space. It can either be the tilde Hamiltonian
     or the Fock Hamiltonian. They will be equivalent, but for clarity
@@ -76,7 +76,7 @@ def Hamil_LF(space, states, t, U, mu, n_sites, n_spins=2):
             # Non-local contribution
             for site1 in np.arange(n_sites):
                 for site2 in np.arange(n_sites):
-                    for sp in np.arange(n_spins):
+                    for sp in [0, 1]:
                         state_next = op_chain_LF(states[n1],
                                                  ((c_dag, site1, sp),
                                                   (c_ann, site2, sp)))
@@ -137,8 +137,9 @@ def Dissip_Naka_LF(states, Gamma, n_sites, n_spins=2):
     return -1j*Dissip
 
 
-def Dissip_Dorda_LF(states, Gamma1, Gamma2, n_sites, n_spins=2):
+def Dissip_Dorda_LF(states, Gamma, n_sites, n_spins=2):
     n2_states = len(states)
+    Gamma1, Gamma2 = Gamma
     Dissip = np.zeros((n2_states, n2_states), complex)
     for n1 in np.arange(n2_states):
         for n2 in np.arange(n2_states):
@@ -148,36 +149,36 @@ def Dissip_Dorda_LF(states, Gamma1, Gamma2, n_sites, n_spins=2):
                     for sp2 in np.arange(n_spins):
                             # cd_T c_T
                             tt_state = op_chain_LF(states[n1],
-                                                    ((c_js_T, site2, sp2),
-                                                    (cd_js_T, site2, sp2)))
+                                                    ((cd_js_T, site2, sp2),
+                                                    (c_js_T, site2, sp2)))
                             # cd_T cd_F
                             tf_state = op_chain_LF(states[n1],
                                                     ((c_js_T, site2, sp2),
-                                                    (cd_js_T, site2, sp2)))
+                                                    (c_js_F, site2, sp2)))
                             # c_T c_F
                             ft_state = op_chain_LF(states[n1],
-                                                    ((c_js_T, site2, sp2),
+                                                    ((cd_js_F, site2, sp2),
                                                     (cd_js_T, site2, sp2)))
 
                             # cd_T cd_F
                             ff_state = op_chain_LF(states[n1],
-                                                    ((c_js_T, site2, sp2),
-                                                    (cd_js_T, site2, sp2)))
-                            Dissip[n1, n2] += Gamma1[site1, site2] * dot_prod_LF(states[n2], nn_state)
-                            Dissip[n1, n2] -= mu[site] * (dot_prod_LF(states[n2], nup_state)
-                                                          + dot_prod_LF(states[n2], ndo_state))
-                
-            # Non-local contribution
-            for site1 in np.arange(n_sites):
-                for site2 in np.arange(n_sites):
-                    for sp in np.arange(n_spins):
-                        state_next = op_chain_LF(states[n1], ((c_dag, site1, sp),
-                                                            (c_ann, site2, sp)))
-                        Hamil[n1, n2] += t[site1, site2] * dot_prod_LF(states[n2],
-                                                                    state_next)
-    return Hamil
+                                                    ((cd_js_F, site2, sp2),
+                                                    (c_js_F, site2, sp2)))
+                            G1_m_G2 = Gamma1[site1, site2] - Gamma2[site1, site2]
+                            Dissip[n1, n2] -= 1j * G1_m_G2 * dot_prod_LF(
+                                                states[n2], ff_state)
+                            Dissip[n1, n2] -= 1j*G1_m_G2 * dot_prod_LF(
+                                                states[n2], tt_state)
+                            Dissip[n1, n2] += 2*Gamma2[site1, site2] * \
+                                dot_prod_LF(states[n2], ft_state)
+                            Dissip[n1, n2] -= 2*Gamma1[site1, site2] * \
+                                dot_prod_LF(states[n2], tf_state)
+                            Dissip[n1, n2] -= 2.j * np.trace(Gamma2) * kron_delta(n1, n2)
+    return -1j*Dissip
 
-def naive_Liouvillian_Hubbard(t, Gamma1, Gamma2, U, mu, n_sites, Dissip=None):
+
+def naive_Liouvillian_Hubbard(t, Gamma, U, mu,
+                              n_sites, n_spins=2, Dissip=None):
     """
     Generation of the Hubbard Hamiltonian for a set of sites.
     Hoppings and chemical potential assumed to be spin-independent.
@@ -206,61 +207,45 @@ def naive_Liouvillian_Hubbard(t, Gamma1, Gamma2, U, mu, n_sites, Dissip=None):
              contains the set of basis states.
     """
     # define Hubbard atom
-    n_spins = 2
 
     # It has 4 states
     states = create_Hubbard_basis_LF(n_sites, n_spins)
-    Hamil_F = Hamil_LF("fock", states, t, U, mu, n_sites)
-    Hamil_T = Hamil_LF("tilde", states, t, U, mu, n_sites)
+    Hamil_F = Hubbard_hamil_LF("fock", states, t, U, mu, n_sites)
+    Hamil_T = Hubbard_hamil_LF("tilde", states, t, U, mu, n_sites)
     Liouville = -1j*(Hamil_F - Hamil_T)
     # TODO add here the dissipator
+    if not(Dissip is None):
+        Liouville += Dissip(states, Gamma, n_sites, n_spins)
     return Liouville, states
 
 
-if __name__ == "__main__":
-    """
-    Calculation of the Liouvillian of the damped Hubbard model,
-    introduced in Nakagawa paper.
-    To achieve this, we disable the coupling to leads (Gamma1 and Gamma2)
-    by putting them to 0 and we introduce the Dissip_Naka_LF,
-    i.e. a simple 2-particle dissipation.
-    """
-    t = np.array([[0]])  # np.array([[0.0, -0.2], [-0.2, 0.0]])
-    mu = 1.0 * np.ones((1,))
-    U_arr = 2. * np.ones((1,))
-    # we define Gamma as c_{do, }
-    Gamma1 = Gamma2 = 0
-    Gamma = 0.2 * np.ones((1,))
-    n_sites = 1
+def find_nearest(a, a0):
+    """Element in nd array `a` closest to the scalar value `a0`,
+    returns the index"""
+    idx = np.abs(a - a0).argmin()
+    return idx
 
-    Liouville, states = naive_Liouvillian_Hubbard(
-        t, 0, 0, U_arr, mu, n_sites)
-    Dissip = Dissip_Naka_LF(states, Gamma, n_sites)
-    Liouville += Dissip
+
+if __name__ == "__main__":
+    t = 0.0 * np.array([[1.]])
+    mu = - 1.0 * np.array([[1.]])
+    U = 0.0 * np.array([[1.]])
+    Gamma1 = 0.2 * np.array([[1.]])
+    Gamma2 = 0.3 * np.array([[1.]])
+    Liouville_sl, states = naive_Liouvillian_Hubbard(
+        t, (Gamma1, Gamma2), U, mu, 1, n_spins=2, Dissip=Dissip_Dorda_LF)
     print("States : ", states)
-    vals, vecs_l, vecs_r = decompose_Liouville(Liouville)
-    vals = np.sort(vals)
-    print("Eigenvalues :", vals)
-    eig_vals_an = np.array([0., -mu[0], -mu[0], U_arr[0]- 1j * Gamma[0] -2*mu[0]])
-    eig_liouv_an = np.matrix.flatten(
-        eig_vals_an[:, None] - np.conj(eig_vals_an[None, :]))
-    print("Eigenvalues exact: ", np.sort(-1j*eig_liouv_an))
-    assert np.allclose(np.sort(-1j*eig_liouv_an) , vals)
+    vals, vecs_l, vecs_r = decompose_Liouville(Liouville_sl)
+    print("Eigenvalues :", np.sort(vals))
     plt.figure()
     plt.title("Eigenvalues of the Liouvillian")
     for val in vals:
         plt.scatter(vals.real, vals.imag)
     plt.xlabel(r"$Re \, \Lambda$")
     plt.ylabel(r"$Im \, \Lambda$")
+    idx = find_nearest(vals, 0.0)
+    assert np.allclose(vals[idx], 0.0)
+    print(vals[idx])
     plt.show()
     
-    # compute Green's function
-    omega = np.linspace(-4, 4, 1000)
-    delta = 1e-2
-    occup = np.zeros((1, 2))
-    occup_tilde = np.zeros((1, 2))
-    rho0 = np.zeros(vals.shape)
-    rho0[0] = 1 # Liouville_state(n_sites, 2, occup, occup_tilde)
-    #I_c_R = 
-    Gf = sum([1/(omega +1j*delta - 1j*val) for val in vals] )
-    plt.plot(omega, -1./np.pi*Gf.imag)
+    

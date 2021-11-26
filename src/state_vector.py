@@ -57,7 +57,8 @@ class LF_vector:
             weights = rhs*deepcopy(self.weights)
             return LF_vector(self.basis, weights)
         assert repr(self.basis) == repr(rhs.basis)
-        weight = np.sum(rhs.weights * np.conj(self.weights))
+        rhs_ = deepcopy(rhs)
+        weight = np.sum(rhs_.weights * np.conj(self.weights))
         return weight
 
     def __rmul__(self, lhs):
@@ -150,7 +151,7 @@ if __name__ == "__main__":
     n_sites = 1
     states = create_Hubbard_basis_LF(n_sites, n_spins)
     vec = LF_vector(states, np.ones((len(states),)))
-    vec_1 = LF_vector(states, 0.51j*np.ones((len(states),)))
+    vec_1 = LF_vector(states, np.array([0.1, 0.2, 0.3, 0.4]))
     print(vec - vec_1)
     print(vec * vec_1)
     print(vec_1 * vec)
@@ -164,3 +165,7 @@ if __name__ == "__main__":
     print(vec_1)
     vec_2 = vec_1.apply(oper_comb)
     print(vec_1, vec_2)
+    vec_3 = vec_1.apply([(c_js_F, site, 0)])
+    print(vec_3)
+    vec_3 = vec_1.apply([(cd_js_F, site, 0)])
+    print(vec_3)
