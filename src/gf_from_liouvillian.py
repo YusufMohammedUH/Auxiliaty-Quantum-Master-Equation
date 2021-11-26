@@ -7,6 +7,7 @@ Created on Fri Nov 26 11:59:42 2021
 """
 import sys
 import numpy as np
+from scipy.integrate import simpson
 from scipy.linalg import eig
 from liouvillian_hubbard import naive_Liouvillian_Hubbard, Dissip_Dorda_LF
 from define_states_liouville import cd_js_F, c_js_F
@@ -82,7 +83,7 @@ def green_function_Liouvillian(omega, Liouville_sl,
     Returns
     -------
     Gf : numpy.ndarray (n_freqs,)
-        DESCRIPTION.
+        Component of Green's function.
 
     """
     b1, b2, sp1, sp2, cmp_keldysh = component
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     plt.ylabel(r"$Im \, \Lambda$")
     plt.show()
     # compute Green's function
-    omega = np.linspace(-4, 4, 1000)
+    omega = np.linspace(-6, 8, 1500)
     Gf = green_function_Liouvillian(omega, Liouville_sl, states)
     Gf -= green_function_Liouvillian(omega, Liouville_sl,
                                      states, component=(0, 0, 0, 0, "<"))
@@ -144,3 +145,5 @@ if __name__ == "__main__":
     plt.xlabel("Energy")
     plt.ylabel("Spectral function")
     plt.show()
+    dx = (omega[-1]-omega[0])/omega.shape[0]
+    print("Area under the curve is ", simpson(0.5j/np.pi*Gf).real*dx)

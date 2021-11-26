@@ -140,7 +140,8 @@ if __name__ == "__main__":
                 for sp_t in np.arange(n_orbs):
                     occup_t = np.zeros((n_sites, n_orbs), dtype=int)
                     occup_t[site_t, sp_t] = 1
-                    FL_state = Liouville_basis_state(n_sites, n_orbs, occup, occup_t)
+                    FL_state = Liouville_basis_state(n_sites, n_orbs,
+                                                     occup, occup_t)
                     print("State", FL_state)
                     print(r"c_{00}"+repr(FL_state)+"=",
                           c_js_F(j, sigma, FL_state))
@@ -151,4 +152,3 @@ if __name__ == "__main__":
                     print(r"\tilde{cd}_{00}"+repr(FL_state)+"=",
                           cd_js_T(j, sigma, FL_state))
                     print("")
-

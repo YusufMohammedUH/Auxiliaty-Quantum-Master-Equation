@@ -63,7 +63,8 @@ def create_Liouvillian_2level(W, epsilon0, epsilon1, Gamma):
                     # elements of the dissipator
                     # Sigma^+ {Sigma^-} and \tilde{Sigma^+} \tilde{Sigma^-}
                     Liouvillian[n_orbs * n2 + n4, n_orbs * n1 + n3] += \
-                        - 0.5 * (Gamma_m[n1, n2] + Gamma_m[n3, n4]) * dot_prod_LF(state_out, state_in)
+                        - 0.5 * (Gamma_m[n1, n2] + Gamma_m[n3, n4]) * \
+                        dot_prod_LF(state_out, state_in)
                     # Sigma^- \tilde{Sigma^-}
                     Liouvillian[n_orbs * n2 + n4, n_orbs * n1 + n3] += \
                         Gamma * kron_delta(n1, n2+1) * kron_delta(n3, n4+1)

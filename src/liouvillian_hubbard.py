@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 from define_states_fock import kron_delta
 from state_vector import create_Hubbard_basis_LF
 from define_states_liouville import dot_prod_LF
-from define_states_liouville import cd_js_F, c_js_F, cd_js_T, c_js_T, op_chain_LF
+from define_states_liouville import cd_js_F, c_js_F, \
+    cd_js_T, c_js_T, op_chain_LF
 from liouville_decomposition import decompose_Liouville
 
 
@@ -69,9 +70,9 @@ def Hubbard_hamil_LF(space, states, t, U, mu, n_sites):
                                                     (c_ann, site, 0)))
                 Hamil[n1, n2] += U[site] * dot_prod_LF(states[n2], nn_state)
                 Hamil[n1, n2] += (- mu[site]) * (
-                  dot_prod_LF(states[n2], nup_state)
-                  + dot_prod_LF(states[n2], ndo_state)
-                  )
+                    dot_prod_LF(states[n2], nup_state)
+                    + dot_prod_LF(states[n2], ndo_state)
+                )
 
             # Non-local contribution
             for site1 in np.arange(n_sites):
@@ -147,33 +148,34 @@ def Dissip_Dorda_LF(states, Gamma, n_sites, n_spins=2):
             for site1 in np.arange(n_sites):
                 for site2 in np.arange(n_sites):
                     for sp2 in np.arange(n_spins):
-                            # cd_T c_T
-                            tt_state = op_chain_LF(states[n1],
-                                                    ((cd_js_T, site2, sp2),
-                                                    (c_js_T, site2, sp2)))
-                            # cd_T cd_F
-                            tf_state = op_chain_LF(states[n1],
-                                                    ((c_js_T, site2, sp2),
-                                                    (c_js_F, site2, sp2)))
-                            # c_T c_F
-                            ft_state = op_chain_LF(states[n1],
-                                                    ((cd_js_F, site2, sp2),
-                                                    (cd_js_T, site2, sp2)))
+                        # cd_T c_T
+                        tt_state = op_chain_LF(states[n1],
+                                               ((cd_js_T, site2, sp2),
+                                                (c_js_T, site2, sp2)))
+                        # cd_T cd_F
+                        tf_state = op_chain_LF(states[n1],
+                                               ((c_js_T, site2, sp2),
+                                                (c_js_F, site2, sp2)))
+                        # c_T c_F
+                        ft_state = op_chain_LF(states[n1],
+                                               ((cd_js_F, site2, sp2),
+                                                (cd_js_T, site2, sp2)))
 
-                            # cd_T cd_F
-                            ff_state = op_chain_LF(states[n1],
-                                                    ((cd_js_F, site2, sp2),
-                                                    (c_js_F, site2, sp2)))
-                            G1_m_G2 = Gamma1[site1, site2] - Gamma2[site1, site2]
-                            Dissip[n1, n2] -= 1j * G1_m_G2 * dot_prod_LF(
-                                                states[n2], ff_state)
-                            Dissip[n1, n2] -= 1j*G1_m_G2 * dot_prod_LF(
-                                                states[n2], tt_state)
-                            Dissip[n1, n2] += 2*Gamma2[site1, site2] * \
-                                dot_prod_LF(states[n2], ft_state)
-                            Dissip[n1, n2] -= 2*Gamma1[site1, site2] * \
-                                dot_prod_LF(states[n2], tf_state)
-                            Dissip[n1, n2] -= 2.j * np.trace(Gamma2) * kron_delta(n1, n2)
+                        # cd_T cd_F
+                        ff_state = op_chain_LF(states[n1],
+                                               ((cd_js_F, site2, sp2),
+                                                (c_js_F, site2, sp2)))
+                        G1_m_G2 = Gamma1[site1, site2] - Gamma2[site1, site2]
+                        Dissip[n1, n2] -= 1j * G1_m_G2 * dot_prod_LF(
+                            states[n2], ff_state)
+                        Dissip[n1, n2] -= 1j*G1_m_G2 * dot_prod_LF(
+                            states[n2], tt_state)
+                        Dissip[n1, n2] += 2*Gamma2[site1, site2] * \
+                            dot_prod_LF(states[n2], ft_state)
+                        Dissip[n1, n2] -= 2*Gamma1[site1, site2] * \
+                            dot_prod_LF(states[n2], tf_state)
+                        Dissip[n1, n2] -= 2.j * \
+                            np.trace(Gamma2) * kron_delta(n1, n2)
     return -1j*Dissip
 
 
@@ -207,7 +209,6 @@ def naive_Liouvillian_Hubbard(t, Gamma, U, mu,
              contains the set of basis states.
     """
     # define Hubbard atom
-
     # It has 4 states
     states = create_Hubbard_basis_LF(n_sites, n_spins)
     Hamil_F = Hubbard_hamil_LF("fock", states, t, U, mu, n_sites)
@@ -247,5 +248,3 @@ if __name__ == "__main__":
     assert np.allclose(vals[idx], 0.0)
     print(vals[idx])
     plt.show()
-    
-    
