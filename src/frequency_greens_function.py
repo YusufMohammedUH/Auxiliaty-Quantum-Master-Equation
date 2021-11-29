@@ -166,14 +166,43 @@ class FrequencyGreen:
             green_0_ret_inverse = self.freq
 
         def get_self_enerqy(green_0_ret_inverse_w, green_ret_w, green_kel_w):
-            sigma_ret_w = green_0_ret_inverse_w - 1.0 / green_ret_w
+            green_ret_w_inverse = 0
+            if green_ret_w == 0:
+                print(green_ret_w_inverse)
+                green_ret_w_inverse = float('inf')
+            else:
+                green_ret_w_inverse = 1.0 / green_ret_w
+            sigma_ret_w = green_0_ret_inverse_w - green_ret_w_inverse
+            green_ret_w_abs_square_inverse = 0
+            if (green_ret_w * np.conj(green_ret_w)) == 0:
+                green_ret_w_abs_square_inverse = float('inf')
+            else:
+                green_ret_w_abs_square_inverse = (
+                    1 / (green_ret_w * np.conj(green_ret_w)))
             sigma_kel_w = (
-                (1 / (green_ret_w * np.conj(green_ret_w))) * green_kel_w)
+                green_ret_w_abs_square_inverse * green_kel_w)
             return sigma_ret_w, sigma_kel_w
 
         vec_get_self_enerqy = np.vectorize(get_self_enerqy)
         sigma = vec_get_self_enerqy(
             green_0_ret_inverse, self.retarded, self.keldysh)
+
+        singularities = np.where(sigma[0].real == float("-inf"))[0]
+        print(singularities)
+        for s in singularities:
+            print(s)
+            if s == 0:
+                sigma[0][s] = complex(
+                    np.sign(sigma[0].real[s + 1]) *
+                    np.abs(np.real(sigma[0][s])),
+                    np.imag(sigma[0][s]))
+                sigma[1][s] = 0
+            else:
+                sigma[0][s] = complex(
+                    np.sign(sigma[0].real[s - 1]) *
+                    np.abs(np.real(sigma[0][s])),
+                    np.imag(sigma[0][s]))
+                sigma[1][s] = 0
 
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
 
