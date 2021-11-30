@@ -1,4 +1,3 @@
-# %%
 from scipy.sparse import diags
 import numpy as np
 
@@ -204,7 +203,6 @@ class AuxiliarySystem:
         self.Gamma2 = self.get_Gamma_general(gamma2)
 
 
-# %%
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
@@ -225,12 +223,6 @@ if __name__ == "__main__":
     print("Gamma2-Gamma2: \n", (aux.Gamma2 - aux.Gamma1))
 
 
-# TODO: The rest should be seperated
-#       4. A costfunction should be written.
-#       5. An optimization routine has to be written.
-#
 # TODO: In the non-particle-hole symmetric case Gamma1 and Gamma2 are
 #       Independent
 # TODO: Later Extend this to multiorbital case
-
-# %%

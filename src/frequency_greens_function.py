@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 import src.auxiliary_system_parameter as auxp
 import matplotlib.pyplot as plt
@@ -204,7 +203,6 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
 
 
-# %%
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
@@ -261,5 +259,3 @@ if __name__ == "__main__":
     plt.legend([r"$G^R_{aux}(\omega)$", r"$G^R_{aux}(\omega)$",
                r"$ImG^K_{aux}(\omega)$", r"$ReG^K_{aux}(\omega)$"])
     plt.show()
-
-# %%

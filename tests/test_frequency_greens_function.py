@@ -1,4 +1,3 @@
-# %%
 import pytest
 import numpy as np
 from src import frequency_greens_function as fg
@@ -21,8 +20,6 @@ def test_FrequencySystem_keldysh_raise_ValueError():
     ws = [i for i in range(10)]
     with pytest.raises(ValueError):
         fg.FrequencyGreen(np.array(ws), np.array(ws), np.array(ws[2:]))
-
-# %%
 
 
 def test_get_self_enerqy_and_dyson():
@@ -57,7 +54,6 @@ def test_get_self_enerqy_and_dyson():
 # TODO: test for method set_green_from_auxiliary in FrequencyGreen
 
 
-# %%
 if __name__ == "__main__":
 
     pytest.main("-v test_frequency_greens_function.py")

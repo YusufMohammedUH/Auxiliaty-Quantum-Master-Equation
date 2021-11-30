@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 import src.auxiliary_system_parameter as auxp
 import src.frequency_greens_function as fg
@@ -6,7 +5,6 @@ import src.dos_util as du
 from scipy.integrate import simps
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
-# %%
 # TODO: 1. enable complex optimization
 # TODO: 2. use a optimization which converges for reliably for NB>1
 #          -> change to more reliable minimization scheme!
@@ -163,13 +161,12 @@ def get_aux_hyb(res, Nb, freq):
     aux = auxp.AuxiliarySystem(Nb, freq)
     aux.set_ph_symmetric_aux(es, ts, gammas)
 
-    green = fg.FrequencyGreen(hybridization.freq)
+    green = fg.FrequencyGreen(freq)
     green.set_green_from_auxiliary(aux)
 
     return green.get_self_enerqy()
 
 
-# %%
 if __name__ == "__main__":
     # setting target hybridization
     beta = 100
@@ -217,5 +214,3 @@ if __name__ == "__main__":
                 r"$Im\Delta^K_{\mathrm{aux,start}}(\omega)$",
                r"$Im\Delta^K_{\mathrm{aux,final}}(\omega)$"])
     plt.show()
-
-# %%
