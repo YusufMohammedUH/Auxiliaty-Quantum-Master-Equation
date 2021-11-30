@@ -4,8 +4,6 @@ import numpy as np
 from src import frequency_greens_function as fg
 from src import dos_util as du
 
-# %%
-
 
 def test_FrequencySystem_freq_raise_TypeError():
     ws = [i for i in range(10)]
@@ -44,12 +42,17 @@ def test_get_self_enerqy_and_dyson():
     green = fg.FrequencyGreen(freq)
     green.dyson(green.freq, hybridization)
     hybridization_retreaved = green.get_self_enerqy()
-    assert (np.allclose(hybridization_retreaved.retarded.imag,
-                        hybridization.retarded.imag) and
-            np.allclose(hybridization_retreaved.retarded.real,
-            hybridization.retarded.real) and
-            np.allclose(hybridization_retreaved.keldysh,
-            hybridization.keldysh))
+
+    diff_hyb_ret = np.abs(hybridization_retreaved.retarded -
+                          hybridization.retarded)
+    diff_hyb_ret = diff_hyb_ret[~np.isnan(diff_hyb_ret)]
+
+    diff_hyb_kel = np.abs(hybridization_retreaved.keldysh -
+                          hybridization.keldysh)
+    diff_hyb_kel = diff_hyb_kel[~np.isnan(diff_hyb_kel)]
+
+    assert (np.allclose(diff_hyb_kel, np.zeros(diff_hyb_kel.shape)) and
+            np.allclose(diff_hyb_ret, np.zeros(diff_hyb_ret.shape)))
 
 # TODO: test for method set_green_from_auxiliary in FrequencyGreen
 
