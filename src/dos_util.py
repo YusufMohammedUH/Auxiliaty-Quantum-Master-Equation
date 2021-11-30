@@ -5,9 +5,9 @@ def flat_dos(w, D, gamma):
     x = D + w
     y = (w - D)
     if x == 0:
-        real_part = float("inf")
+        real_part = -float("inf")
     elif y == 0:
-        real_part = float("-inf")
+        real_part = -float("-inf")
     else:
         real_part = (-gamma / np.pi) * np.log(np.abs(y / x))
 
