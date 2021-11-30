@@ -2,6 +2,7 @@
 import pytest
 import numpy as np
 from src import frequency_greens_function as fg
+from src import dos_util as du
 
 # %%
 
@@ -26,40 +27,21 @@ def test_FrequencySystem_keldysh_raise_ValueError():
 # %%
 
 
-def flat_dos(w, D, gamma):
-    x = D + w
-    y = (w - D)
-    if x == 0:
-        real_part = float("inf")
-    elif y == 0:
-        real_part = float("-inf")
-    else:
-        real_part = (gamma / np.pi) * np.log(np.abs(y / x))
-
-    imag_part = 0
-    if np.abs(w) < D:
-        imag_part = gamma
-    return complex(real_part, imag_part)
-
-
-def heaviside(x, x0):
-    if x < x0:
-        return 0.
-    elif x == x0:
-        return 0.5
-    else:
-        return 1.
-
-
 def test_get_self_enerqy_and_dyson():
-    ws = np.linspace(-4, 4, 1001)
-    flat_hybridization_retarded = np.array([flat_dos(w, 3.0, 1.0) for w in ws])
+    beta = 100
+    N_freq = 1001
+    freq_max = 4
+    D = 3
+    gamma = 1
+    freq = np.linspace(-freq_max, freq_max, N_freq)
+    flat_hybridization_retarded = np.array(
+        [du.flat_dos(w, D, gamma) for w in freq])
     flat_hybridization_keldysh = np.array(
-        [1.j * (1. / np.pi) * (1. - 2. * heaviside(w, 0)) *
-            np.imag(flat_dos(w, 3.0, 1.0)) for w in ws])
+        [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, beta)) *
+            np.imag(du.flat_dos(w, D, gamma)) for w in freq])
     hybridization = fg.FrequencyGreen(
-        ws, flat_hybridization_retarded, flat_hybridization_keldysh)
-    green = fg.FrequencyGreen(ws)
+        freq, flat_hybridization_retarded, flat_hybridization_keldysh)
+    green = fg.FrequencyGreen(freq)
     green.dyson(green.freq, hybridization)
     hybridization_retreaved = green.get_self_enerqy()
     assert (np.allclose(hybridization_retreaved.retarded.imag,
