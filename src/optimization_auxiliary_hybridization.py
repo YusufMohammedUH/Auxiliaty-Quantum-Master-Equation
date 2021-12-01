@@ -26,8 +26,8 @@ def cost_function(hybridization, auxiliary_hybridization, weight=None):
         Second frequency, single particle Green's function type object
 
     weight : numpy.ndarray, optional
-        Weights of importance, e.g. one could focus on values close to the fermi
-        edge, by default None
+        Weights of importance, e.g. one could focus on values close to the
+        fermi edge, by default None
 
     Returns
     -------
@@ -177,10 +177,10 @@ if __name__ == "__main__":
     freq = np.linspace(-freq_max, freq_max, N_freq)
 
     flat_hybridization_retarded = np.array(
-        [du.flat_dos(w, D, gamma) for w in freq])
+        [du.flat_bath_retarded(w, D, gamma) for w in freq])
     flat_hybridization_keldysh = np.array(
         [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, beta)) *
-         np.imag(du.flat_dos(w, D, gamma)) for w in freq])
+         np.imag(du.flat_bath_retarded(w, D, gamma)) for w in freq])
 
     hybridization = fg.FrequencyGreen(
         freq, flat_hybridization_retarded, flat_hybridization_keldysh)
