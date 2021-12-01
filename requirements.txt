@@ -3,3 +3,4 @@ scipy
 flake8
 pytest
 matplotlib
+numba
