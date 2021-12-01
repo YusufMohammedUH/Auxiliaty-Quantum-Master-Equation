@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def flat_dos(w, D, gamma):
+def flat_bath_retarded(w, D, gamma):
     x = D + w
     y = (w - D)
     if x == 0:
@@ -15,6 +15,17 @@ def flat_dos(w, D, gamma):
     if np.abs(w) < D:
         imag_part = -gamma
     return complex(real_part, imag_part)
+
+
+def lorenzian_bath_retarded(w, e, gamma, v=1):
+    x = w - e - 1j * gamma
+    y = (w - e)**2 + gamma**2
+    result = 0
+    if y == 0:
+        result = complex(0, float("-inf"))
+    else:
+        result = x / y
+    return (v**2) * result
 
 
 def heaviside(x, x0):
