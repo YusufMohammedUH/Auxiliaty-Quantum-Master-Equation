@@ -6,10 +6,10 @@ from scipy.integrate import simps
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 # TODO: 1. enable complex optimization
-# TODO: 2. use a optimization which converges for reliably for NB>1
+# TODO: 2. use a optimization which converges for reliably for NB>2
 #          -> change to more reliable minimization scheme!
 #              e.g. Stochastic minimization
-# XXX: optimization doesn't converge reliably for Nb>1
+# XXX: optimization doesn't converge reliably for Nb>2
 
 
 def cost_function(hybridization, auxiliary_hybridization, weight=None):
@@ -54,7 +54,9 @@ def cost_function(hybridization, auxiliary_hybridization, weight=None):
 
 
 def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
-                              N_try=1, dtype=float):
+                              N_try=1, dtype=float,
+                              options={"disp": True, "maxiter": 200,
+                                       "return_all": True, 'gtol': 1e-5}):
     """Approximation of the supplied hybridization function by a auxiliary
     hybridization function of an auxiliary system with Nb left and right
     auxiliary sites.
@@ -98,7 +100,7 @@ def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
         es = np.ones(Nb, dtype=dtype)
         ts = np.ones(Nb, dtype=dtype)
         gammas = np.ones(aux_tmp.N_gamma, dtype=dtype)
-        x_start = [*es, *ts, *gammas]
+        x_start = np.array([*es, *ts, *gammas])
     if weight is None:
         weight = np.ones(hybridization.freq.shape)
     args = (Nb, hybridization, weight)
@@ -123,7 +125,8 @@ def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
 
         return cost_function(hybridization, hyb_aux, weight)
 
-    result = minimize(optimization_func, x_start, args=args)
+    result = minimize(optimization_func, x_start, args=args, options=options,
+                      jac="3-point")
     nn = 1
     print("No. of tries: ", nn, ", converged: ", result.success)
     while (N_try > nn) and (~result.success):
@@ -167,11 +170,38 @@ def get_aux_hyb(res, Nb, freq):
     return green.get_self_enerqy()
 
 
+def get_aux(res, Nb, freq):
+    """Returns a auxiliary system
+
+    Parameters
+    ----------
+    res : numpy.ndarray
+        contains the parameters for determening E,Gamma1 and Gamma2 of the
+        auxiliary system
+    Nb : int
+        Determens number of auxiliary sites (2*Nb)
+    freq : numpy.ndarray
+        Frequency grid
+
+    Returns
+    -------
+    auxiliary_system_parameter.AuxiliarySystem
+        Auxiliary system object for supplied parameters
+    """
+    es = np.array(res[0:(Nb)])
+    ts = np.array(res[(Nb):(2 * Nb)])
+    gammas = np.array(res[(2 * Nb):])
+    aux = auxp.AuxiliarySystem(Nb, freq)
+    aux.set_ph_symmetric_aux(es, ts, gammas)
+
+    return aux
+
+
 if __name__ == "__main__":
-    # setting target hybridization
+    # Setting target hybridization
     beta = 100
-    N_freq = 1000
-    freq_max = 4
+    N_freq = 1001
+    freq_max = 10
     D = 3
     gamma = 1
     freq = np.linspace(-freq_max, freq_max, N_freq)
@@ -184,33 +214,40 @@ if __name__ == "__main__":
 
     hybridization = fg.FrequencyGreen(
         freq, flat_hybridization_retarded, flat_hybridization_keldysh)
-    # Calculating auxiliary hyridization for Nb =1
 
+    # Calculating auxiliary hyridization for Nb =1
     try:
         Nb = 1
         x_start = [3., 0.81, 0.5, -1.40, 0.2]
         result_nb1 = optimization_ph_symmertry(Nb, hybridization,
                                                x_start=x_start)
-        hyb_aux_nb1 = get_aux_hyb(result_nb1.x, Nb, freq)
+        aux_nb1 = get_aux(result_nb1.x, Nb, freq)
+        hyb_aux_nb1 = fg.get_hyb_from_aux(aux_nb1)
     except ValueError:
         print(f"Minimization for Nb = {Nb}, not converged.")
     hyb_start_nb1 = get_aux_hyb(x_start, Nb, freq)
+
+    # Calculating auxiliary hyridization for Nb =2
+    try:
+        Nb = 2
+
+        result_nb2 = optimization_ph_symmertry(Nb, hybridization)
+        aux_nb2 = get_aux(result_nb2.x, Nb, freq)
+        hyb_aux_nb2 = fg.get_hyb_from_aux(aux_nb2)
+    except ValueError:
+        print(f"Minimization for Nb = {Nb}, not converged.")
+
     plt.figure()
     plt.plot(hybridization.freq, hybridization.retarded.imag)
-    plt.plot(hybridization.freq, hyb_start_nb1.retarded.imag)
     plt.plot(hybridization.freq, hyb_aux_nb1.retarded.imag)
+    plt.plot(hybridization.freq, hyb_aux_nb2.retarded.imag)
     plt.xlabel(r"$\omega$")
-    plt.legend([r"$Im\Delta^R_{\mathrm{target}}(\omega)$",
-                r"$Im\Delta^R_{\mathrm{aux,start}}(\omega)$",
-               r"$Im\Delta^R_{\mathrm{aux,final}}(\omega)$"])
+    plt.legend([r"$exact$", r"$Nb=1$", r"$Nb=2$"])
     plt.show()
 
     plt.figure()
     plt.plot(hybridization.freq, hybridization.keldysh.imag)
-    plt.plot(hybridization.freq, hyb_start_nb1.keldysh.imag)
     plt.plot(hybridization.freq, hyb_aux_nb1.keldysh.imag)
+    plt.plot(hybridization.freq, hyb_aux_nb2.keldysh.imag)
     plt.xlabel(r"$\omega$")
-    plt.legend([r"$Im\Delta^K_{\mathrm{target}}(\omega)$",
-                r"$Im\Delta^K_{\mathrm{aux,start}}(\omega)$",
-               r"$Im\Delta^K_{\mathrm{aux,final}}(\omega)$"])
-    plt.show()
+    plt.legend([r"$exact$", r"$Nb=1$", r"$Nb=2$"])
