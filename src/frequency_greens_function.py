@@ -203,6 +203,28 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
 
 
+def get_hyb_from_aux(auxsys):
+    """Given parameters of the auxiliary system, a single particle Green's
+    function is constructed and its self-engergy/hybridization function
+    returned
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    auxsys : auxiliary_system_parameter.AuxiliarySystem
+            Auxiliary system parameters class
+
+    Returns
+    -------
+    out : FrequencyGreen
+        self-energy of given Green's functions
+    """
+    green = FrequencyGreen(auxsys.ws)
+    green.set_green_from_auxiliary(auxsys)
+    return green.get_self_enerqy()
+
+
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
