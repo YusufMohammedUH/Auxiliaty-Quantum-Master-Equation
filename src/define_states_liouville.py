@@ -10,7 +10,7 @@ advantage of the previously defined subroutines.
 """
 import numpy as np
 from copy import deepcopy
-from define_states_fock import basis_state, c_js, cd_js, dot_prod
+from src.define_states_fock import basis_state, c_js, cd_js, dot_prod
 
 
 class Liouville_basis_state:
@@ -143,12 +143,12 @@ if __name__ == "__main__":
                     FL_state = Liouville_basis_state(n_sites, n_orbs,
                                                      occup, occup_t)
                     print("State", FL_state)
-                    print(r"c_{00}"+repr(FL_state)+"=",
+                    print(r"c_{00}" + repr(FL_state) + "=",
                           c_js_F(j, sigma, FL_state))
-                    print(r"cd_{00}"+repr(FL_state)+"=",
+                    print(r"cd_{00}" + repr(FL_state) + "=",
                           cd_js_F(j, sigma, FL_state))
-                    print(r"\tilde{c}_{00}"+repr(FL_state)+"=",
+                    print(r"\tilde{c}_{00}" + repr(FL_state) + "=",
                           c_js_T(j, sigma, FL_state))
-                    print(r"\tilde{cd}_{00}"+repr(FL_state)+"=",
+                    print(r"\tilde{cd}_{00}" + repr(FL_state) + "=",
                           cd_js_T(j, sigma, FL_state))
                     print("")

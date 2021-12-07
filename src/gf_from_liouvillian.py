@@ -9,9 +9,9 @@ import sys
 import numpy as np
 from scipy.integrate import simpson
 from scipy.linalg import eig
-from liouvillian_hubbard import naive_Liouvillian_Hubbard, Dissip_Dorda_LF
-from define_states_liouville import cd_js_F, c_js_F
-from state_vector import LF_vector
+from src.liouvillian_hubbard import naive_Liouvillian_Hubbard, Dissip_Dorda_LF
+from src.define_states_liouville import cd_js_F, c_js_F
+from src.state_vector import LF_vector
 
 
 def decompose_Liouville_states(Liouville, basis):
@@ -103,7 +103,7 @@ def green_function_Liouvillian(omega, Liouville_sl,
         I_c_R = rho_stat_l * R_s.apply([[c_js_F, b1, sp1]])
         L_cd_rho = L_s * rho_stat_r.apply([[cd_js_F, b2, sp2]])
         # print(L_cd_rho)
-        Gf += I_c_R * (L_cd_rho) / (omega + 1j*delta - 1j*vals[ind])
+        Gf += I_c_R * (L_cd_rho) / (omega + 1j * delta - 1j * vals[ind])
     if cmp_keldysh == ">":
         # constrcut G_lesser
         Gf -= np.conj(Gf)
@@ -141,9 +141,9 @@ if __name__ == "__main__":
     Gf -= green_function_Liouvillian(omega, Liouville_sl,
                                      states, component=(0, 0, 0, 0, "<"))
     plt.figure()
-    plt.plot(omega, (0.5j/np.pi*Gf).real)
+    plt.plot(omega, (0.5j / np.pi * Gf).real)
     plt.xlabel("Energy")
     plt.ylabel("Spectral function")
     plt.show()
-    dx = (omega[-1]-omega[0])/omega.shape[0]
-    print("Area under the curve is ", simpson(0.5j/np.pi*Gf).real*dx)
+    dx = (omega[-1] - omega[0]) / omega.shape[0]
+    print("Area under the curve is ", simpson(0.5j / np.pi * Gf).real * dx)

@@ -7,12 +7,12 @@ Created on Wed Nov 24 12:15:29 2021
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from define_states_fock import kron_delta
-from state_vector import create_Hubbard_basis_LF
-from define_states_liouville import dot_prod_LF
-from define_states_liouville import cd_js_F, c_js_F, \
+from src.define_states_fock import kron_delta
+from src.state_vector import create_Hubbard_basis_LF
+from src.define_states_liouville import dot_prod_LF
+from src.define_states_liouville import cd_js_F, c_js_F, \
     cd_js_T, c_js_T, op_chain_LF
-from liouville_decomposition import decompose_Liouville
+from src.liouville_decomposition import decompose_Liouville
 
 
 def Hubbard_hamil_LF(space, states, t, U, mu, n_sites):
@@ -129,13 +129,13 @@ def Dissip_Naka_LF(states, Gamma, n_sites, n_spins=2):
                 # ndo_state = op_chain_LF(states[n1], ((cd_js_T, site, 0),
                 #                                      (c_js_T, site, 0)))
                 Dissip[n1, n2] += Gamma[site] * (
-                    - 1j*dot_prod_LF(states[n2], ff_state)
-                    - 1j*dot_prod_LF(states[n2], tt_state))
+                    - 1j * dot_prod_LF(states[n2], ff_state)
+                    - 1j * dot_prod_LF(states[n2], tt_state))
                 # Dissip[n1, n2] += - 1j*Gamma[site] * (
                 #    dot_prod_LF(states[n2], nup_state)
                 #    + dot_prod_LF(states[n2], ndo_state)) \
                 #    -  1j * Gamma[site] * kron_delta(n1, n2)
-    return -1j*Dissip
+    return -1j * Dissip
 
 
 def Dissip_Dorda_LF(states, Gamma, n_sites, n_spins=2):
@@ -168,15 +168,15 @@ def Dissip_Dorda_LF(states, Gamma, n_sites, n_spins=2):
                         G1_m_G2 = Gamma1[site1, site2] - Gamma2[site1, site2]
                         Dissip[n1, n2] -= 1j * G1_m_G2 * dot_prod_LF(
                             states[n2], ff_state)
-                        Dissip[n1, n2] -= 1j*G1_m_G2 * dot_prod_LF(
+                        Dissip[n1, n2] -= 1j * G1_m_G2 * dot_prod_LF(
                             states[n2], tt_state)
-                        Dissip[n1, n2] += 2*Gamma2[site1, site2] * \
+                        Dissip[n1, n2] += 2 * Gamma2[site1, site2] * \
                             dot_prod_LF(states[n2], ft_state)
-                        Dissip[n1, n2] -= 2*Gamma1[site1, site2] * \
+                        Dissip[n1, n2] -= 2 * Gamma1[site1, site2] * \
                             dot_prod_LF(states[n2], tf_state)
                         Dissip[n1, n2] -= 2.j * \
                             np.trace(Gamma2) * kron_delta(n1, n2)
-    return -1j*Dissip
+    return -1j * Dissip
 
 
 def naive_Liouvillian_Hubbard(t, Gamma, U, mu,
@@ -213,7 +213,7 @@ def naive_Liouvillian_Hubbard(t, Gamma, U, mu,
     states = create_Hubbard_basis_LF(n_sites, n_spins)
     Hamil_F = Hubbard_hamil_LF("fock", states, t, U, mu, n_sites)
     Hamil_T = Hubbard_hamil_LF("tilde", states, t, U, mu, n_sites)
-    Liouville = -1j*(Hamil_F - Hamil_T)
+    Liouville = -1j * (Hamil_F - Hamil_T)
     # TODO add here the dissipator
     if not(Dissip is None):
         Liouville += Dissip(states, Gamma, n_sites, n_spins)

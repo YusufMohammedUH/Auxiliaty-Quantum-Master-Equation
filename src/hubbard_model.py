@@ -7,7 +7,7 @@ Created on Wed Nov 24 12:15:29 2021
 """
 import numpy as np
 from itertools import product
-from define_states_fock import basis_state, dot_prod, op_chain, cd_js, c_js
+from src.define_states_fock import basis_state, dot_prod, op_chain, cd_js, c_js
 
 
 def Hubbard_atom(U, mu):
@@ -83,7 +83,7 @@ def Hubbard_chain(t, U, mu, n_sites):
 
     # It has 4 states
     states = []
-    for conf in product([0, 1], repeat=n_spins*n_sites):
+    for conf in product([0, 1], repeat=n_spins * n_sites):
         conf = np.asarray(conf)
         occup = conf.reshape(n_sites, n_spins)
         state_in = basis_state(n_sites, n_spins, occup)

@@ -11,9 +11,9 @@ Here I construct the actual vector in Hilbert space.
 import numpy as np
 from copy import deepcopy
 from itertools import product
-from define_states_liouville import op_chain_LF, \
+from src.define_states_liouville import op_chain_LF, \
     dot_prod_LF, Liouville_basis_state, c_js_F, c_js_T, cd_js_F, cd_js_T
-from define_states_fock import op_chain, dot_prod, basis_state
+from src.define_states_fock import op_chain, dot_prod, basis_state
 
 
 class LF_vector:
@@ -54,7 +54,7 @@ class LF_vector:
 
     def __mul__(self, rhs):
         if isinstance(rhs, (int, float, complex)):
-            weights = rhs*deepcopy(self.weights)
+            weights = rhs * deepcopy(self.weights)
             return LF_vector(self.basis, weights)
         assert repr(self.basis) == repr(rhs.basis)
         rhs_ = deepcopy(rhs)
@@ -63,7 +63,7 @@ class LF_vector:
 
     def __rmul__(self, lhs):
         if isinstance(lhs, (int, float, complex)):
-            weights = lhs*deepcopy(self.weights)
+            weights = lhs * deepcopy(self.weights)
             return LF_vector(self.basis, weights)
         return np.conj(self.__mul__(lhs))
 
@@ -126,8 +126,8 @@ def create_Hubbard_basis_LF(n_sites, n_spins):
 
     """
     states = []
-    for conf_f in product([0, 1], repeat=n_spins*n_sites):
-        for conf_t in product([0, 1], repeat=n_spins*n_sites):
+    for conf_f in product([0, 1], repeat=n_spins * n_sites):
+        for conf_t in product([0, 1], repeat=n_spins * n_sites):
             conf_f = np.asarray(conf_f)
             conf_t = np.asarray(conf_t)
             occup_f = conf_f.reshape(n_sites, n_spins)

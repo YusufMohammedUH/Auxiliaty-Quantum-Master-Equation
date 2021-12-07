@@ -126,7 +126,7 @@ def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
         return cost_function(hybridization, hyb_aux, weight)
 
     result = minimize(optimization_func, x_start, args=args, options=options,
-                      jac="3-point")
+                      )
     nn = 1
     print("No. of tries: ", nn, ", converged: ", result.success)
     while (N_try > nn) and (~result.success):
