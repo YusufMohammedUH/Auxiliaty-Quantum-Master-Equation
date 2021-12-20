@@ -44,10 +44,10 @@ def test_optimization_ph_symmertry():
     freq = np.linspace(-freq_max, freq_max, N_freq)
 
     flat_hybridization_retarded = np.array(
-        [du.flat_bath_retarded(w, D, gamma) for w in freq])
+        [du.flat_bath_retarded(w, 0, D, gamma) for w in freq])
     flat_hybridization_keldysh = np.array(
         [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, beta)) *
-         np.imag(du.flat_bath_retarded(w, D, gamma)) for w in freq])
+         np.imag(du.flat_bath_retarded(w, 0, D, gamma)) for w in freq])
 
     hybridization = fg.FrequencyGreen(
         freq, flat_hybridization_retarded, flat_hybridization_keldysh)

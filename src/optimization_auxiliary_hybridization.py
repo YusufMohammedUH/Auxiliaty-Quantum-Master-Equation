@@ -199,6 +199,7 @@ def get_aux(res, Nb, freq):
 
 if __name__ == "__main__":
     # Setting target hybridization
+    e0 = 0
     beta = 100
     N_freq = 1001
     freq_max = 10
@@ -207,10 +208,10 @@ if __name__ == "__main__":
     freq = np.linspace(-freq_max, freq_max, N_freq)
 
     flat_hybridization_retarded = np.array(
-        [du.flat_bath_retarded(w, D, gamma) for w in freq])
+        [du.flat_bath_retarded(w, e0, D, gamma) for w in freq])
     flat_hybridization_keldysh = np.array(
         [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, beta)) *
-         np.imag(du.flat_bath_retarded(w, D, gamma)) for w in freq])
+         np.imag(du.flat_bath_retarded(w, e0, D, gamma)) for w in freq])
 
     hybridization = fg.FrequencyGreen(
         freq, flat_hybridization_retarded, flat_hybridization_keldysh)
