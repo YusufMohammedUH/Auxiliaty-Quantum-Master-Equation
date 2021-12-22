@@ -59,7 +59,7 @@ class FermionicFockOperators:
             Indicates if fermions are spinless or spin 1/2.
             If set to True, than the fermions are spinless, by default False.
 
-         Attributes
+        Attributes
         ----------
         spinless: bool
             Indicates if fermions are spinless or spin 1/2.
