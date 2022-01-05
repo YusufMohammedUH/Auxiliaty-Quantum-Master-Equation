@@ -299,7 +299,7 @@ class FermionicFockOperators:
             if spin is not None:
                 print("Spinless fermions don't need the argument spin to be " +
                       "passed")
-                return self.creators[ii]
+            return self.creators[ii]
         else:
             if spin == "up":
                 return self.creators[2 * ii]
