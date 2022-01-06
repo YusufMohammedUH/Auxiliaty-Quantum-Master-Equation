@@ -37,7 +37,7 @@ class FermionicLouvilleOperators:
             operators of a fermionic system with nsite sites/orbitals and
             spin 1/2 if spinnless is None, spinnless otherwise.
 
-        left_vacuum: scipy.sparse.csc_matrix (dim,dim)
+        left_vacuum: scipy.sparse.csc_matrix (dim,1)
             left vacuum state according to Dzhioev et. al.
 
         transformation_tilde: scipy.sparse.csc_matrix (dim,dim)
