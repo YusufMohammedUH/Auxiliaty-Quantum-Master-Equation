@@ -10,7 +10,6 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators):
     fermionic bath, therefore the particle number can change due to the
     dissipator.
 
-
     Parameters
     ----------
     Gamma1 : numpy.ndarray (dim,dim)
