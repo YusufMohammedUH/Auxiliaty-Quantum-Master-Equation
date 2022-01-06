@@ -122,29 +122,36 @@ def hubbard_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
         eop = op.FermionicFockOperators(norbs, spinless=spinless)
     assert eop.nsite == norbs
 
-    factor = 1.0
-    if spinless:
-        factor = 0.5
-
-    T_mat = sparse.csc_matrix((2**eop.spin_times_site, 2**eop.spin_times_site))
-    V_mat = sparse.csc_matrix((2**eop.spin_times_site, 2**eop.spin_times_site))
+    T_mat = sparse.csc_matrix(
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=complex)
+    V_mat = sparse.csc_matrix(
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=complex)
 
     for ii in range(norbs):
-        if abs(V[ii]) > 0:
-            # I assume physicists' notation for V:
-            # V[i,j,k,l]= cdag_i * cdag_j * c_l * c_k
-            # only contributions with oposite spin
-            V_mat += V[ii] * (eop.cdag(ii, "up").dot(
-                eop.cdag(ii, "do")).dot(eop.c(ii, "do").dot(eop.c(ii, "up"))))
-            V_mat += V[ii] * (eop.cdag(ii, "do").dot(
-                eop.cdag(ii, "up")).dot(eop.c(ii, "up").dot(eop.c(ii, "do"))))
+        if spinless:
+            for jj in range(norbs):
+                if abs(T[ii, jj]) > 1e-10:
+                    T_mat += T[ii, jj] * (eop.cdag(ii).dot(eop.c(jj)))
+        else:
+            if abs(V[ii]) > 0:
+                # I assume physicists' notation for V:
+                # V[i,j,k,l]= cdag_i * cdag_j * c_l * c_k
+                # only contributions with oposite spin
+                V_mat += V[ii] * (eop.cdag(ii, "up").dot(
+                    eop.cdag(ii, "do")).dot(eop.c(ii, "do").dot(eop.c(ii,
+                                                                      "up"))))
+                V_mat += V[ii] * (eop.cdag(ii, "do").dot(
+                    eop.cdag(ii, "up")).dot(eop.c(ii, "up").dot(eop.c(ii,
+                                                                      "do"))))
 
-        for jj in range(norbs):
-            if abs(T[ii, jj]) > 1e-10:
-                T_mat += T[ii, jj] * (eop.cdag(ii, "up").dot(eop.c(jj, "up")) +
-                                      eop.cdag(ii, "do").dot(eop.c(jj, "do")))
+            for jj in range(norbs):
+                if abs(T[ii, jj]) > 1e-10:
+                    T_mat += T[ii, jj] * (eop.cdag(ii, "up").dot(eop.c(jj,
+                                                                       "up")) +
+                                          eop.cdag(ii, "do").dot(eop.c(jj,
+                                                                       "do")))
 
-    H_full = factor * (T_mat + 0.5 * V_mat)
+    H_full = T_mat + 0.5 * V_mat
 
     if nelec is not None:
         H_part = H_full[eop.pascal_indices[nelec - 1]:eop.pascal_indices[
@@ -198,18 +205,21 @@ def make_full_hamiltonian_matrix(T, V, eop=None, spinless=False, nelec=None):
         eop = op.FermionicFockOperators(norbs, spinless=spinless)
     assert eop.nsite == norbs
 
-    factor = 1.0
-    if spinless:
-        factor = 0.5
-
-    T_mat = sparse.csc_matrix((2**eop.spin_times_site, 2**eop.spin_times_site))
-    V_mat = sparse.csc_matrix((2**eop.spin_times_site, 2**eop.spin_times_site))
+    T_mat = sparse.csc_matrix(
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=complex)
+    V_mat = sparse.csc_matrix(
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=complex)
 
     for ii in range(norbs):
         for jj in range(norbs):
             if abs(T[ii, jj]) > 1e-10:
-                T_mat += T[ii, jj] * (eop.cdag(ii, "up").dot(eop.c(jj, "up")) +
-                                      eop.cdag(ii, "do").dot(eop.c(jj, "do")))
+                if spinless:
+                    T_mat += T[ii, jj] * (eop.cdag(ii).dot(eop.c(jj)))
+                else:
+                    T_mat += T[ii, jj] * (eop.cdag(ii, "up").dot(eop.c(jj,
+                                                                       "up")) +
+                                          eop.cdag(ii, "do").dot(eop.c(jj,
+                                                                       "do")))
 
             # I assume physicists' notation for V:
             # V[i,j,k,l]= cdag_i * cdag_j * c_l * c_k
@@ -217,41 +227,49 @@ def make_full_hamiltonian_matrix(T, V, eop=None, spinless=False, nelec=None):
                 for ll in range(norbs):
                     if abs(V[ii, jj, kk, ll]) > 1e-10:
                         if ii == jj or kk == ll:
-                            # only contributions with oposite spin
-                            V_mat += (V[ii, jj, kk, ll] *
-                                      (eop.cdag(ii, "up").dot(
-                                          eop.cdag(jj, "do")).dot(
-                                          eop.c(ll, "do").dot(
-                                              eop.c(kk, "up")))))
-                            V_mat += (V[ii, jj, kk, ll] *
-                                      (eop.cdag(ii, "do").dot(
-                                          eop.cdag(jj, "up")).dot(
+                            if not spinless:
+                                # only contributions with oposite spin
+                                V_mat += (V[ii, jj, kk, ll] *
+                                          (eop.cdag(ii, "up").dot(
+                                              eop.cdag(jj, "do")).dot(
+                                              eop.c(ll, "do").dot(
+                                                  eop.c(kk, "up")))))
+                                V_mat += (V[ii, jj, kk, ll] *
+                                          (eop.cdag(ii, "do").dot(
+                                              eop.cdag(jj, "up")).dot(
                                               eop.c(ll, "up").dot(
                                                   eop.c(kk, "do")))))
                         # I definitely should look into symmetries of V-tensor
                         else:
-                            V_mat += (V[ii, jj, kk, ll] *
-                                      (eop.cdag(ii, "up").dot(
-                                          eop.cdag(jj, "up")).dot(
+                            if not spinless:
+                                V_mat += (V[ii, jj, kk, ll] *
+                                          (eop.cdag(ii, "up").dot(
+                                              eop.cdag(jj, "up")).dot(
                                               eop.c(ll, "up").dot(
                                                   eop.c(kk, "up")))))
-                            V_mat += (V[ii, jj, kk, ll] *
-                                      (eop.cdag(ii, "do").dot(
-                                          eop.cdag(jj, "do")).dot(
-                                          eop.c(ll, "do").dot(
-                                              eop.c(kk, "do")))))
-                            V_mat += (V[ii, jj, kk, ll] *
-                                      (eop.cdag(ii, "up").dot(
-                                          eop.cdag(jj, "do")).dot(
-                                          eop.c(ll, "do").dot(
-                                              eop.c(kk, "up")))))
-                            V_mat += (V[ii, jj, kk, ll] *
-                                      (eop.cdag(ii, "do").dot(
-                                          eop.cdag(jj, "up")).dot(
-                                          eop.c(ll, "up").dot(
-                                              eop.c(kk, "do")))))
+                                V_mat += (V[ii, jj, kk, ll] *
+                                          (eop.cdag(ii, "do").dot(
+                                              eop.cdag(jj, "do")).dot(
+                                              eop.c(ll, "do").dot(
+                                                  eop.c(kk, "do")))))
+                                V_mat += (V[ii, jj, kk, ll] *
+                                          (eop.cdag(ii, "up").dot(
+                                              eop.cdag(jj, "do")).dot(
+                                              eop.c(ll, "do").dot(
+                                                  eop.c(kk, "up")))))
+                                V_mat += (V[ii, jj, kk, ll] *
+                                          (eop.cdag(ii, "do").dot(
+                                              eop.cdag(jj, "up")).dot(
+                                              eop.c(ll, "up").dot(
+                                                  eop.c(kk, "do")))))
+                            else:
+                                V_mat += (V[ii, jj, kk, ll] *
+                                          (eop.cdag(ii).dot(
+                                              eop.cdag(jj)).dot(
+                                              eop.c(ll).dot(
+                                                  eop.c(kk)))))
 
-    H_full = factor * (T_mat + 0.5 * V_mat)
+    H_full = T_mat + 0.5 * V_mat
     if nelec is not None:
         H_part = H_full[eop.pascal_indices[nelec - 1]:eop.pascal_indices[
             nelec], eop.pascal_indices[nelec - 1]:eop.pascal_indices[nelec]]
