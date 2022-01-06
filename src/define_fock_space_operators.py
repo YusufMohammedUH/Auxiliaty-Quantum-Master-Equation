@@ -176,14 +176,14 @@ class FermionicFockOperators:
 
         # Bringing operators in block-diagonal regariding the particle number
         self.N = np.sum(self.creators * self.annihilators)
-        self.P = sparse.csc_matrix(
+        self.P = sparse.lil_matrix(
             (2**self.spin_times_site, 2**self.spin_times_site))
 
         pnum_diag_sorted = np.argsort(self.N.diagonal())
 
         for i in range(2**self.spin_times_site):
             self.P[i, pnum_diag_sorted[i]] = 1.
-
+        self.P = self.P.tocsc()
         for ii in range(self.annihilators.shape[0]):
             self.annihilators[ii] = self.P.dot(
                 self.annihilators[ii].dot(self.P.transpose()))
