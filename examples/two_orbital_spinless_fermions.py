@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 # ########################### Unitary propagation #############################
 # Local Hamiltonian parameters of two site Problem
 nsite = 2
-ts = -1.0 * np.ones(nsite - 1)
+ts = 1.0 * np.ones(nsite - 1)
 U = np.zeros(nsite)
 es = np.array([0., 1.])
 
@@ -97,7 +97,7 @@ plt.show()
 
 # ##################### Unitary And Incoherent Dynamics #######################
 
-ts = -1.0 * np.ones(nsite - 1)
+ts = 1.0 * np.ones(nsite - 1)
 
 # Setting hopping matrix
 Tmat = ham.get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts)

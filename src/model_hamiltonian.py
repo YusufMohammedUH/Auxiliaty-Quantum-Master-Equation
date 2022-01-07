@@ -69,7 +69,7 @@ def get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts, boundary=None):
 
     Tmat = np.zeros((nsite, nsite))
 
-    Tmat = np.diag(es) + np.diag(np.conj(-ts), k=-1) + np.diag(-ts, k=1)
+    Tmat = np.diag(es) + np.diag(np.conj(ts), k=-1) + np.diag(ts, k=1)
 
     if boundary is not None:
         Tmat[0, - 1] = - t * boundary
