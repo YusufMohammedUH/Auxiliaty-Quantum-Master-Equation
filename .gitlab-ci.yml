@@ -16,4 +16,4 @@ flake8:
 unit_test:
   stage: Test
   script:
-    - pytest
+    - pytest -v
