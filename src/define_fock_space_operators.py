@@ -352,14 +352,15 @@ class BosonicFockOperators:
         self.nb_max = nb_max + 1  # +1 accounts for the vacuum
 
         # setting up creation and annihilation matrices for one mode
-        create = sparse.csc_matrix((self.nb_max, self.nb_max))
-        destroy = sparse.csc_matrix((self.nb_max, self.nb_max))
+        create = sparse.lil_matrix((self.nb_max, self.nb_max))
+        destroy = sparse.lil_matrix((self.nb_max, self.nb_max))
 
         create.setdiag(values=[np.sqrt(i)
                        for i in range(1, self.nb_max + 1)], k=-1)
+        create = create.tocsc()
         destroy.setdiag(values=[np.sqrt(i)
                         for i in range(1, self.nb_max + 1)], k=1)
-
+        destroy = destroy.tocsc()
         unit_nb_max = sparse.eye(self.nb_max,
                                  dtype=complex, format="csc")
 
