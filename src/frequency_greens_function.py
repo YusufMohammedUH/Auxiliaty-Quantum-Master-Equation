@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 import src.auxiliary_system_parameter as auxp
 import matplotlib.pyplot as plt
@@ -168,7 +167,6 @@ class FrequencyGreen:
         def get_self_enerqy(green_0_ret_inverse_w, green_ret_w, green_kel_w):
             green_ret_w_inverse = 0
             if green_ret_w == 0:
-                print(green_ret_w_inverse)
                 green_ret_w_inverse = float('inf')
             else:
                 green_ret_w_inverse = 1.0 / green_ret_w
@@ -188,9 +186,7 @@ class FrequencyGreen:
             green_0_ret_inverse, self.retarded, self.keldysh)
 
         singularities = np.where(sigma[0].real == float("-inf"))[0]
-        print(singularities)
         for s in singularities:
-            print(s)
             if s == 0:
                 sigma[0][s] = complex(
                     np.sign(sigma[0].real[s + 1]) *
@@ -207,7 +203,28 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
 
 
-# %%
+def get_hyb_from_aux(auxsys):
+    """Given parameters of the auxiliary system, a single particle Green's
+    function is constructed and its self-engergy/hybridization function
+    returned
+
+    [extended_summary]
+
+    Parameters
+    ----------
+    auxsys : auxiliary_system_parameter.AuxiliarySystem
+            Auxiliary system parameters class
+
+    Returns
+    -------
+    out : FrequencyGreen
+        self-energy of given Green's functions
+    """
+    green = FrequencyGreen(auxsys.ws)
+    green.set_green_from_auxiliary(auxsys)
+    return green.get_self_enerqy()
+
+
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
@@ -264,5 +281,3 @@ if __name__ == "__main__":
     plt.legend([r"$G^R_{aux}(\omega)$", r"$G^R_{aux}(\omega)$",
                r"$ImG^K_{aux}(\omega)$", r"$ReG^K_{aux}(\omega)$"])
     plt.show()
-
-# %%
