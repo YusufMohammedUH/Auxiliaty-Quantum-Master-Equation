@@ -72,8 +72,8 @@ def get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts, boundary=None):
     Tmat = np.diag(es) + np.diag(np.conj(ts), k=-1) + np.diag(ts, k=1)
 
     if boundary is not None:
-        Tmat[0, - 1] = - t * boundary
-        Tmat[- 1, 0] = np.conj(-t * boundary)
+        Tmat[0, - 1] = boundary
+        Tmat[- 1, 0] = np.conj(boundary)
 
     return Tmat
 
@@ -134,9 +134,9 @@ def hubbard_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
                     T_mat += T[ii, jj] * (eop.cdag(ii).dot(eop.c(jj)))
         else:
             if abs(V[ii]) > 0:
-                # I assume physicists' notation for V:
+                # Physicists' notation for V is assumed:
                 # V[i,j,k,l]= cdag_i * cdag_j * c_l * c_k
-                # only contributions with oposite spin
+                # only contributions with opposite spin
                 V_mat += V[ii] * (eop.cdag(ii, "up").dot(
                     eop.cdag(ii, "do")).dot(eop.c(ii, "do").dot(eop.c(ii,
                                                                       "up"))))
@@ -163,7 +163,7 @@ def hubbard_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
         return H_full
 
 
-def make_full_hamiltonian_matrix(T, V, eop=None, spinless=False, nelec=None):
+def general_fermionic_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
     """Returns the Hamiltonian with any kind of interaction and any geometry.
 
     Parameters
@@ -221,14 +221,14 @@ def make_full_hamiltonian_matrix(T, V, eop=None, spinless=False, nelec=None):
                                           eop.cdag(ii, "do").dot(eop.c(jj,
                                                                        "do")))
 
-            # I assume physicists' notation for V:
+            # Physicists' notation for V is assumed:
             # V[i,j,k,l]= cdag_i * cdag_j * c_l * c_k
             for kk in range(norbs):
                 for ll in range(norbs):
                     if abs(V[ii, jj, kk, ll]) > 1e-10:
                         if ii == jj or kk == ll:
                             if not spinless:
-                                # only contributions with oposite spin
+                                # only contributions with opposite spin
                                 V_mat += (V[ii, jj, kk, ll] *
                                           (eop.cdag(ii, "up").dot(
                                               eop.cdag(jj, "do")).dot(
