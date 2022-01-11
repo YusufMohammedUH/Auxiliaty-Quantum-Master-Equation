@@ -5,7 +5,7 @@ import src.define_liouville_space_operators as lop
 import src.model_hamiltonian as ham
 
 
-def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators):
+def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators, sign=1):
     """Retruns the dissipator of a fermionic system coupled to a thermal
     fermionic bath, therefore the particle number can change due to the
     dissipator.
@@ -46,7 +46,7 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators):
         for jj in range(nsite):
             for spin in spins:
                 if Gamma1[ii, jj] != 0:
-                    L_Gamma1 += (2. * Gamma1[ii, jj]
+                    L_Gamma1 += (2. * sign * Gamma1[ii, jj]
                                  * liouville_operators.c(jj, spin)
                                  * liouville_operators.cdag_tilde(ii, spin)
                                  - Gamma1[ii, jj]
@@ -56,7 +56,7 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators):
                                     * liouville_operators.cdag_tilde(ii, spin))
                                  )
                 if Gamma2[ii, jj] != 0:
-                    L_Gamma2 += (2. * Gamma2[ii, jj]
+                    L_Gamma2 += (2. * sign * Gamma2[ii, jj]
                                  * liouville_operators.cdag(ii, spin)
                                  * liouville_operators.c_tilde(jj, spin)
                                  - Gamma2[ii, jj]
@@ -244,7 +244,7 @@ class Lindbladian:
              - self.liouville_operators.get_louville_tilde_operator(Hamil_Fock)
              )
 
-    def set_dissipation(self, Gamma1, Gamma2):
+    def set_dissipation(self, Gamma1, Gamma2, sign=None):
         """Set the dissipative part of the Lindbladian describing a non-unitary
         propagation
 
@@ -267,9 +267,12 @@ class Lindbladian:
         if (Gamma1.shape != Gamma2.shape) and Gamma1.shape != (nsite, nsite):
             raise ValueError("ERROR: Wrong shape of Gamma matrices. They have"
                              + F" to be {(nsite,nsite)}.")
-
-        self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
-            Gamma1, Gamma2, self.liouville_operators)
+        if sign is None:
+            self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
+                Gamma1, Gamma2, self.liouville_operators)
+        else:
+            self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
+                Gamma1, Gamma2, self.liouville_operators, sign)
 
     def set_total_linbladian(self):
         """Set the total Lindbladian"""

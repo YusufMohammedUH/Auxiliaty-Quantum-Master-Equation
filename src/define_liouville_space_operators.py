@@ -3,12 +3,10 @@ import numpy as np
 from scipy import sparse
 import src.define_fock_space_operators as fop
 
-# XXX: For now the super-fermionic representation is used with the complex
+# XXX: For now the super-fermionic representation is not used with the complex
 #      phase as surguessted by Dzhioev et. al ( J. Chem. Phys. 134, 044121
-#      (2011); https://doi.org/10.1063/1.3548065). but i don't see any
-#      advantage at the level of constructing the Lindbladian. It should be
-#      checked if there is an advantage for the quantum regression theorem,
-#      e.g. the one particle Green's function. If not, get rid of it.
+#      (2011); https://doi.org/10.1063/1.3548065). Later this will be
+#      implemented.
 
 
 class FermionicLouvilleOperators:
