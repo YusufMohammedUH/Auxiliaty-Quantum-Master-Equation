@@ -59,7 +59,7 @@ class AuxiliarySystem:
             Onsite potentials of the reduced, auxiliary system
 
         ts : numpy.ndarray (self.Nb,)
-            Hopping terms of the educed, auxiliary system
+            Hopping terms of the reduced, auxiliary system
         """
 
         assert len(es) == self.Nb, "es doesn't have size Nb"

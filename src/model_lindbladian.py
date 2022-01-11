@@ -5,7 +5,7 @@ import src.define_liouville_space_operators as lop
 import src.model_hamiltonian as ham
 
 
-def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators, sign=1):
+def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_ops, sign=1):
     """Retruns the dissipator of a fermionic system coupled to a thermal
     fermionic bath, therefore the particle number can change due to the
     dissipator.
@@ -20,7 +20,7 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators, sign=1):
         2D array with the coupling to thermal bath, describing the injection of
         electrons
 
-    liouville_operators : FermionicLouvilleOperators
+    liouville_ops : FermionicLouvilleOperators
         Contains the fermionic creation and annihilation operators Liouville
         space and converts Fock space operators in to Liouville space operators
 
@@ -31,13 +31,13 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators, sign=1):
         removal of electrons, and L_Gamma2, describing the injection of
         electrons.
     """
-    nsite = liouville_operators.fock_operators.nsite
-    spin_times_site = liouville_operators.fock_operators.spin_times_site
+    nsite = liouville_ops.fock_ops.nsite
+    spin_times_site = liouville_ops.fock_ops.spin_times_site
     L_Gamma1 = sparse.csc_matrix(
         (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
     L_Gamma2 = sparse.csc_matrix(
         (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
-    if liouville_operators.fock_operators.spinless:
+    if liouville_ops.fock_ops.spinless:
         spins = [None]
     else:
         spins = ["up", "do"]
@@ -47,28 +47,28 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, liouville_operators, sign=1):
             for spin in spins:
                 if Gamma1[ii, jj] != 0:
                     L_Gamma1 += (2. * sign * Gamma1[ii, jj]
-                                 * liouville_operators.c(jj, spin)
-                                 * liouville_operators.cdag_tilde(ii, spin)
+                                 * liouville_ops.c(jj, spin)
+                                 * liouville_ops.cdag_tilde(ii, spin)
                                  - Gamma1[ii, jj]
-                                 * (liouville_operators.cdag(ii, spin)
-                                    * liouville_operators.c(jj, spin)
-                                    + liouville_operators.c_tilde(jj, spin)
-                                    * liouville_operators.cdag_tilde(ii, spin))
+                                 * (liouville_ops.cdag(ii, spin)
+                                    * liouville_ops.c(jj, spin)
+                                    + liouville_ops.c_tilde(jj, spin)
+                                    * liouville_ops.cdag_tilde(ii, spin))
                                  )
                 if Gamma2[ii, jj] != 0:
                     L_Gamma2 += (2. * sign * Gamma2[ii, jj]
-                                 * liouville_operators.cdag(ii, spin)
-                                 * liouville_operators.c_tilde(jj, spin)
+                                 * liouville_ops.cdag(ii, spin)
+                                 * liouville_ops.c_tilde(jj, spin)
                                  - Gamma2[ii, jj]
-                                 * (liouville_operators.c(jj, spin)
-                                    * liouville_operators.cdag(ii, spin)
-                                    + liouville_operators.cdag_tilde(ii, spin)
-                                    * liouville_operators.c_tilde(jj, spin))
+                                 * (liouville_ops.c(jj, spin)
+                                    * liouville_ops.cdag(ii, spin)
+                                    + liouville_ops.cdag_tilde(ii, spin)
+                                    * liouville_ops.c_tilde(jj, spin))
                                  )
     return L_Gamma1, L_Gamma2
 
 
-def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, liouville_operators):
+def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, liouville_ops):
     """Retruns the dissipator of a fermionic system coupled to a single mode
     bosonic bath.
 
@@ -82,7 +82,7 @@ def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, liouville_operators):
         2D array with the coupling to thermal bath, describing the injection of
         electrons
 
-    liouville_operators : FermionicLouvilleOperators
+    liouville_ops : FermionicLouvilleOperators
         Contains the fermionic creation and annihilation operators Liouville
         space and converts Fock space operators in to Liouville space operators
 
@@ -93,13 +93,13 @@ def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, liouville_operators):
         removal of electrons, and L_Gamma2, describing the injection of
         electrons.
     """
-    nsite = liouville_operators.fock_operators.nsite
-    spin_times_site = liouville_operators.fock_operators.spin_times_site
+    nsite = liouville_ops.fock_ops.nsite
+    spin_times_site = liouville_ops.fock_ops.spin_times_site
     L_Gamma1 = sparse.csc_matrix(
         (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
     L_Gamma2 = sparse.csc_matrix(
         (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
-    if liouville_operators.fock_operators.spinless:
+    if liouville_ops.fock_ops.spinless:
         spins = [None]
     else:
         spins = ["up", "do"]
@@ -110,39 +110,39 @@ def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, liouville_operators):
                 if jj > ii:
                     if Gamma1[ii, jj] != 0:
                         L_Gamma1 += (Gamma1[ii, jj]
-                                     * liouville_operators.cdag(ii, spin)
-                                     * liouville_operators.c(jj, spin)
-                                     * liouville_operators.c_tilde(ii, spin)
-                                     * liouville_operators.cdag_tilde(jj, spin)
+                                     * liouville_ops.cdag(ii, spin)
+                                     * liouville_ops.c(jj, spin)
+                                     * liouville_ops.c_tilde(ii, spin)
+                                     * liouville_ops.cdag_tilde(jj, spin)
                                      - 0.5 * Gamma1[ii, jj]
-                                     * (liouville_operators.cdag(jj, spin)
-                                        * liouville_operators.c(ii, spin)
-                                        * liouville_operators.cdag(ii, spin)
-                                        * liouville_operators.c(jj, spin)
-                                        + liouville_operators.c_tilde(jj, spin)
-                                        * liouville_operators.cdag_tilde(ii,
+                                     * (liouville_ops.cdag(jj, spin)
+                                        * liouville_ops.c(ii, spin)
+                                        * liouville_ops.cdag(ii, spin)
+                                        * liouville_ops.c(jj, spin)
+                                        + liouville_ops.c_tilde(jj, spin)
+                                        * liouville_ops.cdag_tilde(ii,
                                         spin)
-                                        * liouville_operators.c_tilde(ii, spin)
-                                        * liouville_operators.cdag_tilde(jj,
+                                        * liouville_ops.c_tilde(ii, spin)
+                                        * liouville_ops.cdag_tilde(jj,
                                         spin))
                                      )
 
                     if Gamma2[ii, jj] != 0:
                         L_Gamma2 += (Gamma2[ii, jj]
-                                     * liouville_operators.cdag(jj, spin)
-                                     * liouville_operators.c(ii, spin)
-                                     * liouville_operators.c_tilde(jj, spin)
-                                     * liouville_operators.cdag_tilde(ii, spin)
+                                     * liouville_ops.cdag(jj, spin)
+                                     * liouville_ops.c(ii, spin)
+                                     * liouville_ops.c_tilde(jj, spin)
+                                     * liouville_ops.cdag_tilde(ii, spin)
                                      - 0.5 * Gamma2[ii, jj]
-                                     * (liouville_operators.cdag(ii, spin)
-                                        * liouville_operators.c(jj, spin)
-                                        * liouville_operators.cdag(jj, spin)
-                                        * liouville_operators.c(ii, spin)
-                                        + liouville_operators.c_tilde(ii, spin)
-                                        * liouville_operators.cdag_tilde(jj,
+                                     * (liouville_ops.cdag(ii, spin)
+                                        * liouville_ops.c(jj, spin)
+                                        * liouville_ops.cdag(jj, spin)
+                                        * liouville_ops.c(ii, spin)
+                                        + liouville_ops.c_tilde(ii, spin)
+                                        * liouville_ops.cdag_tilde(jj,
                                         spin)
-                                        * liouville_operators.c_tilde(jj, spin)
-                                        * liouville_operators.cdag_tilde(ii,
+                                        * liouville_ops.c_tilde(jj, spin)
+                                        * liouville_ops.cdag_tilde(ii,
                                         spin))
                                      )
     return L_Gamma1, L_Gamma2
@@ -176,7 +176,7 @@ class Lindbladian:
 
         Attributes
         ----------
-        liouville_operators:  FermionicLouvilleOperators
+        liouville_ops:  FermionicLouvilleOperators
         Contains the fermionic creation and annihilation operators Liouville
         space and converts Fock space operators in to Liouville space operators
 
@@ -213,15 +213,15 @@ class Lindbladian:
             Contains the right eigen vectors ot the Lindbladian. The order
             corresponds to the order of the eigen vectors
         """
-        self.liouville_operators = lop.FermionicLouvilleOperators(
+        self.liouville_ops = lop.FermionicLouvilleOperators(
             nsite,
             spinless=spinless,
             unitary_transformation=unitary_transformation)
         self.Hamiltonian = Hamiltonian
         self.Dissipator = Dissipator
         self.L_tot = sparse.csc_matrix(
-            (4**(self.liouville_operators.fock_operators.spin_times_site),
-             4**(self.liouville_operators.fock_operators.spin_times_site)),
+            (4**(self.liouville_ops.fock_ops.spin_times_site),
+             4**(self.liouville_ops.fock_ops.spin_times_site)),
             dtype=complex)
 
     def set_unitay_part(self, T_mat, U_mat):
@@ -238,10 +238,10 @@ class Lindbladian:
         """
         Hamil_Fock = self.Hamiltonian(
             T_mat, U_mat,
-            eop=self.liouville_operators.fock_operators)
+            eop=self.liouville_ops.fock_ops)
         self.L_unitary = -1.j * \
-            (self.liouville_operators.get_louville_operator(Hamil_Fock)
-             - self.liouville_operators.get_louville_tilde_operator(Hamil_Fock)
+            (self.liouville_ops.get_louville_operator(Hamil_Fock)
+             - self.liouville_ops.get_louville_tilde_operator(Hamil_Fock)
              )
 
     def set_dissipation(self, Gamma1, Gamma2, sign=None):
@@ -263,16 +263,16 @@ class Lindbladian:
         ValueError
             If Gamma matrices have mismatching shapes
         """
-        nsite = self.liouville_operators.fock_operators.nsite
+        nsite = self.liouville_ops.fock_ops.nsite
         if (Gamma1.shape != Gamma2.shape) and Gamma1.shape != (nsite, nsite):
             raise ValueError("ERROR: Wrong shape of Gamma matrices. They have"
                              + F" to be {(nsite,nsite)}.")
         if sign is None:
             self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
-                Gamma1, Gamma2, self.liouville_operators)
+                Gamma1, Gamma2, self.liouville_ops)
         else:
             self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
-                Gamma1, Gamma2, self.liouville_operators, sign)
+                Gamma1, Gamma2, self.liouville_ops, sign)
 
     def set_total_linbladian(self):
         """Set the total Lindbladian"""
@@ -284,7 +284,7 @@ class Lindbladian:
         vals, containing the eigen values, vec_l and vec_r containing the left
         and right eigen vectors respectively.
         """
-        n_spin_site = self.liouville_operators.fock_operators.spin_times_site
+        n_spin_site = self.liouville_ops.fock_ops.spin_times_site
         self.vals, vec_r = linalg.eig(
             self.L_tot.toarray())
         for i in range(4**(n_spin_site)):

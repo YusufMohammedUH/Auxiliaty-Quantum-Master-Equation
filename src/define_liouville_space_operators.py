@@ -30,7 +30,7 @@ class FermionicLouvilleOperators:
 
         Attributes
         ----------
-        fock_operators: define_fock_space_operators.FermionicFockOperators
+        fock_ops: define_fock_space_operators.FermionicFockOperators
             Fock space object containing the creation and annihilation
             operators of a fermionic system with nsite sites/orbitals and
             spin 1/2 if spinnless is None, spinnless otherwise.
@@ -42,15 +42,15 @@ class FermionicLouvilleOperators:
             unitary transformation in the tilde subspace in order to account
             for the complex phase in the left vacuum state.
         """
-        self.fock_operators = fop.FermionicFockOperators(nsite, spinless)
+        self.fock_ops = fop.FermionicFockOperators(nsite, spinless)
         self.unitary_transformation = unitary_transformation
         self.left_vacuum = sparse.lil_matrix(
-            (4**(self.fock_operators.spin_times_site), 1), dtype=complex)
+            (4**(self.fock_ops.spin_times_site), 1), dtype=complex)
 
-        pnums = self.fock_operators.N.diagonal()
-        for n in range(2**self.fock_operators.spin_times_site):
+        pnums = self.fock_ops.N.diagonal()
+        for n in range(2**self.fock_ops.spin_times_site):
             pnum_vector = sparse.lil_matrix(
-                (2**self.fock_operators.spin_times_site, 1), dtype=complex)
+                (2**self.fock_ops.spin_times_site, 1), dtype=complex)
             pnum_vector[n, 0] = 1.0
 
             if self.unitary_transformation:
@@ -61,31 +61,31 @@ class FermionicLouvilleOperators:
                     pnum_vector, pnum_vector)
         self.left_vacuum = self.left_vacuum.tocsc()
         self.transformation_tilde = sparse.lil_matrix(
-            (2**self.fock_operators.spin_times_site,
-             2**self.fock_operators.spin_times_site),
+            (2**self.fock_ops.spin_times_site,
+             2**self.fock_ops.spin_times_site),
             dtype=complex)
         self.transformation_tilde.setdiag(
-            (-1j)**self.fock_operators.N.diagonal())
+            (-1j)**self.fock_ops.N.diagonal())
         self.transformation_tilde = self.transformation_tilde.tocsc()
 
     def particle_number_subspace_projector(self, nelec):
-        pnum_index = np.where(self.fock_operators.N.diagonal() == nelec)[0]
+        pnum_index = np.where(self.fock_ops.N.diagonal() == nelec)[0]
         pnum_projector = sparse.csc_matrix(
-            (4**(self.fock_operators.spin_times_site),
-             4**(self.fock_operators.spin_times_site)), dtype=complex)
+            (4**(self.fock_ops.spin_times_site),
+             4**(self.fock_ops.spin_times_site)), dtype=complex)
         for n in pnum_index:
             n_vector = sparse.csc_matrix(
-                (2**self.fock_operators.spin_times_site, 1), dtype=complex)
+                (2**self.fock_ops.spin_times_site, 1), dtype=complex)
             n_vector[n, 0] = 1.0
             for m in pnum_index:
                 m_vector = sparse.csc_matrix(
-                    (2**self.fock_operators.spin_times_site, 1), dtype=complex)
+                    (2**self.fock_ops.spin_times_site, 1), dtype=complex)
                 m_vector[m, 0] = 1
                 nm_vector = sparse.kron(n_vector, m_vector)
                 pnum_projector += nm_vector * nm_vector.transpose()
         if self.unitary_transformation:
             transform = sparse.kron(
-                sparse.eye(2**self.fock_operators.spin_times_site,
+                sparse.eye(2**self.fock_ops.spin_times_site,
                            dtype=complex, format="csc"),
                 self.transformation_tilde,
                 format="csc")
@@ -116,8 +116,8 @@ class FermionicLouvilleOperators:
             Liouville space annihilation operator of site 'ii' and
             spin 'spin'.
         """
-        return sparse.kron(self.fock_operators.c(ii, spin),
-                           sparse.eye(2**self.fock_operators.spin_times_site,
+        return sparse.kron(self.fock_ops.c(ii, spin),
+                           sparse.eye(2**self.fock_ops.spin_times_site,
                                       dtype=complex, format="csc"),
                            format="csc")
 
@@ -143,8 +143,8 @@ class FermionicLouvilleOperators:
             Liouville space creation operator of site 'ii' and
             spin 'spin'.
         """
-        return sparse.kron(self.fock_operators.cdag(ii, spin),
-                           sparse.eye(2**self.fock_operators.spin_times_site,
+        return sparse.kron(self.fock_ops.cdag(ii, spin),
+                           sparse.eye(2**self.fock_ops.spin_times_site,
                                       dtype=complex, format="csc"),
                            format="csc")
 
@@ -172,16 +172,16 @@ class FermionicLouvilleOperators:
         """
         if self.unitary_transformation:
             return sparse.kron(
-                sparse.eye(2**self.fock_operators.spin_times_site,
+                sparse.eye(2**self.fock_ops.spin_times_site,
                            dtype=complex, format="csc"),
-                self.transformation_tilde * self.fock_operators.c(
+                self.transformation_tilde * self.fock_ops.c(
                     ii, spin).transpose()
                 * self.transformation_tilde.transpose().conjugate(),
                 format="csc")
 
-        return sparse.kron(sparse.eye(2**self.fock_operators.spin_times_site,
+        return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
                                       dtype=complex, format="csc"),
-                           self.fock_operators.c(ii, spin).transpose(),
+                           self.fock_ops.c(ii, spin).transpose(),
                            format="csc")
 
     def cdag_tilde(self, ii, spin=None):
@@ -208,17 +208,17 @@ class FermionicLouvilleOperators:
         """
         if self.unitary_transformation:
             return sparse.kron(
-                sparse.eye(2**self.fock_operators.spin_times_site,
+                sparse.eye(2**self.fock_ops.spin_times_site,
                            dtype=complex, format="csc"),
                 self.transformation_tilde
-                * self.fock_operators.cdag(
+                * self.fock_ops.cdag(
                     ii, spin).transpose()
                 * self.transformation_tilde.transpose().conjugate(),
                 format="csc")
 
-        return sparse.kron(sparse.eye(2**self.fock_operators.spin_times_site,
+        return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
                                       dtype=complex, format="csc"),
-                           self.fock_operators.cdag(ii, spin).transpose(),
+                           self.fock_ops.cdag(ii, spin).transpose(),
                            format="csc")
 
     def get_louville_operator(self, fock_operator):
@@ -240,10 +240,10 @@ class FermionicLouvilleOperators:
             Liouville space operators acting from the left
         """
         assert fock_operator.shape == (
-            2**self.fock_operators.spin_times_site,
-            2**self.fock_operators.spin_times_site)
+            2**self.fock_ops.spin_times_site,
+            2**self.fock_ops.spin_times_site)
         return sparse.kron(fock_operator,
-                           sparse.eye(2**self.fock_operators.spin_times_site,
+                           sparse.eye(2**self.fock_ops.spin_times_site,
                                       dtype=complex, format="csc"),
                            format="csc")
 
@@ -267,17 +267,17 @@ class FermionicLouvilleOperators:
             Liouville space tilde operators acting.
         """
         assert fock_operator.shape == (
-            2**self.fock_operators.spin_times_site,
-            2**self.fock_operators.spin_times_site)
+            2**self.fock_ops.spin_times_site,
+            2**self.fock_ops.spin_times_site)
         if self.unitary_transformation:
             return sparse.kron(
-                sparse.eye(2**self.fock_operators.spin_times_site,
+                sparse.eye(2**self.fock_ops.spin_times_site,
                            dtype=complex, format="csc"),
                 self.transformation_tilde
                 * fock_operator.transpose()
                 * self.transformation_tilde.transpose().conjugate(),
                 format="csc")
-        return sparse.kron(sparse.eye(2**self.fock_operators.spin_times_site,
+        return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
                                       dtype=complex, format="csc"),
                            fock_operator.transpose(), format="csc")
 
@@ -374,13 +374,13 @@ if __name__ == "__main__":
               + " tilde Liouville creation/annihilation operator "
               + "acting on the left vacuum state are the same.")
 
-    N = sparse.kron(fl_op.fock_operators.N,
-                    sparse.eye(4**fl_op.fock_operators.nsite,
+    N = sparse.kron(fl_op.fock_ops.N,
+                    sparse.eye(4**fl_op.fock_ops.nsite,
                                dtype=complex, format="csc"))
 
-    N_T = sparse.kron(sparse.eye(4**fl_op.fock_operators.nsite,
+    N_T = sparse.kron(sparse.eye(4**fl_op.fock_ops.nsite,
                                  dtype=complex, format="csc"),
-                      fl_op.fock_operators.N)
+                      fl_op.fock_ops.N)
     operator_equal_operator_tilse = N.dot(fl_op.left_vacuum) - \
         N_T.dot(fl_op.left_vacuum)
     if operator_equal_operator_tilse.count_nonzero() == 0:
