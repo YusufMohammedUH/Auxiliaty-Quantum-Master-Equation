@@ -16,21 +16,22 @@ def test_const_function_values():
     aux_hyb = fg.FrequencyGreen(freq)
 
     renormalized_to_one = opt_aux.cost_function(targed_hyb, aux_hyb) == 1.0
-
+    print(renormalized_to_one)
     weight = 2 * np.ones(freq.shape)
 
     weight_times2 = opt_aux.cost_function(
         targed_hyb, aux_hyb, weight=weight) == 2.0
-
+    print(weight_times2)
     weight = np.array([2.0 * du.heaviside(w, 0) for w in freq])
 
     weight_heavyside = opt_aux.cost_function(
         targed_hyb, aux_hyb, weight=weight) == 1.0
+    print(weight_heavyside)
     aux_hyb = fg.FrequencyGreen(
         freq, 1j * np.ones(freq.shape), 1j * np.ones(freq.shape))
 
     is_equal = opt_aux.cost_function(targed_hyb, aux_hyb) == 0.0
-
+    print(print(weight_heavyside))
     assert renormalized_to_one and weight_times2 and (
         weight_heavyside and is_equal)
 
@@ -53,11 +54,13 @@ def test_optimization_ph_symmertry():
 
     hybridization = fg.FrequencyGreen(
         freq, flat_hybridization_retarded, flat_hybridization_keldysh)
+    options = {"disp": True, "maxiter": 500, 'ftol': 1e-5}
     try:
         Nb = 1
         x_start = [3., 0.81, 0.5, -1.40, 0.2]
         result_nb1 = opt_aux.optimization_ph_symmertry(Nb, hybridization,
-                                                       x_start=x_start)
+                                                       x_start=x_start,
+                                                       options=options)
         hyb_aux_nb1 = opt_aux.get_aux_hyb(result_nb1.x, Nb, freq)
     except ValueError:
         print(f"Minimization for Nb = {Nb}, not converged.")
