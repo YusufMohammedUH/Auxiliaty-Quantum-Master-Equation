@@ -33,14 +33,26 @@ class FermionicLouvilleOperators:
         fock_ops: define_fock_space_operators.FermionicFockOperators
             Fock space object containing the creation and annihilation
             operators of a fermionic system with nsite sites/orbitals and
-            spin 1/2 if spinnless is None, spinnless otherwise.
+            spin 1/2 if spinless is None, spinless otherwise.
 
         left_vacuum: scipy.sparse.csc_matrix (dim,1)
             left vacuum state according to Dzhioev et. al.
 
+        unitary_transformation: bool
+            If True a unitary transformation on the subspace of the tilde
+            operators and the left vacuum state is preformed.
+
         transformation_tilde: scipy.sparse.csc_matrix (dim,dim)
             unitary transformation in the tilde subspace in order to account
             for the complex phase in the left vacuum state.
+
+        Delta_N_up: scipy.sparse.csc_matrix (dim, dim)
+            Difference of total paricel number of electrons with spin up
+            between "normal" and "tilde" space
+
+        Delta_N_do: scipy.sparse.csc_matrix (dim, dim)
+            Difference of total paricel number of electrons with spin down
+            between "normal" and "tilde" space
         """
         self.fock_ops = fop.FermionicFockOperators(nsite, spinless)
         self.unitary_transformation = unitary_transformation
@@ -68,9 +80,28 @@ class FermionicLouvilleOperators:
             (-1j)**self.fock_ops.N.diagonal())
         self.transformation_tilde = self.transformation_tilde.tocsc()
 
+        if not spinless:
+            self.Delta_N_up = self.get_louville_operator(self.fock_ops.N_up) \
+                - self.get_louville_tilde_operator(self.fock_ops.N_up)
+            self.Delta_N_do = self.get_louville_operator(self.fock_ops.N_do) \
+                - self.get_louville_tilde_operator(self.fock_ops.N_do)
+
     def particle_number_subspace_projector(self, nelec):
+        """Projector for given particle number nelec in the liouville space.
+
+
+        Parameters
+        ----------
+        nelec : int
+            Particel number.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (dim, dim)
+            Projector for the desired particle number subspace.
+        """
         pnum_index = np.where(self.fock_ops.N.diagonal() == nelec)[0]
-        pnum_projector = sparse.csc_matrix(
+        pnum_projector = sparse.lil_matrix(
             (4**(self.fock_ops.spin_times_site),
              4**(self.fock_ops.spin_times_site)), dtype=complex)
         for n in pnum_index:
@@ -83,6 +114,7 @@ class FermionicLouvilleOperators:
                 m_vector[m, 0] = 1
                 nm_vector = sparse.kron(n_vector, m_vector)
                 pnum_projector += nm_vector * nm_vector.transpose()
+                pnum_projector = pnum_projector.tocsc()
         if self.unitary_transformation:
             transform = sparse.kron(
                 sparse.eye(2**self.fock_ops.spin_times_site,
@@ -93,6 +125,104 @@ class FermionicLouvilleOperators:
                 transform.transpose().conjugate()
         else:
             return pnum_projector
+
+    def spin_sector_projector(self, sector):
+        """Projector for given spin sector "sector" in the liouville space.
+
+
+        Parameters
+        ----------
+        sector : tuple (up, do)
+            Spin sector defined by the difference between particles in
+            "normal" and "tilde" space for spin up and down
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (dim, dim)
+            Projector for the desired Spin sector subspace, with given
+            spin sector difference between "normal" and "tilde" space of
+            'sector'
+        """
+        if not self.fock_ops.spinless:
+            pnum_up_index = np.where(
+                self.Delta_N_up.diagonal() == sector[0])[0]
+            pnum_do_index = np.where(
+                self.Delta_N_do.diagonal() == sector[1])[0]
+            mask_section = np.in1d(pnum_up_index, pnum_do_index)
+            pnum_index = pnum_up_index[mask_section]
+            pnum_per_spin_projector = sparse.lil_matrix(
+                (4**(self.fock_ops.spin_times_site),
+                 4**(self.fock_ops.spin_times_site)), dtype=complex)
+
+            for n in pnum_index:
+                pnum_per_spin_projector[n, n] = 1.0
+            pnum_per_spin_projector = pnum_per_spin_projector.tocsc()
+
+            return pnum_per_spin_projector
+
+    def spin_sector_permutation_operator(self, sector, full=False):
+        """Returns a permutation operator, permuting desired spin sector
+        "sector" to the upper left corner of a the liouville space matrix.
+
+        This can be used to reduce the Lindbladian to the relevant spin
+        sectors. And accelerating calculations such as the exact
+        diagonalization and time propagation.
+
+        Parameters
+        ----------
+        sector : tuple (up, do)
+            Spin sector defined by the difference between particles in
+            "normal" and "tilde" space for spin up and down
+
+        full : bool, optional
+            If False it returns the permutation operator that permutes the
+            relevant spin sector to the upper left of the matrix and projects
+            out the rest. If True the full permutation operator, which doesn't
+            project out the rest is returned. By default False
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (dim, dim)
+            Permutation operator for the desired Spin sector subspace, with
+            given spin sector difference between "normal" and "tilde" space of
+            'sector'
+        """
+        if not self.fock_ops.spinless:
+            pnum_up_index = np.where(
+                self.Delta_N_up.diagonal() == sector[0])[0]
+            pnum_do_index = np.where(
+                self.Delta_N_do.diagonal() == sector[1])[0]
+            mask_section = np.in1d(pnum_up_index, pnum_do_index)
+            pnum_index = np.sort(pnum_up_index[mask_section])
+            dim_subspace = pnum_index.shape[0]
+            total_index = np.linspace(0.,
+                                      4**(self.fock_ops.spin_times_site) - 1.,
+                                      num=4**(self.fock_ops.spin_times_site),
+                                      dtype=int)
+            n_prime = total_index[dim_subspace:]
+            m_prime = np.setdiff1d(total_index, pnum_index)
+            mask_n_m_prime_same = np.in1d(n_prime, m_prime)
+            n_m_prime_same = n_prime[mask_n_m_prime_same]
+            n_prime_diff = np.setdiff1d(n_prime, m_prime)
+            m_prime_diff = np.setdiff1d(m_prime, n_prime)
+
+            perm_op_sector = sparse.lil_matrix(
+                (4**(self.fock_ops.spin_times_site),
+                 4**(self.fock_ops.spin_times_site)), dtype=complex)
+
+            for n in range(dim_subspace):
+                perm_op_sector[n, pnum_index[n]] = 1.0
+
+            if full:
+                for n, m in zip(n_prime_diff, m_prime_diff):
+                    perm_op_sector[n, m] = 1.0
+
+                for n in n_m_prime_same:
+                    perm_op_sector[n, n] = 1.0
+
+            perm_op_sector = perm_op_sector.tocsc()
+            perm_op_sector = perm_op_sector
+            return dim_subspace, perm_op_sector
 
     def c(self, ii, spin=None):
         """Returns the Liouville space annihilation operator of site 'ii' and
