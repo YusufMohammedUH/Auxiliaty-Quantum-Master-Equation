@@ -114,10 +114,6 @@ class FermionicFockOperators:
         N_do: scipy.sparse.csc_matrix (2**self.spin_times_site,
                                     2**self.spin_times_site)
             Total particle operator of spin down fermions.
-
-        N_up_do: np.ndarray(2**self.spin_times_site,)
-            list of tuples containing the diagonal of the spin up and down
-            total particle operator.
         """
         if spinless:
             print("Constructing spinless fermionic Fock space.")
@@ -209,10 +205,6 @@ class FermionicFockOperators:
             for ii in range(self.nsite):
                 self.N_do += self.cdag(ii, "do").dot(self.c(ii, "do"))
                 self.N_up += self.cdag(ii, "up").dot(self.c(ii, "up"))
-
-            self.N_up_do = np.array(
-                [(n_up, n_do) for n_up, n_do in zip(self.N_up.diagonal(),
-                                                    self.N_do.diagonal())])
 
     # define functions to get certain operators
     # notation
