@@ -51,23 +51,35 @@ class FrequencyGreen:
                 raise ValueError("freq and keldysh must have same shape")
             self.keldysh = keldysh
 
-    def __add__(a: "FrequencyGreen", b: "FrequencyGreen") -> "FrequencyGreen":
+    def __add__(self, other: "FrequencyGreen",) -> "FrequencyGreen":
         """Add two FrequencyGreen objects
 
         Parameters
         ----------
-        a : FrequencyGreen
-
-        b : FrequencyGreen
+        other : FrequencyGreen
 
         Returns
         -------
         out: FrequencyGreen
         """
-        return FrequencyGreen(a.freq, a.retarded + b.retarded,
-                              a.keldysh + b.keldysh)
+        return FrequencyGreen(self.freq, self.retarded + other.retarded,
+                              self.keldysh + other.keldysh)
 
-    def __mul__(a: "FrequencyGreen", b: "FrequencyGreen") -> "FrequencyGreen":
+    def __sub__(self, other: "FrequencyGreen",) -> "FrequencyGreen":
+        """Add two FrequencyGreen objects
+
+        Parameters
+        ----------
+        other : FrequencyGreen
+
+        Returns
+        -------
+        out: FrequencyGreen
+        """
+        return FrequencyGreen(self.freq, self.retarded - other.retarded,
+                              self.keldysh - other.keldysh)
+
+    def __mul__(self, other: "FrequencyGreen") -> "FrequencyGreen":
         """Multiply two frequency Green's functions.
 
         A multiplication in frequency domain corresponds to a convolution in
@@ -86,17 +98,15 @@ class FrequencyGreen:
 
         Parameters
         ----------
-        a : FrequencyGreen
-
-        b : FrequencyGreen
+        other : FrequencyGreen
 
         Returns
         -------
         out: FrequencyGreen
         """
-        return FrequencyGreen(a.freq, a.retarded * b.retarded,
-                              a.retarded * b.keldysh +
-                              a.keldysh * b.retarded.conj())
+        return FrequencyGreen(self.freq, self.retarded * other.retarded,
+                              self.retarded * other.keldysh +
+                              self.keldysh * other.retarded.conj())
 
     def dyson(self, green_0_ret_inverse, self_energy) -> None:
         """Calculate and set the the frequency Green's function, through the
