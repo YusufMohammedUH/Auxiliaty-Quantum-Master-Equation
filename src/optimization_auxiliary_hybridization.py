@@ -53,8 +53,48 @@ def cost_function(hybridization, auxiliary_hybridization, weight=None):
     return norm * simps((diff_ret + diff_kel) * weight, hybridization.freq)
 
 
+def optimize_subroutine(x0, *args):
+    """Optimization function of the hybridization function.
+    Set the current hybridization function from x0 and compare to the target
+    hybridization function, with parameters supplied in args.
+    The difference between target and current hybridization is returned.
+
+    Parameters
+    ----------
+    x0 : array_like
+        Contains the parameters to be optimized in order to obtain the
+        optimal approximation to a hybridization function
+
+    args: array_like
+        Contains arguments necessary to set the problem to optimize over.
+
+    Returns
+    -------
+    out: float
+        Value of discrepancy between current and target hybridization.
+    """
+    Nb = args[0]
+    hybridization = args[1]
+    weight = args[2]
+
+    es = np.array(x0[0:(Nb)])
+    ts = np.array(x0[(Nb):(2 * Nb)])
+    gammas = np.array(x0[(2 * Nb):])
+
+    aux = auxp.AuxiliarySystem(Nb, hybridization.freq)
+    aux.set_ph_symmetric_aux(es, ts, gammas)
+
+    green = fg.FrequencyGreen(hybridization.freq)
+    green.set_green_from_auxiliary(aux)
+
+    hyb_aux = green.get_self_enerqy()
+
+    return cost_function(hybridization, hyb_aux, weight)
+
+
 def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
-                              N_try=1, dtype=float,
+                              N_try=1, dtype=float, bounds=None,
+                              constraints=(),
                               options={"disp": True, "maxiter": 200,
                                        "return_all": True, 'gtol': 1e-5}):
     """Approximation of the supplied hybridization function by a auxiliary
@@ -105,32 +145,15 @@ def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
         weight = np.ones(hybridization.freq.shape)
     args = (Nb, hybridization, weight)
 
-    def optimization_func(x0, *args):
-
-        Nb = args[0]
-        hybridization = args[1]
-        weight = args[2]
-
-        es = np.array(x0[0:(Nb)])
-        ts = np.array(x0[(Nb):(2 * Nb)])
-        gammas = np.array(x0[(2 * Nb):])
-
-        aux = auxp.AuxiliarySystem(Nb, hybridization.freq)
-        aux.set_ph_symmetric_aux(es, ts, gammas)
-
-        green = fg.FrequencyGreen(hybridization.freq)
-        green.set_green_from_auxiliary(aux)
-
-        hyb_aux = green.get_self_enerqy()
-
-        return cost_function(hybridization, hyb_aux, weight)
-
-    result = minimize(optimization_func, x_start, args=args, options=options,
+    result = minimize(optimize_subroutine, x_start, bounds=bounds,
+                      constraints=constraints, method='SLSQP', args=args,
+                      options=options,
                       )
+
     nn = 1
     print("No. of tries: ", nn, ", converged: ", result.success)
     while (N_try > nn) and (~result.success):
-        result = minimize(optimization_func, x_start, args=args)
+        result = minimize(optimize_subroutine, x_start, args=args)
         nn += 1
         print("No. of tries: ", nn, ", converged: ", result.success)
     if not result.success:
@@ -200,6 +223,7 @@ def get_aux(res, Nb, freq):
 if __name__ == "__main__":
     # Setting target hybridization
     e0 = 0
+    mu = 0
     beta = 100
     N_freq = 1001
     freq_max = 10
@@ -210,29 +234,28 @@ if __name__ == "__main__":
     flat_hybridization_retarded = np.array(
         [du.flat_bath_retarded(w, e0, D, gamma) for w in freq])
     flat_hybridization_keldysh = np.array(
-        [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, beta)) *
+        [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, e0, mu, beta)) *
          np.imag(du.flat_bath_retarded(w, e0, D, gamma)) for w in freq])
 
     hybridization = fg.FrequencyGreen(
         freq, flat_hybridization_retarded, flat_hybridization_keldysh)
+    options = {"disp": True, "maxiter": 500, 'ftol': 1e-5}
 
     # Calculating auxiliary hyridization for Nb =1
     try:
         Nb = 1
-        x_start = [3., 0.81, 0.5, -1.40, 0.2]
-        result_nb1 = optimization_ph_symmertry(Nb, hybridization,
-                                               x_start=x_start)
+        result_nb1 = optimization_ph_symmertry(
+            Nb, hybridization, options=options)
         aux_nb1 = get_aux(result_nb1.x, Nb, freq)
         hyb_aux_nb1 = fg.get_hyb_from_aux(aux_nb1)
     except ValueError:
         print(f"Minimization for Nb = {Nb}, not converged.")
-    hyb_start_nb1 = get_aux_hyb(x_start, Nb, freq)
 
     # Calculating auxiliary hyridization for Nb =2
     try:
         Nb = 2
-
-        result_nb2 = optimization_ph_symmertry(Nb, hybridization)
+        result_nb2 = optimization_ph_symmertry(
+            Nb, hybridization, options=options)
         aux_nb2 = get_aux(result_nb2.x, Nb, freq)
         hyb_aux_nb2 = fg.get_hyb_from_aux(aux_nb2)
     except ValueError:
