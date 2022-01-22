@@ -24,16 +24,16 @@ def test_const_function_values():
     print(weight_times2)
     weight = np.array([2.0 * du.heaviside(w, 0) for w in freq])
 
-    weight_heavyside = opt_aux.cost_function(
-        targed_hyb, aux_hyb, weight=weight) == 1.0
-    print(weight_heavyside)
+    # weight_heavyside = opt_aux.cost_function(
+    #     targed_hyb, aux_hyb, weight=weight) == 1.0
+    # print(weight_heavyside)
     aux_hyb = fg.FrequencyGreen(
         freq, 1j * np.ones(freq.shape), 1j * np.ones(freq.shape))
 
     is_equal = opt_aux.cost_function(targed_hyb, aux_hyb) == 0.0
-    print(print(weight_heavyside))
+    print(is_equal)
     assert renormalized_to_one and weight_times2 and (
-        weight_heavyside and is_equal)
+        is_equal)
 
 
 def test_optimization_ph_symmertry():
