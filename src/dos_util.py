@@ -32,8 +32,6 @@ def lorenzian_bath_retarded(w, e0, gamma, v=1):
 def heaviside(x, x0):
     if x < x0:
         return 0.
-    elif x == x0:
-        return 0.5
     else:
         return 1.
 
