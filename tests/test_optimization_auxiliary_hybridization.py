@@ -24,10 +24,6 @@ def test_const_function_values():
     print(weight_times2)
     weight = np.array([2.0 * du.heaviside(w, 0) for w in freq])
 
-    weight_heavyside = opt_aux.cost_function(
-        targed_hyb, aux_hyb, weight=weight) == 1.0
-    print(opt_aux.cost_function(
-        targed_hyb, aux_hyb, weight=weight))
     aux_hyb = fg.FrequencyGreen(
         freq, 1j * np.ones(freq.shape), 1j * np.ones(freq.shape))
 
