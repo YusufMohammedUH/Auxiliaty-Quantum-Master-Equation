@@ -1,6 +1,103 @@
 import numpy as np
+from numba import njit
 import src.auxiliary_system_parameter as auxp
 import matplotlib.pyplot as plt
+
+
+@njit(cache=True)
+def _z_aux(ws, N, Nb, E, Gamma1, Gamma2):
+    """Calculate the non-interacting auxiliary greens function at the impurity
+    site in frequency domain.
+
+    Parameters
+    ----------
+    ws : numpy.ndarray (dim,)
+        Frequency grid.
+
+    N : int
+        Number of sites in the auxiliary system.
+
+    Nb : int
+        Number of bath sites to the left/right
+            (total number of bath sites is 2*Nb)
+
+    E : numpy.ndarray (N, N)
+        T-Matrix (hopping and onsite potential)
+        of the Auxiliary Model
+
+    Gamma1 : numpy.ndarray (N, N)
+        Coupling to Markovian bath 1
+
+    Gamma2 : numpy.ndarray (N, N)
+        Coupling to Markovian bath 2
+
+    Returns
+    -------
+    G_retarded, G_keldysh: tuple ((dim,),(dim,))
+        Tuple containing the non-interacting retarded and keldysh single
+        particle greens function in frequency domain.
+    """
+    id = np.identity(N)
+    Z_R_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex128)
+    Z_A_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex128)
+    Z_K_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex128)
+    for i, w in enumerate(ws):
+        Z_R_aux[i] = np.linalg.inv(
+            w * id - E + 1.0j * (Gamma2 + Gamma1))
+        Z_A_aux[i] = np.linalg.inv(w * id - E -
+                                   1.0j * (Gamma2 + Gamma1))
+        Z_K_aux[i] = 2.0j * \
+            (Z_R_aux[i].dot((Gamma2 - Gamma1).dot(Z_A_aux[i])))
+    return (Z_R_aux[:, Nb, Nb],
+            Z_K_aux[:, Nb, Nb])
+
+
+@njit(cache=True)
+def _get_self_enerqy(green_0_ret_inverse, green_ret, green_kel):
+    """Calculate the self-energy from the supplied retarded and keldysh 
+    greens function.
+
+    Parameters
+    ----------
+    green_0_ret_inverse : numpy.ndarray (dim,)
+        Non-interacting, uncoupled, inverse, retarded Green's function.
+        Is equal to the freqency grid, in absence of a chemical potential and
+        onsite potential.
+
+    green_ret : numpy.ndarray (dim,)
+        Full retarded Green's function.
+
+    green_kel : numpy.ndarray (dim,)
+        Full keldysh Green's function.
+
+    Returns
+    -------
+    Sigma_retarded, Sigma_keldysh: tuple ((dim,),(dim,))
+        Tuple containing the retarded and keldysh single particle self-energy in 
+        frequency domain.
+    """
+    green_ret_w_inverse = np.zeros(
+        green_kel.shape, dtype=np.complex128)
+    sigma_ret_w = np.zeros(
+        green_kel.shape, dtype=np.complex128)
+    sigma_kel_w = np.zeros(
+        green_kel.shape, dtype=np.complex128)
+    for i in range(green_0_ret_inverse.shape[0]):
+        if green_ret[i] == 0:
+            green_ret_w_inverse[i] = np.inf
+        else:
+            green_ret_w_inverse[i] = 1.0 / green_ret[i]
+        sigma_ret_w[i] = green_0_ret_inverse[i] - \
+            green_ret_w_inverse[i]
+        green_ret_w_abs_square_inverse = 0
+        if (green_ret[i] * np.conj(green_ret[i])) == 0:
+            green_ret_w_abs_square_inverse = np.inf
+        else:
+            green_ret_w_abs_square_inverse = (
+                1 / (green_ret[i] * np.conj(green_ret[i])))
+        sigma_kel_w[i] = (
+            green_ret_w_abs_square_inverse * green_kel[i])
+    return sigma_ret_w, sigma_kel_w
 
 
 class FrequencyGreen:
@@ -43,13 +140,13 @@ class FrequencyGreen:
         else:
             if freq.shape != retarded.shape:
                 raise ValueError("freq and retarded must have same shape")
-            self.retarded = retarded
+            self.retarded = np.copy(retarded)
         if keldysh is None:
             self.keldysh = np.zeros(len(freq), dtype=complex)
         else:
             if freq.shape != keldysh.shape:
                 raise ValueError("freq and keldysh must have same shape")
-            self.keldysh = keldysh
+            self.keldysh = np.copy(keldysh)
 
     def __add__(self, other: "FrequencyGreen",) -> "FrequencyGreen":
         """Add two FrequencyGreen objects
@@ -137,21 +234,9 @@ class FrequencyGreen:
         """
         assert np.array_equal(auxsys.ws, self.freq)
 
-        def z_aux(x):
-            Z_R_aux = np.linalg.inv(x * np.identity(auxsys.N) - auxsys.E +
-                                    1.0j * (auxsys.Gamma2 + auxsys.Gamma1))
-            Z_A_aux = np.linalg.inv(x * np.identity(auxsys.N) - auxsys.E -
-                                    1.0j * (auxsys.Gamma2 + auxsys.Gamma1))
-            Z_K_aux = 2.0j * \
-                (Z_R_aux.dot((auxsys.Gamma2 - auxsys.Gamma1).dot(Z_A_aux)))
-            return (Z_R_aux[auxsys.Nb, auxsys.Nb],
-                    Z_K_aux[auxsys.Nb, auxsys.Nb])
-
-        vec_z_aux = np.vectorize(z_aux)
-        G_aux = vec_z_aux(self.freq)
-
-        self.retarded = G_aux[0]
-        self.keldysh = G_aux[1]
+        self.retarded, self.keldysh = _z_aux(auxsys.ws, auxsys.N, auxsys.Nb,
+                                             auxsys.E, auxsys.Gamma1,
+                                             auxsys.Gamma2)
 
     def get_self_enerqy(self, green_0_ret_inverse=None) -> "FrequencyGreen":
         """Returns the retarded and Keldysh component of the self-energy
@@ -174,25 +259,7 @@ class FrequencyGreen:
         if green_0_ret_inverse is None:
             green_0_ret_inverse = self.freq
 
-        def get_self_enerqy(green_0_ret_inverse_w, green_ret_w, green_kel_w):
-            green_ret_w_inverse = 0
-            if green_ret_w == 0:
-                green_ret_w_inverse = float('inf')
-            else:
-                green_ret_w_inverse = 1.0 / green_ret_w
-            sigma_ret_w = green_0_ret_inverse_w - green_ret_w_inverse
-            green_ret_w_abs_square_inverse = 0
-            if (green_ret_w * np.conj(green_ret_w)) == 0:
-                green_ret_w_abs_square_inverse = float('inf')
-            else:
-                green_ret_w_abs_square_inverse = (
-                    1 / (green_ret_w * np.conj(green_ret_w)))
-            sigma_kel_w = (
-                green_ret_w_abs_square_inverse * green_kel_w)
-            return sigma_ret_w, sigma_kel_w
-
-        vec_get_self_enerqy = np.vectorize(get_self_enerqy)
-        sigma = vec_get_self_enerqy(
+        sigma = _get_self_enerqy(
             green_0_ret_inverse, self.retarded, self.keldysh)
 
         singularities = np.where(sigma[0].real == float("-inf"))[0]
