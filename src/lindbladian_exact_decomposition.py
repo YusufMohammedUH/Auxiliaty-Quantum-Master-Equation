@@ -4,7 +4,7 @@ from numba import njit
 
 
 @njit(cache=True)
-def _exact_spectral_decomposition(vals, vec_r_tmp, dim):
+def _exact_spectral_decomposition(vals, vec_r_tmp):
     """Buy jit optimized function returning the eigenvalue and
     eigenvectors.
 
