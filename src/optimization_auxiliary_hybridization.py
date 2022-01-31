@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 # XXX: optimization doesn't converge reliably for Nb>2
 
 
-def cost_function(hybridization, auxiliary_hybridization, weight=None):
+def cost_function(hybridization, auxiliary_hybridization, weight=None,
+                  normalize=True):
     """Cost function returns the weoght, integrated, elementwise squared difference
     between the retarded and Keldysh component of two supplied
     frequency, single particle Green's function type objects.
@@ -37,10 +38,11 @@ def cost_function(hybridization, auxiliary_hybridization, weight=None):
     """
     if weight is None:
         weight = np.ones(hybridization.freq.shape)
-
-    norm = 1.0 / (simps(np.square(hybridization.retarded.imag)
-                        + np.square(hybridization.keldysh.imag),
-                        hybridization.freq))
+    norm = 1.0
+    if normalize:
+        norm = 1.0 / (simps(np.square(hybridization.retarded.imag)
+                            + np.square(hybridization.keldysh.imag),
+                            hybridization.freq))
 
     diff_ret = (np.square((hybridization.retarded -
                            auxiliary_hybridization.retarded).imag))
