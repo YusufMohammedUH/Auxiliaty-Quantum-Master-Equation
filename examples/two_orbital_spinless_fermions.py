@@ -7,6 +7,7 @@
 import numpy as np
 import src.model_hamiltonian as ham
 import src.model_lindbladian as lind
+import src.lindbladian_exact_decomposition as ed_lind
 import matplotlib.pyplot as plt
 
 # ########################### Unitary propagation #############################
@@ -36,7 +37,7 @@ L.set_dissipation(G1, G2)
 L.set_total_linbladian()
 
 # Using exact diagonalization to obtain eigenvalues and eigenvectors
-L.exact_spectral_decomposition()
+vals, vec_l, vec_r = ed_lind.exact_spectral_decomposition(L.L_tot.todense())
 
 # defining initial desity operator with one electron in upper level
 dim = int(np.sqrt(L.L_tot.shape[0]))
@@ -49,8 +50,8 @@ t_max = 5
 N = 1001
 times = np.linspace(t_min, t_max, N)
 
-rho = L.time_propagation_all_times_exact_diagonalization(
-    times, rho0.reshape((dim**2, 1)))
+rho = ed_lind.time_propagation_all_times_exact_diagonalization(
+    times, rho0.reshape((dim**2, 1)), vals, vec_l, vec_r)
 
 plt.title("Unitary Population Dynamics")
 plt.xlabel("t")
@@ -78,15 +79,15 @@ L.set_dissipation(G1, G2)
 L.set_total_linbladian()
 
 # Using exact diagonalization to obtain eigenvalues and eigenvectors
-L.exact_spectral_decomposition()
+vals, vec_l, vec_r = ed_lind.exact_spectral_decomposition(L.L_tot.todense())
 
 t_min = 0
 t_max = 10
 N = 1001
 times = np.linspace(t_min, t_max, N)
 
-rho = L.time_propagation_all_times_exact_diagonalization(
-    times, rho0.reshape((dim**2, 1)))
+rho = ed_lind.time_propagation_all_times_exact_diagonalization(
+    times, rho0.reshape((dim**2, 1)), vals, vec_l, vec_r)
 
 plt.title("Spontaneous Emission")
 plt.xlabel("t")
@@ -109,10 +110,10 @@ L.set_unitay_part(T_mat=Tmat, U_mat=U)
 L.set_total_linbladian()
 
 # Using exact diagonalization to obtain eigenvalues and eigenvectors
-L.exact_spectral_decomposition()
+vals, vec_l, vec_r = ed_lind.exact_spectral_decomposition(L.L_tot.todense())
 
-rho = L.time_propagation_all_times_exact_diagonalization(
-    times, rho0.reshape((dim**2, 1)))
+rho = ed_lind.time_propagation_all_times_exact_diagonalization(
+    times, rho0.reshape((dim**2, 1)), vals, vec_l, vec_r)
 
 plt.title("Incoherent Population Dynamics")
 plt.xlabel("t")
