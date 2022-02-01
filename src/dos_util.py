@@ -5,6 +5,28 @@ import src.frequency_greens_function as fg
 
 @njit(cache=True)
 def flat_bath_retarded(w, e0, D, gamma):
+    """Retarded Green's function with a flat band density of states.
+
+
+    Parameters
+    ----------
+    w : float
+        Frequency.
+
+    e0 : float
+        On-site potential
+
+    D : float
+        Half band width.
+
+    gamma : float
+        hight of the density of states
+
+    Returns
+    -------
+    out: complex
+        Retarded Green's function at frequency 'w'.
+    """
     x = D + (w - e0)
     y = (w - e0 - D)
     if x == 0:
@@ -12,16 +34,37 @@ def flat_bath_retarded(w, e0, D, gamma):
     elif y == 0:
         real_part = np.inf
     else:
-        real_part = (-gamma / np.pi) * np.log(np.abs(y / x))
+        real_part = (-gamma) * np.log(np.abs(y / x))
 
     imag_part = 0
     if np.abs(w - e0) < D:
-        imag_part = -gamma
+        imag_part = -np.pi * gamma
     return complex(real_part, imag_part)
 
 
 @njit(cache=True)
 def lorenzian_bath_retarded(w, e0, gamma, v=1):
+    """Retarded Green's function with a Lorenzian density of states.
+
+    Parameters
+    ----------
+    w : float
+        Frequency.
+
+    e0 : float
+        On-site potential
+
+    D : float
+        Half band width.
+
+    gamma : float
+        hight of the density of states
+
+    Returns
+    -------
+    out: complex
+        Retarded Green's function at frequency 'w'.
+    """
     x = w - e0 - 1j * gamma
     y = (w - e0)**2 + gamma**2
     result = 0
@@ -34,6 +77,21 @@ def lorenzian_bath_retarded(w, e0, gamma, v=1):
 
 @njit(cache=True)
 def heaviside(x, x0):
+    """Heaviside function
+
+    Parameters
+    ----------
+    x : float
+        Running value.
+
+    x0 : float
+        Shift/offset.
+
+    Returns
+    -------
+    out: float
+        Value of the Heaviside function at 'x' with shift 'x0'.
+    """
     if x < x0:
         return 0.
     else:
@@ -42,6 +100,28 @@ def heaviside(x, x0):
 
 @njit(cache=True)
 def fermi(e, e0, mu, beta):
+    """Fermi-Dirac distribution.
+
+
+    Parameters
+    ----------
+    e : float
+        Energie for which the fermi distribution is desired.
+
+    e0 : float
+        On-site potential.
+
+    mu : float
+        Chemical potential.
+
+    beta : float
+        Inverse Temperature times Boltzmann constant.
+
+    Returns
+    -------
+    out: float
+        Fermi-Dirac distribution for given parameters.
+    """
     x = (e + e0 - mu) * beta
     if x < 0.0:
         return 1.0 / (1.0 + np.exp(x))
@@ -51,6 +131,26 @@ def fermi(e, e0, mu, beta):
 
 @njit(cache=True)
 def _set_hybridization(freq, retarded_function, *args):
+    """Set the retarded and keldysh single particle Green's function from
+    a supplied function determening the retarded function on a given frequency
+    grid.
+
+    Parameters
+    ----------
+    freq : numpy.ndarray (dim,)
+        Frequency grid.
+
+    retarded_function : function
+        Function returning the retarded Green's function for given arguments.
+
+    args: list
+        list of arguments necessary for calculating the Fermi function and
+        the retarded Green's function.
+    Returns
+    -------
+    out: tuple (numpy.ndarray,numpy.ndarray)
+        Tuple containing the retarded and keldysh Green's functions.
+    """
     e0 = args[0]
     mu = args[1]
     beta = args[2]
@@ -62,5 +162,25 @@ def _set_hybridization(freq, retarded_function, *args):
 
 
 def set_hybridization(freq, retarded_function, *args):
+    """Set the retarded and keldysh single particle Green's function from
+    a supplied function determening the retarded function on a given frequency
+    grid.
+
+    Parameters
+    ----------
+    freq : numpy.ndarray (dim,)
+        Frequency grid.
+
+    retarded_function : function
+        Function returning the retarded Green's function for given arguments.
+
+    args: list
+        list of arguments necessary for calculating the Fermi function and
+        the retarded Green's function.
+    Returns
+    -------
+    out: src.frequency_greens_function.FrequencyGreen
+        Objectcontaining the calculated retarded and keldysh Green's functions.
+    """
     retarded, keldysh = _set_hybridization(freq, retarded_function, *args)
     return fg.FrequencyGreen(freq=freq, retarded=retarded, keldysh=keldysh)
