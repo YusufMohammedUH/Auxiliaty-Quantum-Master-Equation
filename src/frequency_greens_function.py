@@ -54,7 +54,7 @@ def _z_aux(ws, N, Nb, E, Gamma1, Gamma2):
 
 @njit(cache=True)
 def _get_self_enerqy(green_0_ret_inverse, green_ret, green_kel):
-    """Calculate the self-energy from the supplied retarded and keldysh 
+    """Calculate the self-energy from the supplied retarded and keldysh
     greens function.
 
     Parameters
@@ -73,8 +73,8 @@ def _get_self_enerqy(green_0_ret_inverse, green_ret, green_kel):
     Returns
     -------
     Sigma_retarded, Sigma_keldysh: tuple ((dim,),(dim,))
-        Tuple containing the retarded and keldysh single particle self-energy in 
-        frequency domain.
+        Tuple containing the retarded and keldysh single particle self-energy
+        in frequency domain.
     """
     green_ret_w_inverse = np.zeros(
         green_kel.shape, dtype=np.complex128)
