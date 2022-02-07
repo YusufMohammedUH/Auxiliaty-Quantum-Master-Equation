@@ -80,7 +80,7 @@ for i in range(max_iter):
     two_point_corr.update_model_parameter(
         np.array(aux_sys.Gamma1), np.array(aux_sys.Gamma2), T_mat, Us)
     two_point_corr.set_rho_steady_state()
-    two_point_corr.sectors_exact_decomposition()
+    two_point_corr.sectors_exact_decomposition(sectors=[(-1,0),(0,0),(1,0)])
 
     G_plus, G_minus = two_point_corr.get_two_point_correlator_frequency(
         freq, two_point_corr.Lindbladian.liouville_ops.c(Nb, "up"),
@@ -95,7 +95,7 @@ for i in range(max_iter):
     # ########### Calculate the system single particle Green's function #######
     G_sys.dyson(aux_sys.ws, hybridization + dmft_hyb + sigma)
     err.append(opt.cost_function(G_sys, G_tmp, normalize=False))
-    if err[-1] < 1e-4:
+    if err[-1] < error:
         break
     print(f"Error is: {err[i]}")
     G_tmp = fg.FrequencyGreen(aux_sys.ws, retarded=((1.0 - mixing)

@@ -189,7 +189,7 @@ class Correlators:
 
         # self.check_sector(self.rho_stready_state)
 
-    def sectors_exact_decomposition(self, set_lindblad=True):
+    def sectors_exact_decomposition(self, set_lindblad=True, sectors=None):
         """Exactly decompose the Lindbladian within the relevant spin
         sectors. The eigenvectors and eigenvalues are saved as object
         attributes.
@@ -207,7 +207,9 @@ class Correlators:
         self.vals_sector = {}
         self.vec_l_sector = {}
         self.vec_r_sector = {}
-        for sector in self.spin_combination:
+        if sectors is None:
+            sectors = self.spin_combination
+        for sector in sectors:
             L_sector = self.get_operator_in_spin_sector(self.Lindbladian.L_tot,
                                                         tuple(sector),
                                                         tuple(sector))
