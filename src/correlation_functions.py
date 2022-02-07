@@ -401,29 +401,30 @@ def _get_two_point_correlator_time(A_sector, A_dagger_sector, B_sector,
     """
     G_times_plus = np.zeros(times.shape, dtype=np.complex128)
     G_times_minus = np.zeros(times.shape, dtype=np.complex128)
-    for i, time in enumerate(times):
-        time_evolution_sector = \
-            ed_lind.time_evolution_operator(
-                time, vals_sector,
-                vec_l_sector,
-                vec_r_sector)
-        time_evolution_minus_sector = \
-            ed_lind.time_evolution_operator(
-                time, vals_minus_sector,
-                vec_l_minus_sector,
-                vec_r_minus_sector)
 
-        G_times_plus[i] = -1j * heaviside(time, 0) \
-            * left_vacuum_00.dot(B_sector).dot(
-                time_evolution_sector).dot(A_sector).dot(
+    G_plus_tmp = np.zeros(vals_sector.shape[0], dtype=np.complex128)
+    G_minus_tmp = np.zeros(vals_minus_sector.shape[0], dtype=np.complex128)
+    for m in range(vals_sector.shape[0]):
+        G_plus_tmp[m] = left_vacuum_00.dot(B_sector).dot(
+                vec_r_sector[m]).dot(
+                vec_l_sector[m]).dot(A_sector).dot(
                     rho_stready_state)[0, 0]
-        # TODO: check formula
-        G_times_minus[i] = -1j * heaviside(time, 0) \
-            * np.conj(
+    for m in range(vals_minus_sector.shape[0]):
+        G_minus_tmp[m] = np.conj(
                 left_vacuum_00.dot(B_dagger_sector).dot(
-                    time_evolution_minus_sector).dot(A_dagger_sector).dot(
+                vec_r_minus_sector[m]).dot(
+                vec_l_minus_sector[m]).dot(A_dagger_sector).dot(
                     rho_stready_state
                 )[0, 0])
+
+    for i, time in enumerate(times):
+        for m in range(vals_sector.shape[0]):
+            G_times_plus[i] += -1.j * heaviside(time, 0) \
+            *np.exp(vals_sector[m] * time)* G_plus_tmp[m]
+
+        for m in range(vals_minus_sector.shape[0]):
+            G_times_minus[i] += -1.j * heaviside(time, 0) \
+            * np.exp(vals_minus_sector[m] * time)*G_minus_tmp[m]
     return G_times_plus, G_times_minus
 
 
@@ -492,23 +493,30 @@ def _get_two_point_correlator_frequency(A_sector, A_dagger_sector, B_sector,
     G_omega_plus = np.zeros(omegas.shape, dtype=np.complex128)
     G_omega_minus = np.zeros(omegas.shape, dtype=np.complex128)
 
-    for n, omega in enumerate(omegas):
-        for m in range(vals_sector.shape[0]):
-            G_omega_plus[n] += left_vacuum_00.dot(B_sector).dot(
+    G_plus_tmp = np.zeros(vals_sector.shape[0], dtype=np.complex128)
+    G_minus_tmp = np.zeros(vals_sector.shape[0], dtype=np.complex128)
+    for m in range(vals_sector.shape[0]):
+        G_plus_tmp[m] = left_vacuum_00.dot(B_sector).dot(
                 vec_r_sector[m]).dot(
                 vec_l_sector[m]).dot(A_sector).dot(
-                rho_stready_state)[0, 0] * (
-                1.0 / (omega
-                       - 1j * vals_sector[m]))
-        # TODO: check formula
-        for m in range(vals_minus_sector.shape[0]):
-            G_omega_minus[n] += np.conj(left_vacuum_00.dot(
+                rho_stready_state)[0, 0]
+    for m in range(vals_minus_sector.shape[0]):
+        G_minus_tmp[m] = np.conj(left_vacuum_00.dot(
                 B_dagger_sector).dot(
                 vec_r_minus_sector[m]).dot(
                 vec_l_minus_sector[m]).dot(
-                    A_dagger_sector).dot(rho_stready_state))[0, 0] * (
-                        1.0 / (omega - 1j * np.conj(
-                            vals_minus_sector[m])))
+                    A_dagger_sector).dot(rho_stready_state))[0, 0]
+
+    for n, omega in enumerate(omegas):
+        for m in range(vals_sector.shape[0]):
+            G_omega_plus[n] +=  G_plus_tmp[m]* (
+            1.0 / (omega
+                    - 1j * vals_sector[m]))
+
+        for m in range(vals_minus_sector.shape[0]):
+            G_omega_minus[n] += G_minus_tmp[m]* (
+                    1.0 / (omega - 1j * np.conj(
+                        vals_minus_sector[m])))
     return G_omega_plus, G_omega_minus
 
 

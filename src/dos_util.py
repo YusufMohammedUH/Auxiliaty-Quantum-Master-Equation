@@ -7,7 +7,6 @@ import src.frequency_greens_function as fg
 def flat_bath_retarded(w, e0, D, gamma):
     """Retarded Green's function with a flat band density of states.
 
-
     Parameters
     ----------
     w : float
@@ -156,8 +155,8 @@ def _set_hybridization(freq, retarded_function, args):
     beta = args[2]
     retarded = np.array(
         [retarded_function(f, e0, args[3], args[4]) for f in freq])
-    keldysh = np.array([1.j * (1. / np.pi) * (1. - 2. * fermi(f, e0, mu, beta)) *
-                        np.imag(retarded_function(f, e0, args[3], args[4]))
+    keldysh = np.array([1.j * (1. / np.pi) * (1. - 2. * fermi(f, e0, mu, beta))
+                        * np.imag(retarded_function(f, e0, args[3], args[4]))
                         for f in freq])
     return retarded, keldysh
 
