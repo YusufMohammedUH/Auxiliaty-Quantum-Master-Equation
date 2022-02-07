@@ -148,6 +148,16 @@ class FrequencyGreen:
                 raise ValueError("freq and keldysh must have same shape")
             self.keldysh = np.copy(keldysh)
 
+    def copy(self) -> "FrequencyGreen":
+        """Return a copy of the object.
+
+        Returns
+        -------
+        out: FrequencyGreen
+        """
+        return FrequencyGreen(self.freq.copy(), self.retarded.copy(),
+                              self.keldysh.copy())
+
     def __add__(self, other: "FrequencyGreen",) -> "FrequencyGreen":
         """Add two FrequencyGreen objects
 

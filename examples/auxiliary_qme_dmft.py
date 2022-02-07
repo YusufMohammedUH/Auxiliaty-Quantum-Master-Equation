@@ -48,8 +48,7 @@ flat_hybridization = du.set_hybridization(
 args = np.array([e0, mu, beta, 1.0, 1.0], dtype=np.float64)
 G_sys = du.set_hybridization(
     freq, du.lorenzian_bath_retarded, args)
-G_tmp = du.set_hybridization(
-    freq, du.lorenzian_bath_retarded, args)
+G_tmp = G_sys.copy()
 
 optimization_options = {"disp": False, "maxiter": 500, 'ftol': 1e-5}
 
