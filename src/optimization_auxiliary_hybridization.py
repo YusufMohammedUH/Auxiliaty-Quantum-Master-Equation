@@ -268,7 +268,8 @@ if __name__ == "__main__":
     plt.plot(hybridization.freq, hyb_aux_nb1.retarded.imag)
     plt.plot(hybridization.freq, hyb_aux_nb2.retarded.imag)
     plt.xlabel(r"$\omega$")
-    plt.legend([r"$exact$", r"$Nb=1$", r"$Nb=2$"])
+    plt.ylabel(r"$Im\Delta^R(\omega)$")
+    plt.legend([r"$exact$", r"$Nb=2$", r"$Nb=4$"])
     plt.show()
 
     plt.figure()
@@ -276,4 +277,6 @@ if __name__ == "__main__":
     plt.plot(hybridization.freq, hyb_aux_nb1.keldysh.imag)
     plt.plot(hybridization.freq, hyb_aux_nb2.keldysh.imag)
     plt.xlabel(r"$\omega$")
-    plt.legend([r"$exact$", r"$Nb=1$", r"$Nb=2$"])
+    plt.ylabel(r"$Im\Delta^K(\omega)$")
+    plt.legend([r"$exact$", r"$Nb=2$", r"$Nb=4$"])
+
