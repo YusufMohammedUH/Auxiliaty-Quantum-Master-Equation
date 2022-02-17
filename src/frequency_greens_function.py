@@ -135,6 +135,7 @@ class FrequencyGreen:
             raise TypeError("keldysh must be of type numpy.array or None!")
 
         self.freq = freq
+        self.freq.flags.writeable = False
         if retarded is None:
             self.retarded = np.zeros(len(freq), dtype=complex)
         else:
@@ -155,7 +156,7 @@ class FrequencyGreen:
         -------
         out: FrequencyGreen
         """
-        return FrequencyGreen(self.freq.copy(), self.retarded.copy(),
+        return FrequencyGreen(self.freq, self.retarded.copy(),
                               self.keldysh.copy())
 
     def __add__(self, other: "FrequencyGreen",) -> "FrequencyGreen":
