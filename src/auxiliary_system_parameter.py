@@ -223,6 +223,9 @@ if __name__ == "__main__":
     print("Gamma2-Gamma2: \n", (aux.Gamma2 - aux.Gamma1))
 
 
+# TODO: Should be able to set target impurity site at beginning of in the
+#       middel of the auxiliary problem, for now the impurity site is
+#       positioned in the middel by default.
 # TODO: In the non-particle-hole symmetric case Gamma1 and Gamma2 are
 #       Independent
 # TODO: Later Extend this to multiorbital case
