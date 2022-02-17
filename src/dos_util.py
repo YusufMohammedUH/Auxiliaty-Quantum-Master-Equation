@@ -26,6 +26,8 @@ def flat_bath_retarded(w, e0, D, gamma):
     out: complex
         Retarded Green's function at frequency 'w'.
     """
+    if gamma == 0:
+        return 0.+0.j
     x = D + (w - e0)
     y = (w - e0 - D)
     if x == 0:
@@ -64,6 +66,8 @@ def lorenzian_bath_retarded(w, e0, gamma, v=1.0):
     out: complex
         Retarded Green's function at frequency 'w'.
     """
+    if v == 0:
+        return 0.+0.j
     x = w - e0 - 1j * gamma
     y = (w - e0)**2 + gamma**2
     result = 0
@@ -128,7 +132,7 @@ def fermi(e, e0, mu, beta):
         return 1.0 - 1.0 / (1.0 + np.exp(-x))
 
 
-@njit(cache=True)
+# @njit(cache=True)
 def _set_hybridization(freq, retarded_function, args):
     """Set the retarded and keldysh single particle Green's function from
     a supplied function determening the retarded function on a given frequency
