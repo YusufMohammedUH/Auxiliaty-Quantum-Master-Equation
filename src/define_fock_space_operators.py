@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 from scipy.special import binom
 from scipy import sparse
@@ -42,7 +41,7 @@ def anti_commutator(a, b):
 
 
 class FermionicFockOperators:
-    def __init__(self, nsite, spinless=False):
+    def __init__(self, nsite, spinless=False, sorted_particle_number=True):
         """Class of fermiononic creation and annihilation operators in Fock
         space.
 
@@ -59,6 +58,10 @@ class FermionicFockOperators:
             Indicates if fermions are spinless or spin 1/2.
             If set to True, than the fermions are spinless, by default False.
 
+        sorted_particle_number: bool, optional
+            The Fock space is sorted in incrising order if set to True, by
+            default False.
+
         Attributes
         ----------
         spinless: bool
@@ -69,6 +72,10 @@ class FermionicFockOperators:
 
         sigma_plus: scipy.sparse.csc_matrix (2,2)
             Pauli sigma plus matrix
+
+        sorted_particle_number: bool
+            The Fock space is sorted in incrising order if set to True, by
+            default False.
 
         sigma_minus: scipy.sparse.csc_matrix (2,2)
             Pauli sigma minus matrix
@@ -102,7 +109,6 @@ class FermionicFockOperators:
         P: scipy.sparse.csc_matrix (2**self.spin_times_site,
                                     2**self.spin_times_site)
            Permutation operator used to sort the operators by particle number.
-        TODO: Dought the need of storing P as attribute.
 
         pascal_indices:  list
             List of supspace dimensions with certain particle numbers.
@@ -119,6 +125,7 @@ class FermionicFockOperators:
             print("Constructing spinless fermionic Fock space.")
         self.spinless = spinless
         self.nsite = nsite
+        self.sorted_particle_number = sorted_particle_number
         # Jordan-Wigner transformation
         # fermionic operators
 
@@ -180,13 +187,14 @@ class FermionicFockOperators:
         for i in range(2**self.spin_times_site):
             self.P[i, pnum_diag_sorted[i]] = 1.
         self.P = self.P.tocsc()
-        for ii in range(self.annihilators.shape[0]):
-            self.annihilators[ii] = self.P.dot(
-                self.annihilators[ii].dot(self.P.transpose()))
-            self.creators[ii] = self.P.dot(
-                self.creators[ii].dot(self.P.transpose()))
+        if self.sorted_particle_number:
+            for ii in range(self.annihilators.shape[0]):
+                self.annihilators[ii] = self.P.dot(
+                    self.annihilators[ii].dot(self.P.transpose()))
+                self.creators[ii] = self.P.dot(
+                    self.creators[ii].dot(self.P.transpose()))
 
-        self.N = self.P.dot(self.N.dot(self.P.transpose()))
+            self.N = self.P.dot(self.N.dot(self.P.transpose()))
 
         # Pascal index subspace index for given particle number
         self.pascal_indices = []
@@ -301,9 +309,10 @@ class FermionicFockOperators:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
     def n(self, ii, spin=None, nelec=None):
+        if self.sorted_particle_number:
+            raise ValueError('ERROR: The Fock space is not sorted!')
         if (ii > self.nsite - 1):
-            print('ERROR: index out of bound!')
-            exit()
+            raise ValueError('ERROR: index out of bound!')
 
         n = self.cdag(ii, spin).dot(self.c(ii, spin))
 
@@ -316,7 +325,6 @@ class FermionicFockOperators:
                      self.pascal_indices[nelec - 1]:self.pascal_indices[nelec]]
 
 ###############################################################################
-# %%
 
 
 class BosonicFockOperators:
@@ -434,38 +442,6 @@ class BosonicFockOperators:
         return self.creators[ii]
 
 
-# %%
-if __name__ == "__main__":
-    nsite = 3
-    f_op = FermionicFockOperators(nsite)
-    identity = sparse.eye(4**nsite, dtype=complex)
-    for i in range(nsite):
-        for j in range(nsite):
-            for s1 in ["up", "do"]:
-                for s2 in ["up", "do"]:
-                    # purely fock creation and annihilation operators
-                    anti_commutation_c_cdag = (f_op.cdag(i, s1)
-                                               * f_op.c(j, s2)
-                                               + f_op.c(j, s2)
-                                               * f_op.cdag(i, s1))
-                    anti_commutation_c_c = (f_op.c(i, s1)
-                                            * f_op.c(j, s2)
-                                            + f_op.c(j, s2)
-                                            * f_op.c(i, s1))
-                    anti_commutation_cdag_cdag = (f_op.cdag(i, s1)
-                                                  * f_op.cdag(j, s2)
-                                                  + f_op.cdag(j, s2)
-                                                  * f_op.cdag(i, s1))
-                    if i == j and s1 == s2:
-                        assert (anti_commutation_c_cdag -
-                                identity).count_nonzero() == 0
-
-                    else:
-                        assert (
-                            anti_commutation_c_cdag).count_nonzero() == 0
-                        assert (anti_commutation_c_c).count_nonzero() == 0
-                        assert (
-                            anti_commutation_cdag_cdag).count_nonzero() == 0
 # TODO: Include example for bosonic operators
 # TODO: Include tests
 # %%
