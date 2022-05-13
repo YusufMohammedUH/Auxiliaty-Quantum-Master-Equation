@@ -5,13 +5,12 @@ import src.define_fock_space_operators as fop
 
 # XXX: For now the super-fermionic representation is not used with the complex
 #      phase as surguessted by Dzhioev et. al ( J. Chem. Phys. 134, 044121
-#      (2011); https://doi.org/10.1063/1.3548065). This is not necessary, since
-#      we are using the Schroedinger picture:
-#      Tr[A(t,0)\rho] = Tr[V^{\dagger}(t,0)A\rho] = Tr[AV(t,0)\rho]
-#      where V(t,0) describes the time-evolution of the density
+#      (2011); https://doi.org/10.1063/1.3548065).
+
 
 class FermionicLouvilleOperators:
-    def __init__(self, nsite, spinless=False, tilde_conjugationrule_phase=False):
+    def __init__(self, nsite, spinless=False,
+                 tilde_conjugationrule_phase=False):
         """Class of fermionic operators in the Liouville space, constructed
         form fermionic operators in Fock space.
 
@@ -46,10 +45,6 @@ class FermionicLouvilleOperators:
             phase for the tilde operators and the left vacuum state. If False,
             the phase is set to one.
 
-        transformation_tilde: scipy.sparse.csc_matrix (dim,dim)
-            unitary transformation in the tilde subspace in order to account
-            for the complex phase in the left vacuum state.
-
         Delta_N_up: scipy.sparse.csc_matrix (dim, dim)
             Difference of total paricel number of electrons with spin up
             between "normal" and "tilde" space
@@ -58,48 +53,65 @@ class FermionicLouvilleOperators:
             Difference of total paricel number of electrons with spin down
             between "normal" and "tilde" space
         """
-        self.fock_ops = fop.FermionicFockOperators(nsite, spinless)
+        self.fock_ops = fop.FermionicFockOperators(nsite, spinless,
+                                                   sorted_particle_number=False)
         self.tilde_conjugationrule_phase = tilde_conjugationrule_phase
-        self.left_vacuum = sparse.lil_matrix(
-            (4**(self.fock_ops.spin_times_site), 1), dtype=complex)
 
-        pnums = self.fock_ops.N.diagonal()
-        for n in range(2**self.fock_ops.spin_times_site):
-            pnum_vector = sparse.lil_matrix(
-                (2**self.fock_ops.spin_times_site, 1), dtype=complex)
-            pnum_vector[n, 0] = 1.0
-
-            if self.tilde_conjugationrule_phase:
-                self.left_vacuum += ((-1j)**pnums[n]) * sparse.kron(
-                    pnum_vector, pnum_vector)
-            else:
-                self.left_vacuum += sparse.kron(
-                    pnum_vector, pnum_vector)
-        self.left_vacuum = self.left_vacuum.tocsc()
-
-        if self.tilde_conjugationrule_phase:
-            transformation_tilde = sparse.lil_matrix(
-                (2**self.fock_ops.spin_times_site,
-                2**self.fock_ops.spin_times_site),
-                dtype=complex)
-            transformation_tilde.setdiag(
-                (-1j)**self.fock_ops.N.diagonal())
-
-            transformation_tilde = transformation_tilde.tocsc()
-
-            self.transformation_tilde = sparse.kron(transformation_tilde,
-                           sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=complex, format="csc"),
-                           format="csc")
+        # Define Spin sector operators N_{\simga}-\tilde{N}_{\simga}
         if not spinless:
             self.Delta_N_up = self.get_louville_operator(self.fock_ops.N_up) \
                 - self.get_louville_tilde_operator(self.fock_ops.N_up)
             self.Delta_N_do = self.get_louville_operator(self.fock_ops.N_do) \
                 - self.get_louville_tilde_operator(self.fock_ops.N_do)
 
+        self.N = self.get_louville_operator(self.fock_ops.N)
+        self.N_tilde = self.get_louville_tilde_operator(self.fock_ops.N)
+
+        # Set up Operator encoding commutation relation between
+        self.unity_tilde = sparse.csc_matrix(
+            ([1.0], ([0], [0])), shape=(1, 1))
+        for _ in range(self.fock_ops.spin_times_site):
+            self.unity_tilde = sparse.kron(self.fock_ops.sigma_z,
+                                           self.unity_tilde, format="csc")
+
+        # Set up left vacuum state |I> with or witout the complex phase in the
+        # tilde conjugation rule.
+        self.left_vacuum = sparse.lil_matrix(
+            (4**(self.fock_ops.spin_times_site), 1), dtype=complex)
+
+        # Find and Set |0>x|0>
+        vacuum_index = np.where(
+            (self.N + self.N_tilde).diagonal() == 0)  # |0>x|0>
+        assert len(vacuum_index) == 1
+        self.left_vacuum[vacuum_index[0][0], 0] = 1
+
+        # Set up the constructing operator for the left vacuum state
+        sign = 1
+        if self.tilde_conjugationrule_phase:
+            sign = -1j
+        left_vacuum_constructor = sparse.eye(
+            4**(self.fock_ops.spin_times_site), dtype=complex)
+        if not spinless:
+            for site in range(self.fock_ops.nsite):
+                for spin in ["up", "do"]:
+                    left_vacuum_constructor = left_vacuum_constructor * (sparse.eye(4**(self.fock_ops.spin_times_site),
+                                                                                    dtype=complex) + sign * self.cdag(site, spin) * self.cdag_tilde(site, spin))
+        else:
+            for site in range(self.fock_ops.nsite):
+                left_vacuum_constructor = left_vacuum_constructor * (sparse.eye(4**(self.fock_ops.spin_times_site),
+                                                                                dtype=complex) + sign * self.cdag(site) * self.cdag_tilde(site))
+        # construct the left vacuum state
+        self.left_vacuum = left_vacuum_constructor * self.left_vacuum
+
+        # Dictionary for changing to the tilde space operators
+        self.tilde_operator_name = {'c': 'cdag_tilde', 'cdag': 'c_tilde'}
+        if self.tilde_conjugationrule_phase:
+            self.tilde_operator_sign = {'c': -1j, 'cdag': -1j}
+        else:
+            self.tilde_operator_sign = {'c': 1, 'cdag': -1}
+
     def particle_number_subspace_projector(self, nelec):
         """Projector for given particle number nelec in the liouville space.
-
 
         Parameters
         ----------
@@ -112,20 +124,21 @@ class FermionicLouvilleOperators:
             Projector for the desired particle number subspace.
         """
         pnum_index = np.where(self.fock_ops.N.diagonal() == nelec)[0]
-        pnum_projector = sparse.lil_matrix(
+        pnum_projector = sparse.csc_matrix(
             (4**(self.fock_ops.spin_times_site),
              4**(self.fock_ops.spin_times_site)), dtype=complex)
+
         for n in pnum_index:
-            n_vector = sparse.csc_matrix(
+            n_vector = sparse.lil_matrix(
                 (2**self.fock_ops.spin_times_site, 1), dtype=complex)
             n_vector[n, 0] = 1.0
+
             for m in pnum_index:
-                m_vector = sparse.csc_matrix(
+                m_vector = sparse.lil_matrix(
                     (2**self.fock_ops.spin_times_site, 1), dtype=complex)
                 m_vector[m, 0] = 1
-                nm_vector = sparse.kron(n_vector, m_vector)
+                nm_vector = sparse.kron(n_vector, m_vector, format="csc")
                 pnum_projector += nm_vector * nm_vector.transpose()
-                pnum_projector = pnum_projector.tocsc()
 
         return pnum_projector
 
@@ -250,8 +263,7 @@ class FermionicLouvilleOperators:
             spin 'spin'.
         """
         return sparse.kron(self.fock_ops.c(ii, spin),
-                           sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=complex, format="csc"),
+                           self.unity_tilde,
                            format="csc")
 
     def cdag(self, ii, spin=None):
@@ -277,8 +289,7 @@ class FermionicLouvilleOperators:
             spin 'spin'.
         """
         return sparse.kron(self.fock_ops.cdag(ii, spin),
-                           sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=complex, format="csc"),
+                           self.unity_tilde,
                            format="csc")
 
     def c_tilde(self, ii, spin=None):
@@ -393,19 +404,13 @@ class FermionicLouvilleOperators:
 
 # %%
 if __name__ == "__main__":
-    nsite = 1
-    fl_op = FermionicLouvilleOperators(nsite,tilde_conjugationrule_phase=True)
+    nsite = 2
+    fl_op = FermionicLouvilleOperators(nsite, tilde_conjugationrule_phase=True)
 
     print("Checking commutation relation")
 
-    fock_projector = sparse.kron(sparse.eye(4**nsite, dtype=complex,
-                                            format="csc"),
-                                 sparse.csc_matrix((4**nsite, 4**nsite)))
-    tilde_projector = sparse.kron(sparse.csc_matrix((4**nsite, 4**nsite)),
-                                  sparse.eye(4**nsite, dtype=complex,
-                                             format="csc"))
     identity_super_fermionic = sparse.eye(
-        4**(2 * nsite), dtype=complex, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=complex, format="csc")
 
     for i in range(nsite):
         for j in range(nsite):
@@ -416,16 +421,25 @@ if __name__ == "__main__":
                         fop.anti_commutator(fl_op.c(i, s1), fl_op.cdag(j, s2))
                     anti_commutation_fock_c_c = \
                         fop.anti_commutator(fl_op.c(i, s1), fl_op.c(j, s2))
-
                     anti_commutation_fock_cdag_cdag = \
                         fop.anti_commutator(
                             fl_op.cdag(i, s1), fl_op.cdag(j, s2))
+
+                    # mixed creation and annihilation operators
+                    anti_commutation_mixed_c_cdag_tilde = \
+                        fop.anti_commutator(fl_op.c(i, s1),
+                                            fl_op.cdag_tilde(j, s2))
+                    anti_commutation_mixed_c_c_tilde = \
+                        fop.anti_commutator(fl_op.c(i, s1),
+                                            fl_op.c_tilde(j, s2))
+                    anti_commutation_mixed_cdag_cdag_tilde = \
+                        fop.anti_commutator(
+                            fl_op.cdag(i, s1), fl_op.cdag_tilde(j, s2))
 
                     # purely tilde creation and annihilation operators
                     anti_commutation_tilde_c_cdag = \
                         fop.anti_commutator(
                             fl_op.c_tilde(i, s1), fl_op.cdag_tilde(j, s2))
-
                     anti_commutation_tilde_c_c =  \
                         fop.anti_commutator(
                             fl_op.c_tilde(i, s1), fl_op.c_tilde(j, s2))
@@ -435,24 +449,25 @@ if __name__ == "__main__":
                     if i == j and s1 == s2:
                         assert (anti_commutation_fock_c_cdag -
                                 identity_super_fermionic).nnz == 0
-                        assert (
-                            anti_commutation_tilde_c_cdag-
-                                identity_super_fermionic).nnz == 0
-
                         assert anti_commutation_fock_c_c.nnz == 0
-                        assert anti_commutation_tilde_c_c.nnz == 0
-
                         assert anti_commutation_fock_cdag_cdag.nnz == 0
+
+                        assert (anti_commutation_tilde_c_cdag -
+                                identity_super_fermionic).nnz == 0
+                        assert anti_commutation_tilde_c_c.nnz == 0
                         assert anti_commutation_tilde_cdag_cdag.nnz == 0
 
                     else:
                         assert anti_commutation_fock_c_cdag.nnz == 0
-                        assert anti_commutation_tilde_c_cdag.nnz == 0
-
                         assert anti_commutation_fock_c_c.nnz == 0
-                        assert anti_commutation_tilde_c_c.nnz == 0
-
                         assert anti_commutation_fock_cdag_cdag.nnz == 0
+
+                        assert anti_commutation_mixed_c_cdag_tilde.nnz == 0
+                        assert anti_commutation_mixed_c_c_tilde.nnz == 0
+                        assert anti_commutation_mixed_cdag_cdag_tilde.nnz == 0
+
+                        assert anti_commutation_tilde_c_cdag.nnz == 0
+                        assert anti_commutation_tilde_c_c.nnz == 0
                         assert anti_commutation_tilde_cdag_cdag.nnz == 0
 
     print("Commutation relations fulfilled")
@@ -463,16 +478,16 @@ if __name__ == "__main__":
         for i in range(nsite):
             for spin in ["up", "do"]:
                 n_nonzeros += (fl_op.c(i, spin) + 1j * fl_op.cdag_tilde(i, spin)).dot(
-                                fl_op.left_vacuum).nnz
-                n_nonzeros += (fl_op.cdag(i, spin) - 1j * fl_op.c_tilde(i, spin)).dot(
-                                fl_op.left_vacuum).nnz
+                    fl_op.left_vacuum).nnz
+                n_nonzeros += (fl_op.cdag(i, spin) + 1j * fl_op.c_tilde(i, spin)).dot(
+                    fl_op.left_vacuum).nnz
     else:
         for i in range(nsite):
             for spin in ["up", "do"]:
                 n_nonzeros += (fl_op.c(i, spin) - fl_op.cdag_tilde(i, spin)).dot(
-                                fl_op.left_vacuum).nnz
-                n_nonzeros += (fl_op.cdag(i, spin) - fl_op.c_tilde(i, spin)).dot(
-                                fl_op.left_vacuum).nnz
+                    fl_op.left_vacuum).nnz
+                n_nonzeros += (fl_op.cdag(i, spin) + fl_op.c_tilde(i, spin)).dot(
+                    fl_op.left_vacuum).nnz
     if n_nonzeros != 0:
         raise ValueError("ERROR: Liouville creation/annihilation operator and"
                          + " tilde Liouville creation/annihilation operator "
@@ -483,10 +498,10 @@ if __name__ == "__main__":
               + "acting on the left vacuum state are the same.")
 
     N = sparse.kron(fl_op.fock_ops.N,
-                    sparse.eye(4**fl_op.fock_ops.nsite,
+                    sparse.eye(2**fl_op.fock_ops.spin_times_site,
                                dtype=complex, format="csc"))
 
-    N_T = sparse.kron(sparse.eye(4**fl_op.fock_ops.nsite,
+    N_T = sparse.kron(sparse.eye(2**fl_op.fock_ops.spin_times_site,
                                  dtype=complex, format="csc"),
                       fl_op.fock_ops.N)
     operator_equal_operator_tilse = N.dot(fl_op.left_vacuum) - \
