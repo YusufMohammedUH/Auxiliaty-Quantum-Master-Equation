@@ -71,9 +71,9 @@ Tmat = ham.get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts)
 L.set_unitay_part(T_mat=Tmat, U_mat=U)
 
 # Setting dissipative part of Lindbladian
-G1 = (0.2 * (n + 1)) * np.rot90(np.eye(nsite))
-G2 = (0.2 * (n)) * np.rot90(np.eye(nsite))
-L.set_dissipation(G1, G2)
+G1 = (0.1 * (n + 1)) * np.rot90(np.eye(nsite))
+G2 = (0.1 * (n)) * np.rot90(np.eye(nsite))
+L.set_dissipation(G1, G2,sign=1)
 
 # Setting total Lindbladian
 L.set_total_linbladian()
@@ -82,7 +82,7 @@ L.set_total_linbladian()
 vals, vec_l, vec_r = ed_lind.exact_spectral_decomposition(L.L_tot.todense())
 
 t_min = 0
-t_max = 10
+t_max = 20
 N = 1001
 times = np.linspace(t_min, t_max, N)
 
@@ -97,8 +97,15 @@ plt.plot(times, rho[5].real)
 plt.show()
 
 # ##################### Unitary And Incoherent Dynamics #######################
+t_min = 0
+t_max = 10
+N = 1001
+times = np.linspace(t_min, t_max, N)
 
 ts = 1.0 * np.ones(nsite - 1)
+
+G1 = (0.2 * (n + 1)) * np.rot90(np.eye(nsite))
+G2 = (0.2 * (n)) * np.rot90(np.eye(nsite))
 
 # Setting hopping matrix
 Tmat = ham.get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts)
@@ -106,6 +113,7 @@ Tmat = ham.get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts)
 # Setting unitary part of Lindbladian
 L.set_unitay_part(T_mat=Tmat, U_mat=U)
 
+L.set_dissipation(G1, G2,sign=1)
 # Setting total Lindbladian
 L.set_total_linbladian()
 
