@@ -94,12 +94,17 @@ class FermionicLouvilleOperators:
         if not spinless:
             for site in range(self.fock_ops.nsite):
                 for spin in ["up", "do"]:
-                    left_vacuum_constructor = left_vacuum_constructor * (sparse.eye(4**(self.fock_ops.spin_times_site),
-                                                                                    dtype=complex) + sign * self.cdag(site, spin) * self.cdag_tilde(site, spin))
+                    left_vacuum_constructor = left_vacuum_constructor * (
+                        sparse.eye(4**(self.fock_ops.spin_times_site),
+                                   dtype=complex) + sign * self.cdag(
+                                       site, spin) * self.cdag_tilde(
+                                           site, spin))
         else:
             for site in range(self.fock_ops.nsite):
-                left_vacuum_constructor = left_vacuum_constructor * (sparse.eye(4**(self.fock_ops.spin_times_site),
-                                                                                dtype=complex) + sign * self.cdag(site) * self.cdag_tilde(site))
+                left_vacuum_constructor = left_vacuum_constructor * (
+                    sparse.eye(4**(self.fock_ops.spin_times_site),
+                               dtype=complex) + sign * self.cdag(
+                                   site) * self.cdag_tilde(site))
         # construct the left vacuum state
         self.left_vacuum = left_vacuum_constructor * self.left_vacuum
 
@@ -293,8 +298,8 @@ class FermionicLouvilleOperators:
                            format="csc")
 
     def c_tilde(self, ii, spin=None):
-        """Returns the Liouville space tilde annihilation operator of site 'ii' and
-        spin 'spin'.
+        """Returns the Liouville space tilde annihilation operator of site 'ii'
+        and spin 'spin'.
 
         These operators are used, when they are placed right from the density
         matrix in the Fock space formulation of, e.g the Lindblad equation.
@@ -477,17 +482,17 @@ if __name__ == "__main__":
     if fl_op.tilde_conjugationrule_phase:
         for i in range(nsite):
             for spin in ["up", "do"]:
-                n_nonzeros += (fl_op.c(i, spin) + 1j * fl_op.cdag_tilde(i, spin)).dot(
-                    fl_op.left_vacuum).nnz
-                n_nonzeros += (fl_op.cdag(i, spin) + 1j * fl_op.c_tilde(i, spin)).dot(
-                    fl_op.left_vacuum).nnz
+                n_nonzeros += (fl_op.c(i, spin) + 1j * fl_op.cdag_tilde(
+                    i, spin)).dot(fl_op.left_vacuum).nnz
+                n_nonzeros += (fl_op.cdag(i, spin) + 1j * fl_op.c_tilde(
+                    i, spin)).dot(fl_op.left_vacuum).nnz
     else:
         for i in range(nsite):
             for spin in ["up", "do"]:
-                n_nonzeros += (fl_op.c(i, spin) - fl_op.cdag_tilde(i, spin)).dot(
-                    fl_op.left_vacuum).nnz
-                n_nonzeros += (fl_op.cdag(i, spin) + fl_op.c_tilde(i, spin)).dot(
-                    fl_op.left_vacuum).nnz
+                n_nonzeros += (fl_op.c(i, spin) - fl_op.cdag_tilde(i, spin)
+                               ).dot(fl_op.left_vacuum).nnz
+                n_nonzeros += (fl_op.cdag(i, spin) + fl_op.c_tilde(i, spin)
+                               ).dot(fl_op.left_vacuum).nnz
     if n_nonzeros != 0:
         raise ValueError("ERROR: Liouville creation/annihilation operator and"
                          + " tilde Liouville creation/annihilation operator "
