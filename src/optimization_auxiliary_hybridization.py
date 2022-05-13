@@ -279,4 +279,3 @@ if __name__ == "__main__":
     plt.xlabel(r"$\omega$")
     plt.ylabel(r"$Im\Delta^K(\omega)$")
     plt.legend([r"$exact$", r"$Nb=2$", r"$Nb=4$"])
-
