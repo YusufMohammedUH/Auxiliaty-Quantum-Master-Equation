@@ -19,9 +19,10 @@ def test_anti_commutator():
     assert np.all((fock.anti_commutator(A, B).todense()
                   == (A * B + B * A.todense())))
 
+
 class TestClassFermionicFockOperatorsSpinlessSortedParticleNumber:
     nsite = 2
-    f_op = fock.FermionicFockOperators(nsite,spinless=True)
+    f_op = fock.FermionicFockOperators(nsite, spinless=True)
     identity = sparse.eye(2**f_op.spin_times_site, dtype=complex)
 
     def test_FermionicFockOperators_anticommutation(self):
@@ -29,17 +30,17 @@ class TestClassFermionicFockOperatorsSpinlessSortedParticleNumber:
             for j in range(self.nsite):
                 # purely fock creation and annihilation operators
                 anti_commutation_c_cdag = (self.f_op.cdag(i)
-                                        * self.f_op.c(j)
-                                        + self.f_op.c(j)
-                                        * self.f_op.cdag(i))
+                                           * self.f_op.c(j)
+                                           + self.f_op.c(j)
+                                           * self.f_op.cdag(i))
                 anti_commutation_c_c = (self.f_op.c(i)
                                         * self.f_op.c(j)
                                         + self.f_op.c(j)
                                         * self.f_op.c(i))
                 anti_commutation_cdag_cdag = (self.f_op.cdag(i)
-                                            * self.f_op.cdag(j)
-                                            + self.f_op.cdag(j)
-                                            * self.f_op.cdag(i))
+                                              * self.f_op.cdag(j)
+                                              + self.f_op.cdag(j)
+                                              * self.f_op.cdag(i))
                 if i == j:
                     assert (anti_commutation_c_cdag -
                             self.identity).count_nonzero() == 0
@@ -59,13 +60,15 @@ class TestClassFermionicFockOperatorsSpinlessSortedParticleNumber:
         pascal_indices_accumulated = 0
         for i in range(self.f_op.spin_times_site + 1):
             pascal_indices_accumulated += (self.f_op.N.diagonal() == i).sum()
-            print(self.f_op.pascal_indices[i], "  ", pascal_indices_accumulated)
+            print(self.f_op.pascal_indices[i],
+                  "  ", pascal_indices_accumulated)
             assert self.f_op.pascal_indices[i] == pascal_indices_accumulated
+
 
 class TestClassFermionicFockOperatorsSpinlessUnsortedParticleNumber:
     nsite = 2
-    f_op = fock.FermionicFockOperators(nsite,spinless=True,
-    sorted_particle_number=False)
+    f_op = fock.FermionicFockOperators(nsite, spinless=True,
+                                       sorted_particle_number=False)
     identity = sparse.eye(2**f_op.spin_times_site, dtype=complex)
 
     def test_FermionicFockOperators_anticommutation(self):
@@ -73,17 +76,17 @@ class TestClassFermionicFockOperatorsSpinlessUnsortedParticleNumber:
             for j in range(self.nsite):
                 # purely fock creation and annihilation operators
                 anti_commutation_c_cdag = (self.f_op.cdag(i)
-                                        * self.f_op.c(j)
-                                        + self.f_op.c(j)
-                                        * self.f_op.cdag(i))
+                                           * self.f_op.c(j)
+                                           + self.f_op.c(j)
+                                           * self.f_op.cdag(i))
                 anti_commutation_c_c = (self.f_op.c(i)
                                         * self.f_op.c(j)
                                         + self.f_op.c(j)
                                         * self.f_op.c(i))
                 anti_commutation_cdag_cdag = (self.f_op.cdag(i)
-                                            * self.f_op.cdag(j)
-                                            + self.f_op.cdag(j)
-                                            * self.f_op.cdag(i))
+                                              * self.f_op.cdag(j)
+                                              + self.f_op.cdag(j)
+                                              * self.f_op.cdag(i))
                 if i == j:
                     assert (anti_commutation_c_cdag -
                             self.identity).count_nonzero() == 0
@@ -96,7 +99,7 @@ class TestClassFermionicFockOperatorsSpinlessUnsortedParticleNumber:
                         anti_commutation_cdag_cdag).count_nonzero() == 0
 
     def test_FermionicFockOperators_particle_number_unsorted(self):
-        if (self.f_op.P-self.identity).nnz==0:
+        if (self.f_op.P - self.identity).nnz == 0:
             assert np.all(self.f_op.N.diagonal() == np.sort(
                 self.f_op.N.diagonal()))
         else:
@@ -107,7 +110,8 @@ class TestClassFermionicFockOperatorsSpinlessUnsortedParticleNumber:
         pascal_indices_accumulated = 0
         for i in range(self.f_op.spin_times_site + 1):
             pascal_indices_accumulated += (self.f_op.N.diagonal() == i).sum()
-            print(self.f_op.pascal_indices[i], "  ", pascal_indices_accumulated)
+            print(self.f_op.pascal_indices[i],
+                  "  ", pascal_indices_accumulated)
             assert self.f_op.pascal_indices[i] == pascal_indices_accumulated
 
 
@@ -123,17 +127,17 @@ class TestClassFermionicFockOperatorsSpinfulSortedParticleNumber:
                     for s2 in ["up", "do"]:
                         # purely fock creation and annihilation operators
                         anti_commutation_c_cdag = (self.f_op.cdag(i, s1)
-                                                * self.f_op.c(j, s2)
-                                                + self.f_op.c(j, s2)
-                                                * self.f_op.cdag(i, s1))
+                                                   * self.f_op.c(j, s2)
+                                                   + self.f_op.c(j, s2)
+                                                   * self.f_op.cdag(i, s1))
                         anti_commutation_c_c = (self.f_op.c(i, s1)
                                                 * self.f_op.c(j, s2)
                                                 + self.f_op.c(j, s2)
                                                 * self.f_op.c(i, s1))
                         anti_commutation_cdag_cdag = (self.f_op.cdag(i, s1)
-                                                    * self.f_op.cdag(j, s2)
-                                                    + self.f_op.cdag(j, s2)
-                                                    * self.f_op.cdag(i, s1))
+                                                      * self.f_op.cdag(j, s2)
+                                                      + self.f_op.cdag(j, s2)
+                                                      * self.f_op.cdag(i, s1))
                         if i == j and s1 == s2:
                             assert (anti_commutation_c_cdag -
                                     self.identity).count_nonzero() == 0
@@ -145,7 +149,6 @@ class TestClassFermionicFockOperatorsSpinfulSortedParticleNumber:
                             assert (
                                 anti_commutation_cdag_cdag).count_nonzero() == 0
 
-
     def test_FermionicFockOperators_particle_number_sorted(self):
         assert np.all(self.f_op.N.diagonal() == np.sort(
             self.f_op.N.diagonal()))
@@ -154,14 +157,14 @@ class TestClassFermionicFockOperatorsSpinfulSortedParticleNumber:
         pascal_indices_accumulated = 0
         for i in range(self.f_op.spin_times_site + 1):
             pascal_indices_accumulated += (self.f_op.N.diagonal() == i).sum()
-            print(self.f_op.pascal_indices[i], "  ", pascal_indices_accumulated)
+            print(self.f_op.pascal_indices[i],
+                  "  ", pascal_indices_accumulated)
             assert self.f_op.pascal_indices[i] == pascal_indices_accumulated
-
 
 
 class TestClassFermionicFockOperatorsSpinfulUnortedParticleNumber:
     nsite = 2
-    f_op = fock.FermionicFockOperators(nsite,sorted_particle_number=False)
+    f_op = fock.FermionicFockOperators(nsite, sorted_particle_number=False)
     identity = sparse.eye(2**f_op.spin_times_site, dtype=complex)
 
     def test_FermionicFockOperators_anticommutation(self):
@@ -171,17 +174,17 @@ class TestClassFermionicFockOperatorsSpinfulUnortedParticleNumber:
                     for s2 in ["up", "do"]:
                         # purely fock creation and annihilation operators
                         anti_commutation_c_cdag = (self.f_op.cdag(i, s1)
-                                                * self.f_op.c(j, s2)
-                                                + self.f_op.c(j, s2)
-                                                * self.f_op.cdag(i, s1))
+                                                   * self.f_op.c(j, s2)
+                                                   + self.f_op.c(j, s2)
+                                                   * self.f_op.cdag(i, s1))
                         anti_commutation_c_c = (self.f_op.c(i, s1)
                                                 * self.f_op.c(j, s2)
                                                 + self.f_op.c(j, s2)
                                                 * self.f_op.c(i, s1))
                         anti_commutation_cdag_cdag = (self.f_op.cdag(i, s1)
-                                                    * self.f_op.cdag(j, s2)
-                                                    + self.f_op.cdag(j, s2)
-                                                    * self.f_op.cdag(i, s1))
+                                                      * self.f_op.cdag(j, s2)
+                                                      + self.f_op.cdag(j, s2)
+                                                      * self.f_op.cdag(i, s1))
                         if i == j and s1 == s2:
                             assert (anti_commutation_c_cdag -
                                     self.identity).count_nonzero() == 0
@@ -194,7 +197,7 @@ class TestClassFermionicFockOperatorsSpinfulUnortedParticleNumber:
                                 anti_commutation_cdag_cdag).count_nonzero() == 0
 
     def test_FermionicFockOperators_particle_number_unsorted(self):
-        if (self.f_op.P-self.identity).nnz==0:
+        if (self.f_op.P - self.identity).nnz == 0:
             assert np.all(self.f_op.N.diagonal() == np.sort(
                 self.f_op.N.diagonal()))
         else:
@@ -205,11 +208,9 @@ class TestClassFermionicFockOperatorsSpinfulUnortedParticleNumber:
         pascal_indices_accumulated = 0
         for i in range(self.f_op.spin_times_site + 1):
             pascal_indices_accumulated += (self.f_op.N.diagonal() == i).sum()
-            print(self.f_op.pascal_indices[i], "  ", pascal_indices_accumulated)
+            print(self.f_op.pascal_indices[i],
+                  "  ", pascal_indices_accumulated)
             assert self.f_op.pascal_indices[i] == pascal_indices_accumulated
-
-
-
 
 
 def test_BosonicFockOperators_commutation():
