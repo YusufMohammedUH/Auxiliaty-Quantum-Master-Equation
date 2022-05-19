@@ -1,4 +1,5 @@
 # %%
+import numpy as np
 from scipy import sparse
 import src.model_hamiltonian as ham
 # TODO: Write tests
@@ -396,9 +397,9 @@ class Lindbladian:
                           " simultaneously. This should be done if the" +
                           " unitary part is to be updated.")
 
-        if (T_mat is not None) and (T_mat != self.T_mat):
+        if (T_mat is not None) and np.all(T_mat != self.T_mat):
             self.T_mat = T_mat
-        if (U_mat is not None) and (U_mat != self.U_mat):
+        if (U_mat is not None) and np.all(U_mat != self.U_mat):
             self.U_mat = U_mat
         if (T_mat is not None) or (U_mat is not None):
             self.set_unitay_part(self.T_mat, self.U_mat)
