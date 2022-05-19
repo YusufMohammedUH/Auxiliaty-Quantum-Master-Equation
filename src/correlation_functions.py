@@ -6,13 +6,16 @@ import itertools
 import numpy as np
 from numba import njit, prange
 import src.model_lindbladian as lind
+import src.super_fermionic_subspace as sf_sub
 import src.lindbladian_exact_decomposition as ed_lind
 import src.auxiliary_system_parameter as aux
 import src.frequency_greens_function as fg
 
+# XXX: works only for a single impurity site of interest
+
 
 class Correlators:
-    def __init__(self, Lindbladian, spin_sector_max, spin_components=None,
+    def __init__(self, Lindbladian, spin_components=None,
                  correlators=None, trilex=False):
         """Container for calcutation of correlation function.
         It is assumed, that the steady state density operator is unique
@@ -33,22 +36,16 @@ class Correlators:
             Container class for the Lindbladian. A class attribute is the
             liouville space in which it is defined.
 
-        spin_sector_max : int
-            maximal value of a spin difference between "normal" and "tilde"
-            space
         """
-        assert spin_sector_max >= 0
         self.trilex = trilex
         self.Lindbladian = Lindbladian
-        self.nsite = self.Lindbladian.liouville_ops.fock_ops.nsite
-        self.spin_sector_max = spin_sector_max
-        self.set_spin_sectors()
-        self.set_spin_sectors_fermionic_ops()
+        self.nsite = self.Lindbladian.super_fermi_ops.fock_ops.nsite
         self.operator_sectors = {"cdag": {"up": (1, 0), 'do': (0, 1)},
                                  'c': {'up': (-1, 0), 'do': (0, -1)}}
 
         if correlators is None:
-            correlators = [2 * i for i in range(1, spin_sector_max + 1)]
+            correlators = [2 * i for i in range(
+                1, self.Lindbladian.super_fermi_ops.spin_sector_max + 1)]
 
         self.set_contour_symmetries(correlators, trilex)
 
@@ -63,33 +60,6 @@ class Correlators:
         self.precalc_correlator = {n: {} for n in correlators}
 
         self.set_correlator_keys(correlators)
-
-    def update_model_parameter(self, Gamma1, Gamma2, T_mat, U_mat=None):
-        """Update the model parameter, in order to recalculate the Lindbladian.
-
-        Parameters
-        ----------
-        Gamma1 : numpy.ndarray (dim,dim)
-            2D array with the coupling to bath 1, describing the removal of
-            electrons.
-
-        Gamma2 : numpy.ndarray (dim,dim)
-            2D array with the coupling to bath 2, describing the injection of
-            electrons.
-
-        T_mat : numpy.ndarray (dim,dim)
-            Hopping matrix.
-
-        U_mat : numpy.ndarray 1D or 2D, optional
-            On-site interaction strength. It can differ at each site,
-            by default None.
-        """
-        if T_mat is not None:
-            self.T_mat = T_mat
-        if T_mat is not None:
-            self.U_mat = U_mat
-        self.Gamma1 = Gamma1
-        self.Gamma2 = Gamma2
 
     def set_lindbladian(self, sign=1):
         """Set up the Lindbladian
@@ -108,82 +78,37 @@ class Correlators:
         self.Lindbladian.set_total_linbladian()
         self.precalc_expectation_value = {}
 
-    def set_spin_sectors(self):
-        """calculate all relevant spin sectors, that can be reached with the
-        highest, desired correlator. Set all possible sectors as attribute of
-        the object.
-
-        E.G. a four point vertex can access all spin sector , (i,j)
-        with i<=2, j<=2 and |i-j|<=2
-
-        """
-        sector_range = np.arange(-self.spin_sector_max,
-                                 self.spin_sector_max + 1)
-        spin_combination = np.array(
-            np.meshgrid(sector_range, sector_range)).T.reshape(-1, 2)
-        allowed_combinations = np.sum(np.abs(spin_combination), -1)
-        allowed_combinations = allowed_combinations <= self.spin_sector_max
-        self.spin_combination = spin_combination[allowed_combinations]
-        self.spin_combination = list(map(lambda x: tuple(x),
-                                         self.spin_combination))
-        self.projectors = {}
-        for com in self.spin_combination:
-            self.projectors[tuple(com)] = (self.Lindbladian.liouville_ops
-                                           ).spin_sector_permutation_operator(
-                                               com)
-
-    def get_operator_in_spin_sector(self, Object, sector_left=None,
-                                    sector_right=None):
-        """Extract an Liouville space operator or vector in the desired spin
-        sector subspace.
-
-        Parameters
-        ----------
-        Object : scipy.sparse.csc_matrix (dim, 1), (1, dim) or (dim, dim)
-            Liouville space operator or vector.
-
-        sector_left : tuple (int, int), optional
-            Left spin sector, by default None.
-
-        sector_right : tuple (int, int), optional
-            Right spin sector, by default None.
-
-        Returns
-        -------
-        out: scipy.sparse.csc_matrix (dim, dim)
-            Object in subspace connecting, which connects the spin sectors
-            sector_left and sector_right.
-
-        Raises
-        ------
-        ValueError
-            If no sector_left is passed, Object has to be a vector of shape
-            (1, dim).
-        ValueError
-            "A Sector has to be passed."
-        ValueError
-            If no sector_right is passed, Object has to be a vector of shape
-            (dim, 1).
-        """
-        if sector_left is None:
-            if Object.shape[0] != 1:
-                raise ValueError("If no sector_left is passed, Object has" +
-                                 " to be a vector of shape (1, dim).")
-            if sector_right is None:
-                raise ValueError("A Sector has to be passed.")
-            return (Object * self.projectors[sector_right][1].transpose()
-                    )[0, :self.projectors[sector_right][0]]
-        elif sector_right is None:
-            if Object.shape[1] != 1:
-                raise ValueError("If no sector_right is passed, Object has" +
-                                 " to be a vector of shape (dim, 1).")
-            return (self.projectors[sector_left][1] * Object
-                    )[:self.projectors[sector_left][0], 0]
+    def set_spin_components(self, spin_components=None):
+        if spin_components is None:
+            self.spin_indices = {2: [("up", "up")],
+                                 3: [('up', 'up', ('up', 'up')),
+                                 ('up', 'up', ('do', 'do')),
+                                     ('up', 'do', ('up', 'do')),
+                                     ('do', 'up', ('do', 'up'))],
+                                 4: [('up', 'up', 'up', 'up'),
+                                     ('up', 'do', 'up', 'do')]}
         else:
-            return (self.projectors[sector_left][1] * Object
-                    * self.projectors[sector_right][1].transpose()
-                    )[:self.projectors[sector_left][0],
-                      :self.projectors[sector_right][0]]
+            self.spin_indices = spin_components
+
+    def set_correlator_keys(self, correlators=None):
+        if correlators is not None:
+            self.correlators = {n: {} for n in correlators}
+        else:
+            self.correlators = {n: {} for n in self.correlators.keys()}
+        self.precalc_correlator_keys = {}
+
+        for n in self.correlators.keys():
+            if n == 'trilex':
+                m = 3
+            else:
+                m = n
+            self.precalc_correlator_keys[n] = {}
+            for s in self.spin_indices[m]:
+                self.correlators[n][s] = {}
+                self.precalc_correlator_keys[n][s] = {}
+
+                for comp in get_branch_combinations(m):
+                    self.correlators[n][s][comp] = {}
 
     def set_rho_steady_state(self, set_lindblad=False):
         """Calculate the steady state density of state in the spin sector
@@ -197,8 +122,8 @@ class Correlators:
         if set_lindblad:
             self.set_lindbladian(1.0)
 
-        L_00 = self.get_operator_in_spin_sector(self.Lindbladian.L_tot, (0, 0),
-                                                (0, 0))
+        L_00 = self.Lindbladian.super_fermi_ops.get_subspace_object(
+            self.Lindbladian.L_tot, (0, 0), (0, 0))
 
         vals, _, vec_r = ed_lind.exact_spectral_decomposition(
             L_00.todense())
@@ -207,7 +132,6 @@ class Correlators:
         vals_close_zero = vals[mask]
         n_steady_state = vals_close_zero.shape[0]
         if n_steady_state == 0:
-            print(vals_close_zero.shape)
             raise ValueError("No steady state density of state.")
         if n_steady_state > 1:
             vals_close_zero_sorted = sorted(
@@ -217,30 +141,25 @@ class Correlators:
             mask2 = vals_close_zero == vals_close_zero_sorted[0]
             if np.abs(vals_renormalized[1]) < 100:
                 print("eigen values")
-                print([np.abs(e)
-                       for e in vals_close_zero_sorted])
                 raise ValueError(
                     "There are more than one stready states values")
-                self.rho_stready_state = vec_r[mask][mask2][0]
+            self.rho_stready_state = vec_r[mask][mask2][0]
+        else:
+            self.rho_stready_state = vec_r[mask][0]
 
-        self.rho_stready_state = vec_r[mask][0]
-
-        self.rho_stready_state /=\
-            self.get_operator_in_spin_sector(
-                (self.Lindbladian.liouville_ops.left_vacuum
+        self.left_vacuum = \
+            self.Lindbladian.super_fermi_ops.get_subspace_object(
+                (self.Lindbladian.super_fermi_ops.left_vacuum
                  ).transpose().conjugate(),
-                sector_right=(0, 0))\
-            * self.rho_stready_state
+                sector_right=(0, 0)).todense()
 
-        self.left_vacuum = self.get_operator_in_spin_sector(
-            (self.Lindbladian.liouville_ops.left_vacuum
-             ).transpose().conjugate(),
-            sector_right=(0, 0)).todense()
+        self.rho_stready_state /= self.left_vacuum * self.rho_stready_state
 
         # self.check_sector(self.rho_stready_state)
 
     def sectors_exact_decomposition(self, set_lindblad=True, sectors=None,
-                                    sign=None, tilde_conjugationrule_phase=False):
+                                    sign=None,
+                                    tilde_conjugationrule_phase=False):
         """Exactly decompose the Lindbladian within the relevant spin
         sectors. The eigenvectors and eigenvalues are saved as object
         attributes.
@@ -257,108 +176,65 @@ class Correlators:
             self.sign = -1
 
         if set_lindblad:
-            self.set_lindbladian(self.sign)
+            self.Lindbladian.update(sign=self.sign)
 
         self.vals_sector = {}
         self.vec_l_sector = {}
         self.vec_r_sector = {}
         if sectors is None:
-            sectors = self.spin_combination
+            sectors = self.Lindbladian.super_fermi_ops.spin_sectors
         for sector in sectors:
-            L_sector = self.get_operator_in_spin_sector(self.Lindbladian.L_tot,
-                                                        tuple(sector),
-                                                        tuple(sector))
+            L_sector = self.Lindbladian.super_fermi_ops.get_subspace_object(
+                self.Lindbladian.L_tot, tuple(sector), tuple(sector))
             self.vals_sector[tuple(sector)], self.vec_l_sector[tuple(sector)],\
                 self.vec_r_sector[tuple(sector)] = \
                 ed_lind.exact_spectral_decomposition(L_sector.todense())
-
-    def set_spin_sectors_fermionic_ops(self, site=None):
-        """calculate and save the fermionic operators within the accessable
-        spin sectors. The spin sectors are determined in self.set_spin_sectors.
-        This reduces the dimension of the operators in liouville space.
-
-        Parameters
-        ----------
-        site : int, optional
-            Index of the desired site for which the operators are obtained,
-            by default None
-        """
-        if site is None:
-            site = int((self.nsite - 1) / 2)
-        self.spin_sector_fermi_ops = {'c': {}, 'c_tilde': {},
-                                      'cdag': {}, 'cdag_tilde': {}}
-        cdag_up_sector = {}
-        cdag_up_tilde_sector = {}
-        c_up_sector = {}
-        c_up_tilde_sector = {}
-        cdag_do_sector = {}
-        cdag_do_tilde_sector = {}
-        c_do_sector = {}
-        c_do_tilde_sector = {}
-
-        for sector in self.spin_combination:
-            sector = tuple(sector)
-            up_plus = add_sectors((1, 0), sector)
-            up_minus = add_sectors((-1, 0), sector)
-            do_plus = add_sectors((0, 1), sector)
-            do_minus = add_sectors((0, -1), sector)
-
-            if up_plus in self.spin_combination:
-                cdag_up_sector[up_plus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.cdag(site, 'up'),
-                        up_plus, sector).todense()
-                cdag_up_tilde_sector[up_plus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.cdag_tilde(site, 'up'),
-                        up_plus, sector).todense()
-
-            if up_minus in self.spin_combination:
-                c_up_sector[up_minus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.c(site, 'up'),
-                        up_minus, sector).todense()
-                c_up_tilde_sector[up_minus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.c_tilde(site, 'up'),
-                        up_minus, sector).todense()
-
-            if do_plus in self.spin_combination:
-                cdag_do_sector[do_plus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.cdag(site, 'do'),
-                        do_plus, sector).todense()
-                cdag_do_tilde_sector[do_plus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.cdag_tilde(site, 'do'),
-                        do_plus, sector).todense()
-
-            if do_minus in self.spin_combination:
-                c_do_sector[do_minus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.c(site, 'do'),
-                        do_minus, sector).todense()
-                c_do_tilde_sector[do_minus, sector] = \
-                    self.get_operator_in_spin_sector(
-                        self.Lindbladian.liouville_ops.c_tilde(site, 'do'),
-                        do_minus, sector).todense()
-
-        self.spin_sector_fermi_ops['c']['up'] = c_up_sector
-        self.spin_sector_fermi_ops['c']['do'] = c_do_sector
-        self.spin_sector_fermi_ops['c_tilde']['up'] = c_up_tilde_sector
-        self.spin_sector_fermi_ops['c_tilde']['do'] = c_do_tilde_sector
-
-        self.spin_sector_fermi_ops['cdag']['up'] = cdag_up_sector
-        self.spin_sector_fermi_ops['cdag']['do'] = cdag_do_sector
-        self.spin_sector_fermi_ops['cdag_tilde']['up'] = cdag_up_tilde_sector
-        self.spin_sector_fermi_ops['cdag_tilde']['do'] = cdag_do_tilde_sector
 
     def reset_correlator_data(self):
         self.precalc_correlator = {n: {} for n in self.correlators.keys()}
         self.set_correlator_keys()
 
-    def precalculate_expectation_value(self, operator_keys, shape, n_fop,
-                                       n_time):
+    def get_operator_keys(self, contour_parameters, operator_sectors):
+
+        operator_sector_list = [operator_sectors[p[2]][p[3]] if p[2] != 'rho'
+                                else add_sectors(operator_sectors['cdag'][
+                                    p[3]],
+                                operator_sectors['c'][p[4]])
+                                for p in contour_parameters]
+        sectors = [(0, 0), *operator_sector_list, (0, 0)]
+
+        operators = []
+        for p in contour_parameters:
+            tmp = None
+            if p[1] >= 0:
+                if p[2] == 'rho':
+                    tmp = (p[2], p[3], p[4])
+                else:
+                    tmp = (p[2], p[3])
+            else:
+                if p[2] == 'rho':
+                    tmp = (p[2] + "_tilde", p[3], p[4])
+                else:
+                    tmp = (
+                        self.Lindbladian.super_fermi_ops.tilde_operator_name[
+                            p[2]], p[3])
+            operators.append(tmp)
+        tmp = (0, 0)
+        spin_sector_transitions = []
+        for s in sectors[::-1][1:]:
+            sum = add_sectors(s, tmp)
+            spin_sector_transitions.append((sum, tmp))
+            tmp = sum
+        spin_sector_transitions = spin_sector_transitions[::-1][1:]
+        operator_keys = tuple(map(lambda x: (*x[0], x[1]),
+                                  zip(operators, spin_sector_transitions)))
+        assert spin_sector_transitions[0][0] == (0, 0), \
+            ("The number of creation and annihilation have to be the same per"
+             + "spin.")
+        return operator_keys
+
+    def precalculate_expectation_value(self, sites, operator_keys, shape,
+                                       n_fop, n_time):
         """Calculate the expectation value of a given set of operators with
         regards to the steady state density of states and at time zero. It is
         calculated by insertion of the Lindbladian eigenbasis and saved as a
@@ -388,30 +264,37 @@ class Correlators:
             vec_r_sector = []
             vec_l_sector = []
             if n_time < 5:
-                for op_key in operator_keys:
+                for site, op_key in zip(sites, operator_keys):
                     tmp = None
                     if op_key[0] != 'rho' and op_key[0] != 'rho_tilde':
-                        tmp = (self.spin_sector_fermi_ops[op_key[0]]
-                               [op_key[1]][op_key[2]])
+                        tmp = ((self.Lindbladian.super_fermi_ops
+                                ).spin_sector_fermi_ops[site][op_key[0]]
+                               [op_key[1]][op_key[2]].todense() *
+                               (self.Lindbladian.super_fermi_ops
+                                ).tilde_operator_sign[op_key[0]])
                     else:
                         if op_key[0] == 'rho':
                             middle_sector = add_sectors(
                                 self.operator_sectors['c'][op_key[2]],
                                 op_key[3][1])
                             tmp = (
-                                self.spin_sector_fermi_ops['cdag'][op_key[1]]
-                                [op_key[3][0], middle_sector]).dot(
-                                self.spin_sector_fermi_ops['c']
-                                [op_key[2]][middle_sector, op_key[3][1]]
-                            )
+                                (self.Lindbladian.super_fermi_ops
+                                 ).spin_sector_fermi_ops[site[0]]['cdag'][
+                                     op_key[1]][op_key[3][0], middle_sector]
+                            ).dot((self.Lindbladian.super_fermi_ops
+                                   ).spin_sector_fermi_ops[site[1]]['c']
+                                  [op_key[2]][middle_sector, op_key[3][1]]
+                                  )
                         elif op_key[0] == 'rho_tilde':
                             middle_sector = add_sectors(
                                 self.operator_sectors['cdag'][op_key[1]],
                                 op_key[3][1])
                             tmp = (
-                                self.spin_sector_fermi_ops['c_tilde']
+                                (self.Lindbladian.super_fermi_ops
+                                 ).spin_sector_fermi_ops['cdag_tilde']
                                 [op_key[2]][op_key[3][0], middle_sector]).dot(
-                                self.spin_sector_fermi_ops['cdag_tilde']
+                                (self.Lindbladian.super_fermi_ops
+                                 ).spin_sector_fermi_ops['c_tilde']
                                 [op_key[1]][middle_sector, op_key[3][1]]
                             )
                     spin_sector_fermi_ops.append(tmp)
@@ -463,54 +346,30 @@ class Correlators:
                     vec_l_sector,
                     self.rho_stready_state, n_time)
 
-    def set_spin_components(self, spin_components=None):
-        if spin_components is None:
-            self.spin_indices = {2: [("up", "up")],
-                                 3: [('up', 'up', ('up', 'up')), ('up', 'up', ('do', 'do')),
-                                 ('up', 'do', ('up', 'do')),
-                                 ('do', 'up', ('do', 'up'))],
-                                 4: [('up', 'up', 'up', 'up'),
-                                 ('up', 'do', 'up', 'do')]}
-        else:
-            self.spin_indices = spin_components
-
-    def set_correlator_keys(self, correlators=None):
-        if correlators is not None:
-            self.correlators = {n: {} for n in correlators}
-        else:
-            self.correlators = {n: {} for n in self.correlators.keys()}
-        self.precalc_correlator_keys = {}
-
-        for n in self.correlators.keys():
-            if n == 'trilex':
-                m = 3
-            else:
-                m = n
-            self.precalc_correlator_keys[n] = {}
-            for s in self.spin_indices[m]:
-                self.correlators[n][s] = {}
-                self.precalc_correlator_keys[n][s] = {}
-
-                for comp in get_branch_combinations(m):
-                    self.correlators[n][s][comp] = {}
-
-    def get_single_particle_green(self, component, freq, spin=('up', 'up')):
+    def get_single_particle_green(self, component, freq, sites=None,
+                                  spin=('up', 'up')):
+        if sites is None:
+            site = int(
+                (self.Lindbladian.super_fermi_ops.fock_ops.nsite - 1) / 2)
+            sites = (site, site)
         permutation_sign = None
         operators = None
 
         if component == (1, 0):
             permutation_sign = 1 + 0j
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((0, 0, 'cdag', spin[1]), (1, -1, 'c', spin[0])),
-                          ((1, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1]))]]
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((0, 0, 'cdag', spin[1]),
+                                         (1, -1, 'c', spin[0])),
+                                        ((1, 0, 'c', spin[0]),
+                                         (0, 0, 'cdag', spin[1]))]]
 
         elif component == (0, 1):
             permutation_sign = -1 + 0j
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((1, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0])),
-                          ((0, 0, 'c', spin[0]), (1, -1, 'cdag', spin[1]))]]
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((1, 0, 'cdag', spin[1]),
+                                         (0, 0, 'c', spin[0])),
+                                        ((0, 0, 'c', spin[0]),
+                                         (1, -1, 'cdag', spin[1]))]]
 
         tensor_shapes = [tuple([self.vals_sector[op_key[2][1]].shape[0]
                                 if op_key[0] != 'rho' else
@@ -527,175 +386,225 @@ class Correlators:
         n_time = 2
         precalc_correlator = []
         for op_key, tensor_shape in zip(operators, tensor_shapes):
-            self.precalculate_expectation_value(op_key, tensor_shape,
+            self.precalculate_expectation_value(sites, op_key, tensor_shape,
                                                 n_fop, n_time)
             precalc_correlator.append(self.precalc_correlator[2][op_key])
         precalc_correlator = tuple(precalc_correlator)
 
-        green_component = np.zeros(freq.shape, dtype=np.complex128)
-        _get_two_point_correlator_frequency(green_component, freq,
-                                            precalc_correlator, vals_sector,
-                                            tensor_shapes,
-                                            n_fop, permutation_sign)
-        return green_component * (0.5)
+        green_component_plus = np.zeros(freq.shape, dtype=np.complex128)
+        green_component_minus = np.zeros(freq.shape, dtype=np.complex128)
+        if component == (1, 0):
+            _get_two_point_correlator_frequency(green_component_plus,
+                                                green_component_minus, freq,
+                                                precalc_correlator,
+                                                vals_sector,
+                                                tensor_shapes,
+                                                n_fop, permutation_sign)
+        elif component == (0, 1):
+            _get_two_point_correlator_frequency(green_component_plus,
+                                                green_component_minus, freq,
+                                                precalc_correlator,
+                                                vals_sector,
+                                                tensor_shapes,
+                                                n_fop, permutation_sign)
+        return green_component_plus, green_component_minus
 
-    def get_three_point_vertex_components(self, component, freq,
-                                          spin=('up', 'up', ('up', 'up')),
-                                          permutation_sign=(-1 + 0j, 1 + 0j, 1 + 0j), prefactor=-1 + 0j):
+    def get_three_point_vertex_components(
+            self, component, freq, sites=None, spin=('up', 'up', ('up', 'up')),
+            permutation_sign=(-1 + 0j, 1 + 0j, 1 + 0j), prefactor=-1 + 0j):
         operators = None
-
+        if sites is None:
+            site = int(
+                (self.Lindbladian.super_fermi_ops.fock_ops.nsite - 1) / 2)
+            sites = (site, site, (site, site))
         # precalculating the expectation value
         if component == (0, 0, 0):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((0, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1])),
-                          ((0, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((0, 0, 'c', spin[0]),
+                                         (0, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0],
+                                         spin[2][1])),
+                                        ((0, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0],
+                                         spin[2][1]),
+                                         (0, 0, 'cdag', spin[1])),
 
-                          ((0, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1])),
-                          ((0, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0])),
+                                        ((0, 0, 'cdag', spin[1]), (0, 0, 'c',
+                                                                   spin[0]),
+                                         (0, 0, 'rho', spin[2][0],
+                                         spin[2][1])),
+                                        ((0, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0])),
 
-                          ((0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1])),
-                          ((0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0]))]]
+                                        ((0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0]), (0, 0, 'cdag',
+                                                                spin[1])),
+                                        ((0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'cdag', spin[1]), (0, 0, 'c',
+                                                                   spin[0]))]]
 
         elif component == (1, 0, 0):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((1, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1])),
-                          ((0, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, -1, 'c', spin[0])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((1, 0, 'c', spin[0]),
+                                         (0, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0],
+                                         spin[2][1])),
+                                        ((0, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, -1, 'c', spin[0])),
 
-                          ((1, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1])),
-                          ((0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1]), (1, -1, 'c', spin[0]))]]
+                                        ((1, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'cdag', spin[1])),
+                                        ((0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'cdag', spin[1]), (1, -1, 'c',
+                                         spin[0]))]]
 
         elif component == (0, 1, 0):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((1, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1])),
-                          ((0, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, -1, 'cdag', spin[1])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((1, 0, 'cdag', spin[1]),
+                                         (0, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0],
+                                         spin[2][1])),
+                                        ((0, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, -1, 'cdag', spin[1])),
 
-                          ((1, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0])),
-                          ((0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0]), (1, -1, 'cdag', spin[1]))]]
+                                        ((1, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0])),
+                                        ((0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0]), (1, -1, 'cdag',
+                                                                spin[1]))]]
 
         elif component == (0, 0, 1):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1])),
-                          ((0, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1]),
-                           (1, -1, 'rho', spin[2][0], spin[2][1])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0]),
+                                         (0, 0, 'cdag', spin[1])),
+                                        ((0, 0, 'c', spin[0]),
+                                        (0, 0, 'cdag', spin[1]),
+                                         (1, -1, 'rho', spin[2][0],
+                                         spin[2][1])),
 
-                          ((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0])),
-                          ((0, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0]),
-                           (1, -1, 'rho', spin[2][0], spin[2][1]))]]
+                                        ((1, 0, 'rho', spin[2][0],
+                                          spin[2][1]),
+                                         (0, 0, 'cdag', spin[1]),
+                                         (0, 0, 'c', spin[0])),
+                                        ((0, 0, 'cdag', spin[1]),
+                                        (0, 0, 'c', spin[0]),
+                                         (1, -1, 'rho', spin[2][0],
+                                         spin[2][1]))]]
 
         elif component == (1, 1, 0):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((1, 0, 'c', spin[0]), (1, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1])),
-                          ((1, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, -1, 'c', spin[0])),
-                          ((1, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, -1, 'c', spin[0])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((1, 0, 'c', spin[0]),
+                                         (1, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0],
+                                          spin[2][1])),
+                                        ((1, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, -1, 'c', spin[0])),
+                                        ((1, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, -1, 'c', spin[0])),
 
-                          ((1, 0, 'cdag', spin[1]), (1, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1])),
-                          ((1, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, -1, 'cdag', spin[1])),
-                          ((1, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, -1, 'cdag', spin[1]))]]
+                                        ((1, 0, 'cdag', spin[1]),
+                                         (1, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0],
+                                            spin[2][1])),
+                                        ((1, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, -1, 'cdag', spin[1])),
+                                        ((1, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, -1, 'cdag', spin[1]))]]
 
         elif component == (1, 0, 1):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((1, 0, 'c', spin[0]),
-                           (1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1])),
-                          ((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1]), (1, -1, 'c', spin[0])),
-                          ((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1]), (1, -1, 'c', spin[0])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((1, 0, 'c', spin[0]),
+                                         (1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'cdag', spin[1])),
+                                        ((1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'cdag', spin[1]),
+                                         (1, -1, 'c', spin[0])),
+                                        ((1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'cdag', spin[1]),
+                                         (1, -1, 'c', spin[0])),
 
-                          ((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1])),
-                          ((1, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1]),
-                           (1, -1, 'rho', spin[2][0], spin[2][1])),
-                          ((1, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1]),
-                           (1, -1, 'rho', spin[2][0], spin[2][1]))]]
+                                        ((1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, 0, 'c', spin[0]),
+                                         (0, 0, 'cdag', spin[1])),
+                                        ((1, 0, 'c', spin[0]),
+                                        (0, 0, 'cdag', spin[1]),
+                                         (1, -1, 'rho', spin[2][0],
+                                         spin[2][1])),
+                                        ((1, 0, 'c', spin[0]),
+                                        (0, 0, 'cdag', spin[1]),
+                                         (1, -1, 'rho', spin[2][0],
+                                         spin[2][1]))]]
 
         elif component == (0, 1, 1):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((1, 0, 'cdag', spin[1]),
-                           (1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0])),
-                          ((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0]), (1, -1, 'cdag', spin[1])),
-                          ((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0]), (1, -1, 'cdag', spin[1])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((1, 0, 'cdag', spin[1]),
+                                         (1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0])),
+                                        ((1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0]),
+                                         (1, -1, 'cdag', spin[1])),
+                                        ((1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0]),
+                                         (1, -1, 'cdag', spin[1])),
 
-                          ((1, 0, 'rho', spin[2][0], spin[2][1]),
-                           (1, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0])),
-                          ((1, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0]),
-                           (1, -1, 'rho', spin[2][0], spin[2][1])),
-                          ((1, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0]),
-                           (1, -1, 'rho', spin[2][0], spin[2][1]))]]
+                                        ((1, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (1, 0, 'cdag', spin[1]),
+                                         (0, 0, 'c', spin[0])),
+                                        ((1, 0, 'cdag', spin[1]),
+                                        (0, 0, 'c', spin[0]),
+                                         (1, -1, 'rho', spin[2][0],
+                                         spin[2][1])),
+                                        ((1, 0, 'cdag', spin[1]),
+                                        (0, 0, 'c', spin[0]),
+                                         (1, -1, 'rho', spin[2][0],
+                                         spin[2][1]))]]
 
         elif component == (1, 1, 1):
-            operators = [get_operator_keys(op_key, self.operator_sectors) for
-                         op_key in
-                         [((0, 0, 'cdag', spin[1]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, -1, 'c', spin[0])),
-                          ((0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'cdag', spin[1]), (0, -1, 'c', spin[0])),
+            operators = [self.get_operator_keys(op_key, self.operator_sectors)
+                         for op_key in [((0, 0, 'cdag', spin[1]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, -1, 'c', spin[0])),
+                                        ((0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'cdag', spin[1]),
+                                         (0, -1, 'c', spin[0])),
 
-                          ((0, 0, 'c', spin[0]),
-                           (0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, -1, 'cdag', spin[1])),
-                          ((0, 0, 'rho', spin[2][0], spin[2][1]),
-                           (0, 0, 'c', spin[0]),
-                           (0, -1, 'cdag', spin[1])),
+                                        ((0, 0, 'c', spin[0]),
+                                         (0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, -1, 'cdag', spin[1])),
+                                        ((0, 0, 'rho', spin[2][0], spin[2][1]),
+                                         (0, 0, 'c', spin[0]),
+                                         (0, -1, 'cdag', spin[1])),
 
-                          ((0, 0, 'c', spin[0]), (0, 0, 'cdag', spin[1]),
-                           (0, -1, 'rho', spin[2][0], spin[2][1])),
-                          ((0, 0, 'cdag', spin[1]), (0, 0, 'c', spin[0]),
-                           (0, -1, 'rho', spin[2][0], spin[2][1]))]]
+                                        ((0, 0, 'c', spin[0]),
+                                        (0, 0, 'cdag', spin[1]),
+                                         (0, -1, 'rho', spin[2][0],
+                                         spin[2][1])),
+                                        ((0, 0, 'cdag', spin[1]),
+                                        (0, 0, 'c', spin[0]),
+                                         (0, -1, 'rho', spin[2][0],
+                                         spin[2][1]))]]
 
         tensor_shapes = [tuple([self.vals_sector[op_key[2][1]].shape[0]
                                 if op_key[0] != 'rho' else
                                 self.vals_sector[op_key[3][1]].shape[0]
                                 for op_key in op_keys[:-1]]) for op_keys
                          in operators]
-        vals_sectors = [tuple([self.vals_sector[op_key[2][0]] if
-                               (op_key[0] != 'rho' and op_key[0] != 'rho_tilde')
-                               else self.vals_sector[op_key[3][0]]
-                               for op_key in op_keys[1:]]) for op_keys
-                        in operators]
+        vals_sectors = [
+            tuple([self.vals_sector[op_key[2][0]] if
+                   (op_key[0] != 'rho' and op_key[0] != 'rho_tilde')
+                   else self.vals_sector[op_key[3][0]]
+                   for op_key in op_keys[1:]]) for op_keys
+            in operators]
 
         n_fop = 4
         n_time = 3
@@ -712,63 +621,84 @@ class Correlators:
 
         if component == (0, 0, 0):
             _get_three_point_correlator_frequency_mmm(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         elif component == (1, 0, 0):
             _get_three_point_correlator_frequency_pmm(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         elif component == (0, 1, 0):
             _get_three_point_correlator_frequency_mpm(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         elif component == (0, 0, 1):
             _get_three_point_correlator_frequency_mmp(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         elif component == (1, 1, 0):
             _get_three_point_correlator_frequency_ppm(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         elif component == (1, 0, 1):
             _get_three_point_correlator_frequency_pmp(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         elif component == (0, 1, 1):
             _get_three_point_correlator_frequency_mpp(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         elif component == (1, 1, 1):
             _get_three_point_correlator_frequency_ppp(green_component, freq,
-                                                      precalc_correlators, vals_sectors,
+                                                      precalc_correlators,
+                                                      vals_sectors,
                                                       tensor_shapes,
-                                                      permutation_sign, prefactor)
+                                                      permutation_sign,
+                                                      prefactor)
         return green_component
 
     def get_three_point_vertex(self, freq,
                                spin=('up', 'up', ('up', 'up')),
-                               permutation_sign=(-1 + 0j, 1 + 0j, 1 + 0j), prefactor=-1 + 0j,
+                               permutation_sign=(-1 + 0j, 1 + 0j, 1 + 0j),
+                               prefactor=-1 + 0j,
                                return_=False):
         if not return_:
 
             for component in self.correlators['trilex'][spin]:
                 self.correlators['trilex'][spin][component] = \
-                    self.get_three_point_vertex_components(component, freq,
-                                                           permutation_sign=permutation_sign, prefactor=prefactor)
+                    self.get_three_point_vertex_components(
+                        component, freq, permutation_sign=permutation_sign,
+                        prefactor=prefactor)
         else:
-            three_point_vertex = np.zeros((freq.shape[0], freq.shape[0], 2, 2, 2),
-                                          dtype=np.complex128)
-            for i, j, k in self.correlators['trilex'][("up", "up", ("up", "up"))]:
+            three_point_vertex = np.zeros(
+                (freq.shape[0], freq.shape[0], 2, 2, 2),
+                dtype=np.complex128)
+            for i, j, k in self.correlators['trilex'][
+                    ("up", "up", ("up", "up"))]:
                 three_point_vertex[:, :, i, j, k] = \
-                    self.get_three_point_vertex_components((i, j, k), freq, spin,
-                                                           permutation_sign=permutation_sign, prefactor=prefactor)
+                    self.get_three_point_vertex_components(
+                        (i, j, k), freq, spin,
+                    permutation_sign=permutation_sign, prefactor=prefactor)
 
             return three_point_vertex
 
@@ -803,7 +733,8 @@ class Correlators:
                         n_correlator_symmetrie[tuple(comb_symmetric)] = comb
             if n == 2:
                 choose_components([((1, 1), (0, 0)), ((1, 0), (0, 1)),
-                                   ((0, 1), (1, 0)), ((0, 0), (1, 1))], n_correlator_symmetrie)
+                                   ((0, 1), (1, 0)), ((0, 0), (1, 1))],
+                                  n_correlator_symmetrie)
             if n == 3 and trilex:
                 self.contour_symmetries['trilex'] = \
                     n_correlator_symmetrie.copy()
@@ -812,29 +743,53 @@ class Correlators:
 
 
 @njit(parallel=True, cache=True)
-def _get_two_point_correlator_frequency(green_component, freq,
+def _get_two_point_correlator_frequency(green_component_plus,
+                                        green_component_minus, freq,
                                         precalc_correlators, vals_sectors,
                                         tensor_shapes,
                                         n_operator, permutation_sign):
 
     for i in prange(len(freq)):
-        G1 = 0 + 0j
-        G2 = 0 + 0j
-        for n in prange(tensor_shapes[0][0]):
-            G1 += (precalc_correlators[0][n] /
-                   ((1j * freq[i] + vals_sectors[0][n])))
-        for n in prange(tensor_shapes[1][0]):
-            G2 += (precalc_correlators[1][n] /
-                   ((1j * freq[i] - vals_sectors[1][n])))
+        G_plus = 0 + 0j
+        G_minus = 0 + 0j
 
-        green_component[i] = (G1 - G2) * \
-            ((-1j)**(n_operator // 2)) * permutation_sign
-    # return green_component
+        for n in prange(tensor_shapes[1][0]):
+            G_plus += (precalc_correlators[1][n] /
+                       ((1j * freq[i] + vals_sectors[1][n])))
+
+        for n in prange(tensor_shapes[0][0]):
+            G_minus += (precalc_correlators[0][n] /
+                        ((1j * freq[i] - vals_sectors[0][n])))
+
+        green_component_plus[i] = 1j * G_plus * permutation_sign
+        green_component_minus[i] = -1j * G_minus * permutation_sign
+
+
+# @njit(parallel=True, cache=True)
+# def _get_two_point_correlator_frequency_mp(green_component, freq,
+#                                            precalc_correlators, vals_sectors,
+#                                            tensor_shapes,
+#                                            n_operator, permutation_sign):
+
+#     for i in prange(len(freq)):
+#         G1 = 0 + 0j
+#         G2 = 0 + 0j
+#         for n in prange(tensor_shapes[0][0]):
+#             G1 += (precalc_correlators[0][n] /
+#                    ((1j * freq[i] - vals_sectors[0][n])))
+#         for n in prange(tensor_shapes[1][0]):
+#             G2 += (precalc_correlators[1][n] /
+#                    ((1j * freq[i] + vals_sectors[1][n])))
+
+#         green_component[i] = (G1 - G2) * \
+#             ((-1j)) * permutation_sign
+#     # return green_component
 
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_mmm(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
                                               permutation_sign, prefactor):
     for i in prange(len(freq)):
@@ -886,18 +841,22 @@ def _get_three_point_correlator_frequency_mmm(green_component, freq,
                 L_n = vals_sectors[5][0][n]
                 for m in prange(tensor_shapes[5][1]):
                     L_m = vals_sectors[5][1][m]
-                    G += prefactor * permutation_sign[1] * permutation_sign[2]\
-                        * permutation_sign[0] * precalc_correlators[5][n, m]\
-                        * (1 / ((1j * w1 - L_n - L_m) * (1j * (w1 + w2) - L_n)))
+                    G += prefactor * permutation_sign[1] \
+                        * permutation_sign[2] * permutation_sign[0] \
+                        * precalc_correlators[5][n, m]\
+                        * (1 / ((1j * w1 - L_n - L_m) * (1j * (w1 + w2) - L_n))
+                           )
 
             green_component[i, j] = G
 
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_pmm(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
-                                              permutation_sign, prefactor):
+                                              permutation_sign,
+                                              prefactor):
     for i in prange(len(freq)):
         w1 = freq[i]
         for j in prange(len(freq)):
@@ -939,9 +898,11 @@ def _get_three_point_correlator_frequency_pmm(green_component, freq,
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_mpm(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
-                                              permutation_sign, prefactor):
+                                              permutation_sign,
+                                              prefactor):
     for i in prange(len(freq)):
         w1 = freq[i]
         for j in prange(len(freq)):
@@ -987,9 +948,11 @@ def _get_three_point_correlator_frequency_mpm(green_component, freq,
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_mmp(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
-                                              permutation_sign, prefactor):
+                                              permutation_sign,
+                                              prefactor):
     for i in prange(len(freq)):
         w1 = freq[i]
         for j in prange(len(freq)):
@@ -1037,9 +1000,11 @@ def _get_three_point_correlator_frequency_mmp(green_component, freq,
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_ppm(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
-                                              permutation_sign, prefactor):
+                                              permutation_sign,
+                                              prefactor):
     for i in prange(len(freq)):
         w1 = freq[i]
         for j in prange(len(freq)):
@@ -1065,7 +1030,8 @@ def _get_three_point_correlator_frequency_ppm(green_component, freq,
                 for m in prange(tensor_shapes[2][1]):
                     L_m = vals_sectors[2][1][m]
                     G += prefactor * precalc_correlators[2][n, m]\
-                        * ((1 / (1j * w1 - L_n - L_m)) - (1 / (1j * (w1 + w2) - L_m))
+                        * ((1 / (1j * w1 - L_n - L_m))
+                           - (1 / (1j * (w1 + w2) - L_m))
                            ) * (1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[3][0]):
@@ -1074,7 +1040,8 @@ def _get_three_point_correlator_frequency_ppm(green_component, freq,
                     L_m = vals_sectors[3][1][m]
                     G += prefactor * permutation_sign[0]\
                         * precalc_correlators[3][n, m]\
-                        * ((1 / (1j * w1 + L_m)) - (1 / (1j * (w1 + w2) + L_n + L_m))
+                        * ((1 / (1j * w1 + L_m))
+                           - (1 / (1j * (w1 + w2) + L_n + L_m))
                            ) * (1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[4][0]):
@@ -1098,9 +1065,11 @@ def _get_three_point_correlator_frequency_ppm(green_component, freq,
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_pmp(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
-                                              permutation_sign, prefactor):
+                                              permutation_sign,
+                                              prefactor):
     for i in prange(len(freq)):
         w1 = freq[i]
         for j in prange(len(freq)):
@@ -1121,7 +1090,8 @@ def _get_three_point_correlator_frequency_pmp(green_component, freq,
                     L_m = vals_sectors[1][1][m]
                     G += prefactor * permutation_sign[2]\
                         * precalc_correlators[1][n, m]\
-                        * ((1 / (1j * w1 - L_n - L_m)) - (1 / (1j * (w1 + w2) - L_n))
+                        * ((1 / (1j * w1 - L_n - L_m))
+                           - (1 / (1j * (w1 + w2) - L_n))
                            ) * (1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[2][0]):
@@ -1146,7 +1116,8 @@ def _get_three_point_correlator_frequency_pmp(green_component, freq,
                     L_m = vals_sectors[4][1][m]
                     G += prefactor * permutation_sign[2] * permutation_sign[1]\
                         * precalc_correlators[4][n, m]\
-                        * ((1 / (1j * w1 + L_n)) - (1 / (1j * (w1 + w2) + L_n + L_m))
+                        * ((1 / (1j * w1 + L_n))
+                           - (1 / (1j * (w1 + w2) + L_n + L_m))
                            ) * (1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[5][0]):
@@ -1162,9 +1133,11 @@ def _get_three_point_correlator_frequency_pmp(green_component, freq,
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_mpp(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
-                                              permutation_sign, prefactor):
+                                              permutation_sign,
+                                              prefactor):
     for i in prange(len(freq)):
         w1 = freq[i]
         for j in prange(len(freq)):
@@ -1175,9 +1148,10 @@ def _get_three_point_correlator_frequency_mpp(green_component, freq,
                 L_n = vals_sectors[0][0][n]
                 for m in range(tensor_shapes[0][1]):
                     L_m = vals_sectors[0][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * precalc_correlators[0][n, m]\
-                        * ((1 / (1j * w1 - L_n - L_m)) - (1 / (1j * (w1 + w2) - L_m))
+                    G += prefactor * permutation_sign[0] \
+                        * permutation_sign[1] * precalc_correlators[0][n, m]\
+                        * ((1 / (1j * w1 - L_n - L_m))
+                           - (1 / (1j * (w1 + w2) - L_m))
                            ) * (1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[1][0]):
@@ -1186,7 +1160,8 @@ def _get_three_point_correlator_frequency_mpp(green_component, freq,
                     L_m = vals_sectors[1][1][m]
                     G += prefactor * permutation_sign[0] * permutation_sign[1]\
                         * precalc_correlators[1][n, m]\
-                        * (1 / (1j * (w1 + w2) - L_n)) * (1 / (1j * w2 - L_n - L_m))
+                        * (1 / (1j * (w1 + w2) - L_n)) * (
+                            1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
@@ -1210,7 +1185,8 @@ def _get_three_point_correlator_frequency_mpp(green_component, freq,
                     L_m = vals_sectors[4][1][m]
                     G += prefactor * permutation_sign[0] * permutation_sign[1]\
                         * permutation_sign[2] * precalc_correlators[4][n, m]\
-                        * (1 / (1j * (w1 + w2) + L_n + L_m)) * (1 / (1j * w2 + L_n))
+                        * (1 / (1j * (w1 + w2) + L_n + L_m)) * (
+                            1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[5][0]):
                 L_n = vals_sectors[5][0][n]
@@ -1218,7 +1194,8 @@ def _get_three_point_correlator_frequency_mpp(green_component, freq,
                     L_m = vals_sectors[5][1][m]
                     G += prefactor * permutation_sign[0] * permutation_sign[1]\
                         * permutation_sign[2] * precalc_correlators[5][n, m]\
-                        * ((1 / (1j * w1 + L_m)) - (1 / (1j * (w1 + w2) + L_n + L_m))
+                        * ((1 / (1j * w1 + L_m)) - (
+                            1 / (1j * (w1 + w2) + L_n + L_m))
                            ) * (1 / (1j * w2 + L_n))
 
             green_component[i, j] = G
@@ -1226,9 +1203,11 @@ def _get_three_point_correlator_frequency_mpp(green_component, freq,
 
 @njit(parallel=True, cache=True)
 def _get_three_point_correlator_frequency_ppp(green_component, freq,
-                                              precalc_correlators, vals_sectors,
+                                              precalc_correlators,
+                                              vals_sectors,
                                               tensor_shapes,
-                                              permutation_sign, prefactor):
+                                              permutation_sign,
+                                              prefactor):
     for i in prange(len(freq)):
         w1 = freq[i]
         for j in prange(len(freq)):
@@ -1241,7 +1220,8 @@ def _get_three_point_correlator_frequency_ppp(green_component, freq,
                     L_m = vals_sectors[0][1][m]
                     G += prefactor\
                         * precalc_correlators[0][n, m]\
-                        * (1 / (1j * w1 - L_n - L_m)) * (1 / (1j * (w1 + w2) - L_m))
+                        * (1 / (1j * w1 - L_n - L_m)) * (
+                            1 / (1j * (w1 + w2) - L_m))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
@@ -1257,15 +1237,17 @@ def _get_three_point_correlator_frequency_ppp(green_component, freq,
                     L_m = vals_sectors[2][1][m]
                     G += prefactor * permutation_sign[0]\
                         * precalc_correlators[2][n, m]\
-                        * (1 / (1j * (w1 + w2) - L_m)) * (1 / (1j * w2 - L_n - L_m))
+                        * (1 / (1j * (w1 + w2) - L_m)) * (
+                            1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
                 for m in prange(tensor_shapes[3][1]):
                     L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * precalc_correlators[3][n, m]\
-                        * (-1 / (1j * w1 + L_m)) * (-1 / (1j * w2 - L_n - L_m))
+                    G += prefactor * permutation_sign[0] \
+                        * permutation_sign[1] * precalc_correlators[3][n, m]\
+                        * (-1 / (1j * w1 + L_m)) * (
+                            -1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[4][0]):
                 L_n = vals_sectors[4][0][n]
@@ -1273,7 +1255,8 @@ def _get_three_point_correlator_frequency_ppp(green_component, freq,
                     L_m = vals_sectors[4][1][m]
                     G += prefactor * permutation_sign[1] * permutation_sign[2]\
                         * precalc_correlators[4][n, m]\
-                        * (1 / (1j * (w1 + w2) + L_n + L_m)) * (1 / (1j * w2 + L_m))
+                        * (1 / (1j * (w1 + w2) + L_n + L_m)) * (
+                            1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[5][0]):
                 L_n = vals_sectors[5][0][n]
@@ -1281,35 +1264,10 @@ def _get_three_point_correlator_frequency_ppp(green_component, freq,
                     L_m = vals_sectors[5][1][m]
                     G += prefactor * permutation_sign[0] * permutation_sign[1]\
                         * permutation_sign[2] * precalc_correlators[5][n, m]\
-                        * (1 / (1j * w1 + L_m)) * (1 / (1j * (w1 + w2) + L_n + L_m))
+                        * (1 / (1j * w1 + L_m)) * (
+                            1 / (1j * (w1 + w2) + L_n + L_m))
 
             green_component[i, j] = G
-
-# @njit(parallel=True, cache=True)
-# def _get_four_point_correlator_frequency(green_component, freq, time_direction,
-#                                          precalc_correlator, vals_sector,
-#                                          tensor_shape, sign,
-#                                          n_operator):
-
-#     for i in prange(len(freq)):
-#         for j in prange(len(freq)):
-#             for k in prange(len(freq)):
-#                 G = 0+0j
-#                 for l in range(tensor_shape[0]):
-#                     tmp1 = - \
-#                         (1./((time_direction[0]*1j*freq[i]+vals_sector[0][l])))
-#                     for n in range(tensor_shape[0]):
-#                         tmp2 = - \
-#                             (1./((time_direction[1]*1j *
-#                              freq[j]+vals_sector[1][n])))
-#                         for m in range(tensor_shape[1]):
-#                             tmp = -(tmp1 * tmp2
-#                                     * (1./((time_direction[2]*1j*freq[k]+vals_sector[2][m]))))
-
-#                             G += tmp*precalc_correlator[l, n, m]
-
-#                 green_component[i, j, k] = G*((-1j)**(n_operator//2))*sign
-#     return green_component
 
 
 @njit(parallel=True, cache=True)
@@ -1409,44 +1367,6 @@ def get_branch_combinations(n, contour_ordered=False):
     return list(map(lambda x: tuple(x), combos))
 
 
-def get_operator_keys(contour_parameters, operator_sectors):
-
-    operator_sector_list = [operator_sectors[p[2]][p[3]] if p[2] != 'rho'
-                            else add_sectors(operator_sectors['cdag'][p[3]],
-                            operator_sectors['c'][p[4]])
-                            for p in contour_parameters]
-    # print("Sectors: ", operator_sector_list)
-    sectors = [(0, 0), *operator_sector_list, (0, 0)]
-
-    operators = []
-    for p in contour_parameters:
-        tmp = None
-        if p[1] >= 0:
-            if p[2] == 'rho':
-                tmp = (p[2], p[3], p[4])
-            else:
-                tmp = (p[2], p[3])
-        else:
-            if p[2] == 'rho':
-                tmp = (p[2] + "_tilde", p[3], p[4])
-            else:
-                tmp = (p[2] + "_tilde", p[3])
-        operators.append(tmp)
-    # print("Operators: ", operators)
-    tmp = (0, 0)
-    spin_sector_transitions = []
-    for s in sectors[::-1][1:]:
-        sum = add_sectors(s, tmp)
-        spin_sector_transitions.append((sum, tmp))
-        tmp = sum
-    spin_sector_transitions = spin_sector_transitions[::-1][1:]
-    operator_keys = tuple(map(lambda x: (*x[0], x[1]),
-                              zip(operators, spin_sector_transitions)))
-    assert spin_sector_transitions[0][0] == (0, 0), \
-        "The number of creation and annihilation have to be the same per spin."
-    return operator_keys
-
-
 def add_sectors(sector1, sector2):
     return tuple([sum(x) for x in zip(sector1, sector2)])
 
@@ -1464,73 +1384,85 @@ def find_index_max_time(list_of_parameters):
 
 # %%
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
     # Set parameters
+    ws = np.linspace(-5, 5, 200)
+
     Nb = 1
     nsite = 2 * Nb + 1
-    ws = np.linspace(-5, 5, 200)
+    U_imp = 1.0
     es = np.array([1])
     ts = np.array([0.5])
-    gamma = np.array([0.2 + 0.0j, 0.0 + 0.0j, 0.1 + 0.0j])
     Us = np.zeros(nsite)
+    Us[Nb] = U_imp
+    gamma = np.array([0.2 + 0.0j, 0.0 + 0.0j, 0.1 + 0.0j])
+
+    # Initializing Lindblad class
+    spin_sector_max = 1
+    spinless = False
+    tilde_conjugationrule_phase = True
+    super_fermi_ops = sf_sub.SpinSectorDecomposition(
+        nsite, spin_sector_max, spinless=spinless,
+        tilde_conjugationrule_phase=tilde_conjugationrule_phase)
     # plt.figure()
-    for U in [0.0]:
-        Us[Nb] = U
+    L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
+    # for U in [2.0]:
 
-        # Initializing auxiliary system and E, Gamma1 and Gamma2 for a
-        # particle-hole symmetric system
-        sys = aux.AuxiliarySystem(Nb, ws)
-        sys.set_ph_symmetric_aux(es, ts, gamma)
+    # Initializing auxiliary system and E, Gamma1 and Gamma2 for a
+    # particle-hole symmetric system
+    sys = aux.AuxiliarySystem(Nb, ws)
+    sys.set_ph_symmetric_aux(es, ts, gamma)
 
-        green = fg.FrequencyGreen(sys.ws)
-        green.set_green_from_auxiliary(sys)
-        hyb_aux = green.get_self_enerqy()
+    green = fg.FrequencyGreen(sys.ws)
+    green.set_green_from_auxiliary(sys)
+    hyb_aux = green.get_self_enerqy()
 
-        # Initializing Lindblad class
-        spinless = False
-        L = lind.Lindbladian(
-            nsite, spinless, tilde_conjugationrule_phase=False)
+    # Setting unitary part of Lindbladian
+    T_mat = sys.E
+    T_mat[Nb, Nb] = -Us[Nb] / 2.0
+    # L.update(T_mat=T_mat, U_mat=Us, Gamma1=sys.Gamma1, Gamma2=sys.Gamma2)
 
-        # Setting unitary part of Lindbladian
-        T_mat = sys.E
-        T_mat[Nb, Nb] = -Us[Nb] / 2.0
-        L.set_unitay_part(T_mat=T_mat, U_mat=Us)
+    # Setting dissipative part of Lindbladian
+    # L.set_dissipation(sys.Gamma1, sys.Gamma2)
+    print("after setting dissipator")
+    # Setting total Lindbladian
+    # L.set_total_linbladian()
 
-        # Setting dissipative part of Lindbladian
-        L.set_dissipation(sys.Gamma1, sys.Gamma2, sign=1)
-        print("after setting dissipator")
-        # Setting total Lindbladian
-        L.set_total_linbladian()
+    # Setup a correlator object
+    corr = Correlators(Lindbladian=L, trilex=True)
+    corr.Lindbladian.update(T_mat=T_mat, U_mat=Us, Gamma1=sys.Gamma1,
+                            Gamma2=sys.Gamma2)
 
-        # Setup a correlator object
-        corr = Correlators(L, 2, trilex=True)
-        corr.update_model_parameter(sys.Gamma1, sys.Gamma2, T_mat, Us)
-        corr.set_rho_steady_state(set_lindblad=False)
-        corr.sectors_exact_decomposition(set_lindblad=False)
+    # corr.update_model_parameter(sys.Gamma1, sys.Gamma2, T_mat, Us)
+    corr.set_rho_steady_state(set_lindblad=False)
+    corr.sectors_exact_decomposition(set_lindblad=False)
 
-        # Calcolate Green's functions
-        G_lesser = corr.get_single_particle_green((0, 1), ws)
-        G_greater = corr.get_single_particle_green((1, 0), ws)
+    # Calcolate Green's functions
+    G_lesser_plus, G_lesser_minus = corr.get_single_particle_green(
+        (0, 1), ws)
+    G_greater_plus, G_greater_minus = corr.get_single_particle_green(
+        (1, 0), ws)
+    G_les = G_lesser_plus + G_lesser_minus
+    G_gr = G_greater_plus + G_greater_minus
+    G_R = G_greater_plus - G_lesser_plus
+    G_K = G_greater_plus + G_greater_minus + G_lesser_plus + G_lesser_minus
 
-        G_R = G_lesser - G_greater
-        G_K = np.conj(G_lesser) - G_greater - \
-            np.conj(np.conj(G_lesser) - G_greater)
+    # green2 = fg.FrequencyGreen(sys.ws, retarded=G_R, keldysh=G_K)
+    # sigma = green2.get_self_enerqy() - hyb_aux
 
-        # green2 = fg.FrequencyGreen(sys.ws, retarded=G_R, keldysh=G_K)
-        # sigma = green2.get_self_enerqy() - hyb_aux
+    # # Visualize results
 
-        # # Visualize results
-
-        # # plt.plot(sys.ws, green.retarded.imag)
-        # plt.figure()
-        # plt.plot(sys.ws, G_R.imag)
-        # plt.ylabel(r"$A(\omega)$")
-        # plt.xlabel(r"$\omega$")
-        # plt.show()
-        # plt.figure()
-        # plt.plot(sys.ws, G_K.imag)
-        # plt.ylabel(r"$A(\omega)$")
-        # plt.xlabel(r"$\omega$")
-        # plt.show()
+    # # plt.plot(sys.ws, green.retarded.imag)
+    # plt.figure()
+    # plt.plot(sys.ws, G_R.imag)
+    # plt.ylabel(r"$A(\omega)$")
+    # plt.xlabel(r"$\omega$")
+    # plt.show()
+    # plt.figure()
+    # plt.plot(sys.ws, G_K.imag)
+    # plt.ylabel(r"$A(\omega)$")
+    # plt.xlabel(r"$\omega$")
+    # plt.show()
     # plt.legend([r"$U = 0$",r"$U = 0.5$",r"$U = 1$",r"$U = 1.5$",
     #                 r"$U = 2$"])
     # plt.show()

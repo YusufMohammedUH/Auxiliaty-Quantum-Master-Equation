@@ -7,6 +7,7 @@
 import numpy as np
 import src.model_hamiltonian as ham
 import src.model_lindbladian as lind
+import src.super_fermionic_subspace as sf_op
 import src.lindbladian_exact_decomposition as ed_lind
 import matplotlib.pyplot as plt
 
@@ -18,8 +19,9 @@ U = np.zeros(nsite)
 es = np.array([0., 1.])
 
 spinless = True
+super_fermi_ops = sf_op.SubspaceDecomposition(nsite, spinless=spinless)
 # Initializing Lindblad class
-L = lind.Lindbladian(nsite, spinless,
+L = lind.Lindbladian(super_fermi_ops,
                      Dissipator=lind.Dissipator_thermal_radiation_mode)
 
 # Setting hopping matrix
@@ -73,7 +75,7 @@ L.set_unitay_part(T_mat=Tmat, U_mat=U)
 # Setting dissipative part of Lindbladian
 G1 = (0.1 * (n + 1)) * np.rot90(np.eye(nsite))
 G2 = (0.1 * (n)) * np.rot90(np.eye(nsite))
-L.set_dissipation(G1, G2,sign=1)
+L.set_dissipation(G1, G2, sign=1)
 
 # Setting total Lindbladian
 L.set_total_linbladian()
@@ -113,7 +115,7 @@ Tmat = ham.get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts)
 # Setting unitary part of Lindbladian
 L.set_unitay_part(T_mat=Tmat, U_mat=U)
 
-L.set_dissipation(G1, G2,sign=1)
+L.set_dissipation(G1, G2, sign=1)
 # Setting total Lindbladian
 L.set_total_linbladian()
 
