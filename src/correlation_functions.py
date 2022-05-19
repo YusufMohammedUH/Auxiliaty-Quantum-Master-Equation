@@ -1384,7 +1384,7 @@ def find_index_max_time(list_of_parameters):
 
 # %%
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
     # Set parameters
     ws = np.linspace(-5, 5, 200)
 

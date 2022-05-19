@@ -1,7 +1,5 @@
 # %%
 from scipy import sparse
-import src.define_super_fermionic_operators as sop
-import src.super_fermionic_subspace as sop_sub
 import src.model_hamiltonian as ham
 # TODO: Write tests
 #       Here it's probably best to reproduce papers
