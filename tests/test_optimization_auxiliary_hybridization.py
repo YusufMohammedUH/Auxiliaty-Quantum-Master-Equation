@@ -16,19 +16,16 @@ def test_const_function_values():
     aux_hyb = fg.FrequencyGreen(freq)
 
     renormalized_to_one = opt_aux.cost_function(targed_hyb, aux_hyb) == 1.0
-    print(renormalized_to_one)
     weight = 2 * np.ones(freq.shape)
 
     weight_times2 = opt_aux.cost_function(
         targed_hyb, aux_hyb, weight=weight) == 2.0
-    print(weight_times2)
     weight = np.array([2.0 * du.heaviside(w, 0) for w in freq])
 
     aux_hyb = fg.FrequencyGreen(
         freq, 1j * np.ones(freq.shape), 1j * np.ones(freq.shape))
 
     is_equal = opt_aux.cost_function(targed_hyb, aux_hyb) == 0.0
-    print(is_equal)
     assert renormalized_to_one and weight_times2 and (
         is_equal)
 

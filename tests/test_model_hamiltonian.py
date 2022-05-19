@@ -153,7 +153,6 @@ def test_general_fermionic_hamiltonian_self_adjoint():
         d = np.einsum('ijji->ij', V)
         A = np.random.rand(n, n)
         d[:] = A + A.T.conj()
-        print(np.count_nonzero(V))
         T_mat = ham.get_1D_chain_nearest_neighbor_hopping_matrix(
             n, es, ts)
         fermionic_op = op.FermionicFockOperators(n)
