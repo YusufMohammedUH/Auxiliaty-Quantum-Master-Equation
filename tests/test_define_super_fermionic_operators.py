@@ -1,8 +1,7 @@
 import pytest
-import numpy as np
-import src.define_super_fermionic_operators as sf_op
 from scipy import sparse
-import src.define_fock_space_operators as fop
+import src.super_fermionic_space.define_super_fermionic_operators as sf_op
+import src.hilber_space.define_fock_space_operators as fop
 
 
 class TestClassSuperFermionicOperatorsNoComplexPhaseSpinless:
@@ -127,7 +126,7 @@ class TestClassSuperFermionicOperatorsNoComplexPhaseSpinless:
             c_c_tilde.dot(self.fl_op.left_vacuum)
         assert correspondence_c_c.count_nonzero() == 0
 
-    def test_fock_tilde_operator_correspondence_pair_get_super_fermionic_operator(
+    def test_fock_tilde_operator_correspondence_pair_get_super_fermi_operator(
             self):
         for i in range(self.nsite):
             for j in range(self.nsite):
@@ -215,7 +214,7 @@ class TestClassSuperFermionicOperatorsNoComplexPhaseSpinless:
             cdag_c_c_cdag_tilde.dot(self.fl_op.left_vacuum)
         assert correspondence_cdag_c_c_cdag.count_nonzero() == 0
 
-    def test_fock_tilde_operator_correspondence_four_get_super_fermionic_operator(
+    def test_fock_tilde_operator_correspondence_four_get_super_fermi_operator(
             self):
         for i in range(self.nsite):
             for j in range(self.nsite):
@@ -404,7 +403,7 @@ class TestClassSuperFermionicOperatorsComplexPhaseSpinless:
             c_c_tilde.dot(self.fl_op.left_vacuum)
         assert correspondence_c_c.count_nonzero() == 0
 
-    def test_fock_tilde_operator_correspondence_pair_get_super_fermionic_operator(
+    def test_fock_tilde_operator_correspondence_pair_get_super_fermi_operator(
             self):
         for i in range(self.nsite):
             for j in range(self.nsite):
@@ -492,7 +491,7 @@ class TestClassSuperFermionicOperatorsComplexPhaseSpinless:
             cdag_c_c_cdag_tilde.dot(self.fl_op.left_vacuum)
         assert correspondence_cdag_c_c_cdag.count_nonzero() == 0
 
-    def test_fock_tilde_operator_correspondence_four_get_super_fermionic_operator(
+    def test_fock_tilde_operator_correspondence_four_get_super_fermi_operator(
             self):
         for i in range(self.nsite):
             for j in range(self.nsite):
@@ -639,12 +638,14 @@ class TestClassSuperFermionicOperatorsNoComplexPhase:
                                                 self.fl_op.c_tilde(j, s2))
                         anti_commutation_mixed_cdag_cdag_tilde = \
                             fop.anti_commutator(
-                                self.fl_op.cdag(i, s1), self.fl_op.cdag_tilde(j, s2))
+                                self.fl_op.cdag(i, s1),
+                                self.fl_op.cdag_tilde(j, s2))
 
                         if (not i == j) or (not s1 == s2):
                             assert anti_commutation_mixed_c_cdag_tilde.nnz == 0
                             assert anti_commutation_mixed_c_c_tilde.nnz == 0
-                            assert anti_commutation_mixed_cdag_cdag_tilde.nnz == 0
+                            assert \
+                                anti_commutation_mixed_cdag_cdag_tilde.nnz == 0
 
     def test_fock_tilde_operator_correspondence(self):
         n_nonzeros = 0
@@ -688,7 +689,7 @@ class TestClassSuperFermionicOperatorsNoComplexPhase:
             c_c_tilde.dot(self.fl_op.left_vacuum)
         assert correspondence_c_c.count_nonzero() == 0
 
-    def test_fock_tilde_operator_correspondence_pair_get_super_fermionic_operator(
+    def test_fock_tilde_operator_correspondence_pair_get_super_fermi_operator(
             self):
         for i in range(self.nsite):
             for j in range(self.nsite):
@@ -707,9 +708,10 @@ class TestClassSuperFermionicOperatorsNoComplexPhase:
                                 self.fl_op.fock_ops.cdag(j, s2)
                                 * self.fl_op.fock_ops.c(i, s1))
 
-                        c_c_tilde = self.fl_op.get_super_fermionic_tilde_operator(
-                            self.fl_op.fock_ops.c(j, s2)
-                            * self.fl_op.fock_ops.c(i, s1))
+                        c_c_tilde = \
+                            self.fl_op.get_super_fermionic_tilde_operator(
+                                self.fl_op.fock_ops.c(j, s2)
+                                * self.fl_op.fock_ops.c(i, s1))
 
         correspondence_cdag_c = cdag_c.dot(
             self.fl_op.left_vacuum) - \
@@ -781,7 +783,7 @@ class TestClassSuperFermionicOperatorsNoComplexPhase:
             cdag_c_c_cdag_tilde.dot(self.fl_op.left_vacuum)
         assert correspondence_cdag_c_c_cdag.count_nonzero() == 0
 
-    def test_fock_tilde_operator_correspondence_four_get_super_fermionic_operator(
+    def test_fock_tilde_operator_correspondence_four_get_super_fermi_operator(
             self):
         for i in range(self.nsite):
             for j in range(self.nsite):
@@ -792,46 +794,57 @@ class TestClassSuperFermionicOperatorsNoComplexPhase:
                                 for s3 in ["up", "do"]:
                                     for s4 in ["up", "do"]:
                                         cdag_cdag_c_c = \
-                                            self.fl_op.get_super_fermionic_operator(
+                                            (self.fl_op
+                                             ).get_super_fermionic_operator(
                                                 self.fl_op.fock_ops.cdag(i, s1)
-                                                * self.fl_op.fock_ops.cdag(j, s1)
+                                                * self.fl_op.fock_ops.cdag(
+                                                    j, s1)
                                                 * self.fl_op.fock_ops.c(k, s2)
                                                 * self.fl_op.fock_ops.c(l, s2))
 
                                         cdag_c_cdag_c = \
-                                            self.fl_op.get_super_fermionic_operator(
+                                            (self.fl_op
+                                             ).get_super_fermionic_operator(
                                                 self.fl_op.fock_ops.cdag(i, s1)
                                                 * self.fl_op.fock_ops.c(j, s1)
-                                                * self.fl_op.fock_ops.cdag(k, s2)
+                                                * self.fl_op.fock_ops.cdag(k,
+                                                                           s2)
                                                 * self.fl_op.fock_ops.c(l, s2))
 
                                         cdag_c_c_cdag = \
-                                            self.fl_op.get_super_fermionic_operator(
+                                            (self.fl_op
+                                             ).get_super_fermionic_operator(
                                                 self.fl_op.fock_ops.cdag(i, s1)
                                                 * self.fl_op.fock_ops.c(j, s1)
                                                 * self.fl_op.fock_ops.c(k, s2)
-                                                * self.fl_op.fock_ops.cdag(l, s2))
+                                                * self.fl_op.fock_ops.cdag(l,
+                                                                           s2))
 
                                         cdag_cdag_c_c_tilde = \
-                                            self.fl_op.get_super_fermionic_tilde_operator(
+                                            (self.fl_op
+                                             ).get_super_fermionic_tilde_operator(
                                                 self.fl_op.fock_ops.cdag(i, s1)
                                                 * self.fl_op.fock_ops.cdag(j, s1)
                                                 * self.fl_op.fock_ops.c(k, s2)
                                                 * self.fl_op.fock_ops.c(l, s2))
 
                                         cdag_c_cdag_c_tilde = \
-                                            self.fl_op.get_super_fermionic_tilde_operator(
+                                            (self.fl_op
+                                             ).get_super_fermionic_tilde_operator(
                                                 self.fl_op.fock_ops.cdag(i, s1)
                                                 * self.fl_op.fock_ops.c(j, s1)
-                                                * self.fl_op.fock_ops.cdag(k, s2)
+                                                * self.fl_op.fock_ops.cdag(k,
+                                                                           s2)
                                                 * self.fl_op.fock_ops.c(l, s2))
 
                                         cdag_c_c_cdag_tilde = \
-                                            self.fl_op.get_super_fermionic_tilde_operator(
+                                            (self.fl_op
+                                             ).get_super_fermionic_tilde_operator(
                                                 self.fl_op.fock_ops.cdag(i, s1)
                                                 * self.fl_op.fock_ops.c(j, s1)
                                                 * self.fl_op.fock_ops.c(k, s2)
-                                                * self.fl_op.fock_ops.cdag(l, s2))
+                                                * self.fl_op.fock_ops.cdag(l,
+                                                                           s2))
 
         correspondence_cdag_cdag_c_c = cdag_cdag_c_c.dot(
             self.fl_op.left_vacuum) - \
@@ -929,12 +942,14 @@ class TestClassSuperFermionicOperatorsComplexPhase:
                                                 self.fl_op.c_tilde(j, s2))
                         anti_commutation_mixed_cdag_cdag_tilde = \
                             fop.anti_commutator(
-                                self.fl_op.cdag(i, s1), self.fl_op.cdag_tilde(j, s2))
+                                self.fl_op.cdag(i, s1), self.fl_op.cdag_tilde(
+                                    j, s2))
 
                         if (not i == j) or (not s1 == s2):
                             assert anti_commutation_mixed_c_cdag_tilde.nnz == 0
                             assert anti_commutation_mixed_c_c_tilde.nnz == 0
-                            assert anti_commutation_mixed_cdag_cdag_tilde.nnz == 0
+                            assert \
+                                anti_commutation_mixed_cdag_cdag_tilde.nnz == 0
 
     def test_fock_tilde_operator_correspondence(self):
         n_nonzeros = 0

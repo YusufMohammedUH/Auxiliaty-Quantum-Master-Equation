@@ -20,8 +20,8 @@ def _exact_spectral_decomposition(vals, vec_r_tmp):
     Returns
     -------
     (vals, vec_l, vec_r) : tuple ((dim,),(dim, 1, dim),(dim, dim, 1))
-        Eigendecomposition of the, in general non-hermitian, complex matrix
-        Lindbladian. The first element contains the eigenvalues, the second the
+        Eigen decomposition of the, in general non-hermitian, complex matrix.
+        The first element contains the eigenvalues, the second the
         left and the third the right eigenvectors. The ith eigenvector, e.g.
         left is given by vec_l[i]. The eigenvectors are numpy.matrix, for
         convenient.
@@ -38,26 +38,25 @@ def _exact_spectral_decomposition(vals, vec_r_tmp):
     return vals, vec_l, vec_r
 
 
-def exact_spectral_decomposition(Lindbladian):
-    """Exact diagonalization of the Lindbladian, setting the attributes
+def exact_spectral_decomposition(matrix):
+    """Exact diagonalization of the matrix, setting the attributes
     vals, containing the eigen values, vec_l and vec_r containing the left
     and right eigen vectors respectively.
 
     Parameters
     ----------
 
-    Lindbladian : numpy.ndarray (dim,dim)
-        Lindbladian operator as Liouvillian matrix.
-
+    matrix : numpy.ndarray (dim,dim)
+        General non-hermitian, complex matrix
     Returns
     -------
     (vals, vec_l, vec_r) : tuple ((dim,),(dim, 1, dim),(dim, dim, 1))
-        Eigendecomposition of the, in general non-hermitian, complex matrix
-        Lindbladian. The first element contains the eigenvalues, the second the
+        Eigen decomposition of the, in general non-hermitian, complex matrix.
+        The first element contains the eigenvalues, the second the
         left and the third the right eigenvectors
     """
 
-    vals, vec_r_tmp = linalg.eig(Lindbladian)
+    vals, vec_r_tmp = linalg.eig(matrix)
 
     return _exact_spectral_decomposition(vals, vec_r_tmp)
 
@@ -65,9 +64,8 @@ def exact_spectral_decomposition(Lindbladian):
 @njit(cache=True)
 def time_propagation_all_times_exact_diagonalization(times, vec0, vals, vec_l,
                                                      vec_r):
-    """Retruns the time propagated Liouvillian vectors vec for all times
-    "times", with vec0 as starting vector, by using the supplied
-    eigendecomposition.
+    """Retruns the time propagated vector "vec0" propagated by supplying
+    eigenvectors ("vec_l","vec_r"), eigenvalues "vals" for all times "times".
 
     Parameters
     ----------
@@ -75,7 +73,7 @@ def time_propagation_all_times_exact_diagonalization(times, vec0, vals, vec_l,
         array of times for which the propagated vector is to be calculated
 
     vec0 : numpy.ndarray (dim,1)
-        Initial Liouvillian vector.
+        Initial vector.
 
     vals : numpy.ndarray (dim,)
         Eigenvalues.
@@ -89,7 +87,7 @@ def time_propagation_all_times_exact_diagonalization(times, vec0, vals, vec_l,
     Returns
     -------
     vec : numpy.ndarray (dim, dim2)
-        Time propagated Liouvillian vectors. vec[:,i] contains the time
+        Time propagated vectors. vec[:,i] contains the time
         propagated vector at time times[i]
     """
     dim = vec0.shape[0]
@@ -104,8 +102,8 @@ def time_propagation_all_times_exact_diagonalization(times, vec0, vals, vec_l,
 @njit(cache=True)
 def time_propagation_exact_diagonalization(time, vec0, vals, vec_l,
                                            vec_r):
-    """Retruns the time propagated Liouvillian vector vec, with vec0 as
-    starting vector, by using the supplied eigendecomposition.
+    """Retruns the time propagated vector "vec0" propagated by supplying
+    eigenvectors ("vec_l","vec_r"), eigenvalues "vals" for all time "time".
 
 
     Parameters
@@ -114,7 +112,7 @@ def time_propagation_exact_diagonalization(time, vec0, vals, vec_l,
         array of times for which the propagated vector is to be calculated
 
     vec0 : numpy.ndarray (dim,1)
-        Initial Liouvillian vector.
+        Initial vector.
 
     vals : numpy.ndarray (dim,)
         Eigenvalues.
@@ -128,7 +126,7 @@ def time_propagation_exact_diagonalization(time, vec0, vals, vec_l,
     Returns
     -------
     vec : numpy.ndarray (dim, dim2)
-        Time propagated Liouvillian vectors. vec[:,i] contains the time
+        Time propagated vectors. vec[:,i] contains the time
         propagated vector at time times[i]
     """
     dim = vec0.shape[0]
@@ -142,7 +140,7 @@ def time_propagation_exact_diagonalization(time, vec0, vals, vec_l,
 @njit(cache=True)
 def time_evolution_operator(time, vals, vec_l, vec_r):
     """Retruns the time evolution operator for given time "time", by
-    using the supplied eigendecomposition.
+    using the supplied eigen decomposition.
 
     Parameters
     ----------
@@ -162,7 +160,7 @@ def time_evolution_operator(time, vals, vec_l, vec_r):
     -------
     out : numpy.ndarray (dim, dim)
         Time propagation operator, for given time, from
-        eigendecomposition supplied by as function arguments.
+        eigen decomposition supplied by as function arguments.
     """
 
     dim = vals.shape[0]

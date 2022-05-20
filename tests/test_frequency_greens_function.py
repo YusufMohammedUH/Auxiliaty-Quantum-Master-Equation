@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
-from src import frequency_greens_function as fg
-from src import dos_util as du
+from src.greens_function import frequency_greens_function as fg
+from src.greens_function import dos_util as du
 
 
 def test_FrequencySystem_freq_raise_TypeError():

@@ -1,7 +1,7 @@
 # %%
 import numpy as np
 from scipy import sparse
-import src.define_fock_space_operators as fop
+import src.hilber_space.define_fock_space_operators as fop
 
 
 class SuperFermionicOperators:

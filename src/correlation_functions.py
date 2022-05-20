@@ -5,13 +5,31 @@
 import itertools
 import numpy as np
 from numba import njit, prange
-import src.model_lindbladian as lind
-import src.super_fermionic_subspace as sf_sub
-import src.lindbladian_exact_decomposition as ed_lind
-import src.auxiliary_system_parameter as aux
-import src.frequency_greens_function as fg
+import src.super_fermionic_space.model_lindbladian as lind
+import src.super_fermionic_space.super_fermionic_subspace as sf_sub
+import src.exact_decomposition as ed_lind
+import src.auxiliary_mapping.auxiliary_system_parameter as aux
+import src.greens_function.frequency_greens_function as fg
 
 # XXX: works only for a single impurity site of interest
+# TODO: Restructure:
+#       - Correlators should be a interface class
+#       - a Solver should be supplied to the class:
+#               i)  getting the steady state density of state
+#               ii) get correlators: i)   ED
+#                                    ii)  Lanczos/Arnoldi
+#                                    iii) Tensornetwork/MPS/DMRG
+#
+#           -> should the solvers be children of the correlator class or
+#              should the correlator have an attribute
+#
+#       - should should it do:
+#           - have subspace Lindbladian
+#           - have the subspace creator and annihilator
+#           - set everything before solving expectation values
+#               - ordering and prefactors of expectation values
+#               - sectors
+#       - The rest should be moved in a ED solver class which
 
 
 class Correlators:
@@ -61,23 +79,6 @@ class Correlators:
 
         self.set_correlator_keys(correlators)
 
-    def set_lindbladian(self, sign=1):
-        """Set up the Lindbladian
-
-        Parameters
-        ----------
-        sign : int (-1 or 1)
-            -1 if the Lindbladian describes the time evolution of a single
-            fermionic operator and with a dissipator describing a single
-            electron dissipation, 1 otherwise.
-        """
-        assert np.abs(sign) == 1
-        self.sign = sign
-        self.Lindbladian.set_unitay_part(self.T_mat, self.U_mat)
-        self.Lindbladian.set_dissipation(self.Gamma1, self.Gamma2, sign)
-        self.Lindbladian.set_total_linbladian()
-        self.precalc_expectation_value = {}
-
     def set_spin_components(self, spin_components=None):
         if spin_components is None:
             self.spin_indices = {2: [("up", "up")],
@@ -110,7 +111,7 @@ class Correlators:
                 for comp in get_branch_combinations(m):
                     self.correlators[n][s][comp] = {}
 
-    def set_rho_steady_state(self, set_lindblad=False):
+    def get_rho_steady_state(self):
         """Calculate the steady state density of state in the spin sector
         (0,0).
 
@@ -119,8 +120,6 @@ class Correlators:
         ValueError
             If there are more then one steady-steate density of states
         """
-        if set_lindblad:
-            self.set_lindbladian(1.0)
 
         L_00 = self.Lindbladian.super_fermi_ops.get_subspace_object(
             self.Lindbladian.L_tot, (0, 0), (0, 0))
@@ -157,9 +156,7 @@ class Correlators:
 
         # self.check_sector(self.rho_stready_state)
 
-    def sectors_exact_decomposition(self, set_lindblad=True, sectors=None,
-                                    sign=None,
-                                    tilde_conjugationrule_phase=False):
+    def sectors_exact_decomposition(self):
         """Exactly decompose the Lindbladian within the relevant spin
         sectors. The eigenvectors and eigenvalues are saved as object
         attributes.
@@ -172,18 +169,12 @@ class Correlators:
             time propagation of a single femionic operator, with a single
             fermionic operator coupling the Markovian bath to the system.
         """
-        if sign is None:
-            self.sign = -1
-
-        if set_lindblad:
-            self.Lindbladian.update(sign=self.sign)
 
         self.vals_sector = {}
         self.vec_l_sector = {}
         self.vec_r_sector = {}
-        if sectors is None:
-            sectors = self.Lindbladian.super_fermi_ops.spin_sectors
-        for sector in sectors:
+
+        for sector in self.Lindbladian.super_fermi_ops.spin_sectors:
             L_sector = self.Lindbladian.super_fermi_ops.get_subspace_object(
                 self.Lindbladian.L_tot, tuple(sector), tuple(sector))
             self.vals_sector[tuple(sector)], self.vec_l_sector[tuple(sector)],\
@@ -193,6 +184,16 @@ class Correlators:
     def reset_correlator_data(self):
         self.precalc_correlator = {n: {} for n in self.correlators.keys()}
         self.set_correlator_keys()
+
+    def update(self, T_mat=None, U_mat=None, Gamma1=None, Gamma2=None):
+        self.Lindbladian.update(T_mat=T_mat, U_mat=U_mat, Gamma1=Gamma1,
+                                Gamma2=Gamma2, sign=1)
+        self.get_rho_steady_state()
+        if not self.Lindbladian.super_fermi_ops.tilde_conjugationrule_phase:
+            self.Lindbladian.update(T_mat=T_mat, U_mat=U_mat, Gamma1=Gamma1,
+                                    Gamma2=Gamma2, sign=-1)
+        self.sectors_exact_decomposition()
+        self.reset_correlator_data()
 
     def get_operator_keys(self, contour_parameters, operator_sectors):
 
@@ -1430,12 +1431,11 @@ if __name__ == "__main__":
 
     # Setup a correlator object
     corr = Correlators(Lindbladian=L, trilex=True)
-    corr.Lindbladian.update(T_mat=T_mat, U_mat=Us, Gamma1=sys.Gamma1,
-                            Gamma2=sys.Gamma2)
-
-    # corr.update_model_parameter(sys.Gamma1, sys.Gamma2, T_mat, Us)
-    corr.set_rho_steady_state(set_lindblad=False)
-    corr.sectors_exact_decomposition(set_lindblad=False)
+    corr.update(T_mat=T_mat, U_mat=Us, Gamma1=sys.Gamma1,
+                Gamma2=sys.Gamma2)
+    # # corr.update_model_parameter(sys.Gamma1, sys.Gamma2, T_mat, Us)
+    # corr.set_rho_steady_state(set_lindblad=False)
+    # corr.sectors_exact_decomposition(set_lindblad=False)
 
     # Calcolate Green's functions
     G_lesser_plus, G_lesser_minus = corr.get_single_particle_green(

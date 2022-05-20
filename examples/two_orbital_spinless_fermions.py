@@ -5,10 +5,10 @@
     """
 # %%
 import numpy as np
-import src.model_hamiltonian as ham
-import src.model_lindbladian as lind
-import src.super_fermionic_subspace as sf_op
-import src.lindbladian_exact_decomposition as ed_lind
+import src.hilber_space.model_hamiltonian as ham
+import src.super_fermionic_space.model_lindbladian as lind
+import src.super_fermionic_space.super_fermionic_subspace as sf_op
+import src.exact_decomposition as ed_lind
 import matplotlib.pyplot as plt
 
 # ########################### Unitary propagation #############################

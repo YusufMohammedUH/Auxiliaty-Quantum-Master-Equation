@@ -1,10 +1,10 @@
 # %%
 import pytest
 import numpy as np
-import src.frequency_greens_function as fg
-from src import optimization_auxiliary_hybridization as opt_aux
-import src.auxiliary_system_parameter as auxp
-from src import dos_util as du
+import src.greens_function.frequency_greens_function as fg
+import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt_aux
+import src.auxiliary_mapping.auxiliary_system_parameter as auxp
+import src.greens_function.dos_util as du
 
 # %%
 

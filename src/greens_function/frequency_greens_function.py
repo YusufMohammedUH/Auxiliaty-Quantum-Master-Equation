@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-import src.auxiliary_system_parameter as auxp
+import src.auxiliary_mapping.auxiliary_system_parameter as auxp
 import matplotlib.pyplot as plt
 
 

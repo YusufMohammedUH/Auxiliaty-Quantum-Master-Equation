@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from src import auxiliary_system_parameter as auxp
+import src.auxiliary_mapping.auxiliary_system_parameter as auxp
 
 
 def test_set_E_ph_symmetric_equal_value():

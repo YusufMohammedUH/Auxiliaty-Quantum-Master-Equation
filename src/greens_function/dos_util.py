@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit, complex128, float64
-import src.frequency_greens_function as fg
+import src.greens_function.frequency_greens_function as fg
 
 
 @njit(complex128(float64, float64, float64, float64), cache=True)
@@ -27,7 +27,7 @@ def flat_bath_retarded(w, e0, D, gamma):
         Retarded Green's function at frequency 'w'.
     """
     if gamma == 0:
-        return 0.+0.j
+        return 0. + 0.j
     x = D + (w - e0)
     y = (w - e0 - D)
     if x == 0:
@@ -67,7 +67,7 @@ def lorenzian_bath_retarded(w, e0, gamma, v=1.0):
         Retarded Green's function at frequency 'w'.
     """
     if v == 0:
-        return 0.+0.j
+        return 0. + 0.j
     x = w - e0 - 1j * gamma
     y = (w - e0)**2 + gamma**2
     result = 0

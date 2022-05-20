@@ -1,7 +1,7 @@
 # %%
 import numpy as np
 from scipy import sparse
-import src.model_hamiltonian as ham
+import src.hilber_space.model_hamiltonian as ham
 # TODO: Write tests
 #       Here it's probably best to reproduce papers
 #      [x] Spinless fermions without interaction coupled to
@@ -25,8 +25,7 @@ import src.model_hamiltonian as ham
 #          Dissipator_thermal_bath
 
 
-def Dissipator_thermal_bath(Gamma1, Gamma2, super_fermi_ops, sign=1,
-                            tilde_conjugationrule_phase=False):
+def Dissipator_thermal_bath(Gamma1, Gamma2, super_fermi_ops, sign=None):
     """Retruns the dissipator of a fermionic system coupled to a thermal
     fermionic bath, therefore the particle number can change due to the
     dissipator.
@@ -108,34 +107,35 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, super_fermi_ops, sign=1,
         for jj in range(nsite):
             for spin in spins:
                 if Gamma1[ii, jj] != 0:
-                    L_Gamma1 += (2. * super_fermi_ops.tilde_operator_sign[
-                        "c_tilde"]
-                        * Gamma1[ii, jj]
-                        * super_fermi_ops.c(jj, spin)
-                        * super_fermi_ops.c_tilde(ii, spin)
-                        - Gamma1[ii, jj]
-                        * (super_fermi_ops.cdag(ii, spin)
-                           * super_fermi_ops.c(jj, spin)
-                           + super_fermi_ops.cdag_tilde(jj, spin)
-                           * super_fermi_ops.c_tilde(ii, spin))
-                    )
+                    L_Gamma1 += (2. * sign
+                                 * super_fermi_ops.tilde_operator_sign[
+                                     "c_tilde"]
+                                 * Gamma1[ii, jj]
+                                 * super_fermi_ops.c(jj, spin)
+                                 * super_fermi_ops.c_tilde(ii, spin)
+                                 - Gamma1[ii, jj]
+                                 * (super_fermi_ops.cdag(ii, spin)
+                                    * super_fermi_ops.c(jj, spin)
+                                    + super_fermi_ops.cdag_tilde(jj, spin)
+                                    * super_fermi_ops.c_tilde(ii, spin))
+                                 )
                 if Gamma2[ii, jj] != 0:
-                    L_Gamma2 += (2. * super_fermi_ops.tilde_operator_sign[
-                        "cdag_tilde"]
-                        * Gamma2[ii, jj]
-                        * super_fermi_ops.cdag(ii, spin)
-                        * super_fermi_ops.cdag_tilde(jj, spin)
-                        - Gamma2[ii, jj]
-                        * (super_fermi_ops.c(jj, spin)
-                           * super_fermi_ops.cdag(ii, spin)
-                           + super_fermi_ops.c_tilde(ii, spin)
-                           * super_fermi_ops.cdag_tilde(jj, spin))
-                    )
+                    L_Gamma2 += (2. * sign
+                                 * super_fermi_ops.tilde_operator_sign[
+                                     "cdag_tilde"]
+                                 * Gamma2[ii, jj]
+                                 * super_fermi_ops.cdag(ii, spin)
+                                 * super_fermi_ops.cdag_tilde(jj, spin)
+                                 - Gamma2[ii, jj]
+                                 * (super_fermi_ops.c(jj, spin)
+                                     * super_fermi_ops.cdag(ii, spin)
+                                     + super_fermi_ops.c_tilde(ii, spin)
+                                     * super_fermi_ops.cdag_tilde(jj, spin))
+                                 )
     return L_Gamma1, L_Gamma2
 
 
-def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, super_fermi_ops, sign=1,
-                                      tilde_conjugationrule_phase=False):
+def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, super_fermi_ops, sign=1):
     """Retruns the dissipator of a fermionic system coupled to a single mode
     bosonic bath.
 
@@ -317,7 +317,8 @@ class Lindbladian:
 
         self.L_unitary = -1.j * \
             (self.super_fermi_ops.get_super_fermionic_operator(Hamil_Fock)
-             - self.super_fermi_ops.get_super_fermionic_tilde_operator(Hamil_Fock)
+             - self.super_fermi_ops.get_super_fermionic_tilde_operator(
+                 Hamil_Fock)
              )
 
     def set_dissipation(self, Gamma1, Gamma2, sign=None):
@@ -345,8 +346,7 @@ class Lindbladian:
                              + F" to be {(nsite,nsite)}.")
         if self.super_fermi_ops.tilde_conjugationrule_phase:
             self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
-                Gamma1, Gamma2, self.super_fermi_ops,
-                tilde_conjugationrule_phase=self.super_fermi_ops.tilde_conjugationrule_phase)
+                Gamma1, Gamma2, self.super_fermi_ops)
         else:
             self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
                 Gamma1, Gamma2, self.super_fermi_ops, sign=sign)

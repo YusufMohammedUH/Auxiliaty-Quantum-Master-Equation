@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import src.define_fock_space_operators as fock
+import src.hilber_space.define_fock_space_operators as fock
 from scipy import sparse
 
 

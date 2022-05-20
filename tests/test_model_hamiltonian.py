@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
-import src.model_hamiltonian as ham
-import src.define_fock_space_operators as op
+import src.hilber_space.model_hamiltonian as ham
+import src.hilber_space.define_fock_space_operators as op
 import random
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import sparse
-import src.define_super_fermionic_operators as sf_op
+import src.super_fermionic_space.define_super_fermionic_operators as sf_op
 
 
 # TODO: SubspaceDecomposition should only contain the function containing the

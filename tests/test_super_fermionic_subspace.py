@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import src.super_fermionic_subspace as sf_op
+import src.super_fermionic_space.super_fermionic_subspace as sf_op
 from scipy import sparse
 
 

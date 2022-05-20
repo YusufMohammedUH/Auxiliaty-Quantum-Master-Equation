@@ -1,9 +1,9 @@
 
 import pytest
 import numpy as np
-import src.super_fermionic_subspace as sop_sub
-import src.model_lindbladian as lind
-import src.model_hamiltonian as ham
+import src.super_fermionic_space.super_fermionic_subspace as sop_sub
+import src.super_fermionic_space.model_lindbladian as lind
+import src.hilber_space.model_hamiltonian as ham
 
 # TODO: add more tests
 
@@ -73,7 +73,7 @@ class TestClassLindbladianSpinSectorDecompositionNoComplexPhase:
         nsite=nsite, es=es, ts=ts)
     U_mat = 0.2 * np.ones(nsite)
     Lindblad.update(T_mat=T_mat, U_mat=U_mat, Gamma1=Gamma1,
-                    Gamma2=Gamma2)
+                    Gamma2=Gamma2, sign=1)
 
     def test_consturction_unitary(self):
         real = self.Lindblad.L_unitary + self.Lindblad.L_unitary.conj()
