@@ -5,7 +5,8 @@ import src.hilber_space.define_fock_space_operators as fop
 
 
 class SuperFermionicOperators:
-    def __init__(self, nsite, spinless=False, tilde_conjugationrule_phase=True):
+    def __init__(self, nsite, spinless=False,
+                 tilde_conjugationrule_phase=True):
         """Class of fermionic operators in the super-fermionic space,
         constructed form fermionic operators in Fock space.
         The fermions can have a 1/2 spin or be spinless.
@@ -69,15 +70,17 @@ class SuperFermionicOperators:
             fermionic operators from "normal" to "tilde" space.
 
         """
-        self.fock_ops = fop.FermionicFockOperators(nsite, spinless,
-                                                   sorted_particle_number=False)
+        self.fock_ops = fop.FermionicFockOperators(
+            nsite, spinless, sorted_particle_number=False)
         self.tilde_conjugationrule_phase = tilde_conjugationrule_phase
 
         # Define Spin sector operators N_{\simga}-\tilde{N}_{\simga}
         if not spinless:
-            self.Delta_N_up = self.get_super_fermionic_operator(self.fock_ops.N_up) \
+            self.Delta_N_up = self.get_super_fermionic_operator(
+                self.fock_ops.N_up) \
                 - self.get_super_fermionic_tilde_operator(self.fock_ops.N_up)
-            self.Delta_N_do = self.get_super_fermionic_operator(self.fock_ops.N_do) \
+            self.Delta_N_do = self.get_super_fermionic_operator(
+                self.fock_ops.N_do) \
                 - self.get_super_fermionic_tilde_operator(self.fock_ops.N_do)
 
         self.N = self.get_super_fermionic_operator(self.fock_ops.N)
@@ -244,8 +247,8 @@ class SuperFermionicOperators:
     def get_super_fermionic_operator(self, fock_operator):
         """Returns the super-fermionic space representation of an Fock space operator
 
-        These super-fermionic space operators are used, when they are appear left
-        from the density matrix in the Fock space formulation of, e.g the
+        These super-fermionic space operators are used, when they are appear
+        left from the density matrix in the Fock space formulation of, e.g the
         Lindblad equation.
 
         Parameters
@@ -268,11 +271,11 @@ class SuperFermionicOperators:
                            format="csc")
 
     def get_super_fermionic_tilde_operator(self, fock_operator):
-        """Returns the super-fermionic space tilde representation of an Fock space
-        operator
+        """Returns the super-fermionic space tilde representation of an Fock
+        space operator
 
-        These super-fermionic space operators are used, when they are appear right
-        from the density matrix in the Fock space formulation of, e.g the
+        These super-fermionic space operators are used, when they are appear
+        right from the density matrix in the Fock space formulation of, e.g the
         Lindblad equation.
 
         Parameters
@@ -382,9 +385,10 @@ if __name__ == "__main__":
                 n_nonzeros += (fl_op.cdag(i, spin) + fl_op.c_tilde(i, spin)
                                ).dot(fl_op.left_vacuum).nnz
     if n_nonzeros != 0:
-        raise ValueError("ERROR: super-fermionic creation/annihilation operator and"
-                         + " tilde super-fermionic creation/annihilation operator "
-                         + "acting on the left vacuum state have to be same.")
+        raise ValueError("ERROR: super-fermionic creation/annihilation"
+                         + " operator and tilde super-fermionic "
+                         + "creation/annihilation operator acting on the"
+                         + " left vacuum state have to be same.")
     else:
         print("super-fermionic creation/annihilation operator and"
               + " tilde super-fermionic creation/annihilation operator "
