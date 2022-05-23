@@ -1,10 +1,11 @@
+from typing import Callable, Tuple
 import numpy as np
 from numba import njit, complex128, float64
 import src.greens_function.frequency_greens_function as fg
 
 
 @njit(complex128(float64, float64, float64, float64), cache=True)
-def flat_bath_retarded(w, e0, D, gamma):
+def flat_bath_retarded(w: float, e0: float, D: float, gamma: float) -> complex:
     """Retarded Green's function with a flat band density of states.
 
     Parameters
@@ -44,7 +45,8 @@ def flat_bath_retarded(w, e0, D, gamma):
 
 
 @njit(complex128(float64, float64, float64, float64), cache=True)
-def lorenzian_bath_retarded(w, e0, gamma, v=1.0):
+def lorenzian_bath_retarded(w: float, e0: float, gamma: float,
+                            v: float = 1.0) -> complex:
     """Retarded Green's function with a Lorenzian density of states.
 
     Parameters
@@ -79,7 +81,7 @@ def lorenzian_bath_retarded(w, e0, gamma, v=1.0):
 
 
 @njit(float64(float64, float64), cache=True)
-def heaviside(x, x0):
+def heaviside(x: float, x0: float) -> float:
     """Heaviside function
 
     Parameters
@@ -102,7 +104,7 @@ def heaviside(x, x0):
 
 
 @njit(float64(float64, float64, float64, float64), cache=True)
-def fermi(e, e0, mu, beta):
+def fermi(e: float, e0: float, mu: float, beta: float) -> float:
     """Fermi-Dirac distribution.
 
 
@@ -133,7 +135,8 @@ def fermi(e, e0, mu, beta):
 
 
 # @njit(cache=True)
-def _set_hybridization(freq, retarded_function, args):
+def _set_hybridization(freq: np.ndarray, retarded_function: Callable,
+                       args: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Set the retarded and keldysh single particle Green's function from
     a supplied function determening the retarded function on a given frequency
     grid.
@@ -165,7 +168,8 @@ def _set_hybridization(freq, retarded_function, args):
     return retarded, keldysh
 
 
-def set_hybridization(freq, retarded_function, args):
+def set_hybridization(freq: np.ndarray, retarded_function: Callable,
+                      args: np.ndarray) -> fg.FrequencyGreen:
     """Set the retarded and keldysh single particle Green's function from
     a supplied function determening the retarded function on a given frequency
     grid.

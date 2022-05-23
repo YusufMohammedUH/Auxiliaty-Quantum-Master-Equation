@@ -42,14 +42,14 @@ class AuxiliarySystem:
                     Coupling to Markovian bath 2
     """
 
-    def __init__(self, Nb, ws) -> None:
+    def __init__(self, Nb: int, ws: np.ndarray) -> None:
 
         self.Nb = Nb
         self.N = 2 * self.Nb + 1
         self.N_gamma = int((self.N - 1) * self.N / 2)
         self.ws = ws
 
-    def set_E_ph_symmetric(self, es, ts):
+    def set_E_ph_symmetric(self, es: np.ndarray, ts: np.ndarray) -> None:
         """Sets particle-hole symmetric T-Matrix as class attribute E. E is of
         shape (self.N,self.N).
 
@@ -70,7 +70,7 @@ class AuxiliarySystem:
         offset = [-1, 0, 1]
         self.E = diags([t, E, t], offset).toarray()
 
-    def set_E_general(self, es, ts):
+    def set_E_general(self, es: np.ndarray, ts: np.ndarray) -> None:
         """Sets general T-Matrix as class attribute E. E is of
         shape (self.N,self.N).
 
@@ -88,7 +88,7 @@ class AuxiliarySystem:
         offset = [-1, 0, 1]
         self.E = diags([ts, es, ts], offset, dtype=complex).toarray()
 
-    def get_Gamma_from_upper_tiagonal(self, G_upper):
+    def get_Gamma_from_upper_tiagonal(self, G_upper: np.ndarray) -> np.ndarray:
         """Returns full gamma matrix (see [1]) from upper triangular matrix
 
         Parameters
@@ -107,7 +107,7 @@ class AuxiliarySystem:
         G_adj[np.diag_indices(G_adj.shape[0])] = 0
         return G_upper + G_adj
 
-    def get_Gamma_general(self, gammas):
+    def get_Gamma_general(self, gammas: np.ndarray) -> np.ndarray:
         """Calculate full gamma matrix from array_like gamma containing all
         independent entries of gamma matrix.
 
@@ -143,7 +143,7 @@ class AuxiliarySystem:
                         n += 1
         return self.get_Gamma_from_upper_tiagonal(Gamma)
 
-    def get_Gamma2_ph_symmetric(self, Gamma1):
+    def get_Gamma2_ph_symmetric(self, Gamma1: np.ndarray) -> np.ndarray:
         """Returns the Gamma2 matrix calculated from Gamma1 in the particle-hole
         symmetric case
 
@@ -161,7 +161,8 @@ class AuxiliarySystem:
                                                     ((self.N - 1) - i)])
                           for i in range(self.N)] for j in range(self.N)])
 
-    def set_ph_symmetric_aux(self, es, ts, gammas):
+    def set_ph_symmetric_aux(self, es: np.ndarray, ts: np.ndarray,
+                             gammas: np.ndarray) -> None:
         """Set the matrices E, Gamma1,Gamma2 describing the auxiliary system in
         the particle-hole symmetric case.
 
@@ -180,7 +181,8 @@ class AuxiliarySystem:
         self.Gamma1 = self.get_Gamma_general(gammas)
         self.Gamma2 = self.get_Gamma2_ph_symmetric(self.Gamma1)
 
-    def set_general_aux(self, es, ts, gamma1, gamma2):
+    def set_general_aux(self, es: np.ndarray, ts: np.ndarray,
+                        gamma1: np.ndarray, gamma2: np.ndarray) -> None:
         """Set the matrices E, Gamma1,Gamma2 describing the auxiliary system in
         the general case.
 

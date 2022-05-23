@@ -1,3 +1,4 @@
+from typing import Tuple, Union
 import numpy as np
 from numba import njit
 import src.auxiliary_mapping.auxiliary_system_parameter as auxp
@@ -5,7 +6,8 @@ import matplotlib.pyplot as plt
 
 
 @njit(cache=True)
-def _z_aux(ws, N, Nb, E, Gamma1, Gamma2):
+def _z_aux(ws: np.ndarray, N: int, Nb: int, E: np.ndarray, Gamma1: np.ndarray,
+           Gamma2: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Calculate the non-interacting auxiliary greens function at the impurity
     site in frequency domain.
 
@@ -53,7 +55,8 @@ def _z_aux(ws, N, Nb, E, Gamma1, Gamma2):
 
 
 @njit(cache=True)
-def _get_self_enerqy(green_0_ret_inverse, green_ret, green_kel):
+def _get_self_enerqy(green_0_ret_inverse: np.ndarray, green_ret: np.ndarray,
+                     green_kel: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Calculate the self-energy from the supplied retarded and keldysh
     greens function.
 
@@ -126,7 +129,9 @@ class FrequencyGreen:
             Contains the keldysh Green's
     """
 
-    def __init__(self, freq: np.ndarray, retarded=None, keldysh=None) -> None:
+    def __init__(self, freq: np.ndarray,
+                 retarded: Union[np.ndarray, None] = None,
+                 keldysh: Union[np.ndarray, None] = None) -> None:
         if not isinstance(freq, np.ndarray):
             raise TypeError("freq must be of type numpy.array!")
         if (not isinstance(retarded, np.ndarray)) and (retarded is not None):
@@ -159,7 +164,7 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, self.retarded.copy(),
                               self.keldysh.copy())
 
-    def __add__(self, other: "FrequencyGreen",) -> "FrequencyGreen":
+    def __add__(self, other: "FrequencyGreen") -> "FrequencyGreen":
         """Add two FrequencyGreen objects
 
         Parameters
@@ -173,7 +178,7 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, self.retarded + other.retarded,
                               self.keldysh + other.keldysh)
 
-    def __sub__(self, other: "FrequencyGreen",) -> "FrequencyGreen":
+    def __sub__(self, other: "FrequencyGreen") -> "FrequencyGreen":
         """Add two FrequencyGreen objects
 
         Parameters
@@ -216,7 +221,8 @@ class FrequencyGreen:
                               self.retarded * other.keldysh +
                               self.keldysh * other.retarded.conj())
 
-    def dyson(self, green_0_ret_inverse, self_energy) -> None:
+    def dyson(self, green_0_ret_inverse: np.ndarray,
+              self_energy: "FrequencyGreen") -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma.
 
@@ -249,7 +255,9 @@ class FrequencyGreen:
                                              auxsys.E, auxsys.Gamma1,
                                              auxsys.Gamma2)
 
-    def get_self_enerqy(self, green_0_ret_inverse=None) -> "FrequencyGreen":
+    def get_self_enerqy(self,
+                        green_0_ret_inverse: Union[np.ndarray, None] = None
+                        ) -> "FrequencyGreen":
         """Returns the retarded and Keldysh component of the self-energy
         from the retarded and Keldysh Green's.
 
@@ -291,7 +299,7 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
 
 
-def get_hyb_from_aux(auxsys):
+def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
     """Given parameters of the auxiliary system, a single particle Green's
     function is constructed and its self-engergy/hybridization function
     returned

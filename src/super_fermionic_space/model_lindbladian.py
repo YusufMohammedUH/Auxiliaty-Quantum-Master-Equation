@@ -1,7 +1,9 @@
 # %%
+from typing import Union, Callable, Tuple
 import numpy as np
 from scipy import sparse
 import src.hilber_space.model_hamiltonian as ham
+import src.super_fermionic_space.super_fermionic_subspace as sf_op
 # TODO: Write tests
 #       Here it's probably best to reproduce papers
 #      [x] Spinless fermions without interaction coupled to
@@ -25,7 +27,10 @@ import src.hilber_space.model_hamiltonian as ham
 #          Dissipator_thermal_bath
 
 
-def Dissipator_thermal_bath(Gamma1, Gamma2, super_fermi_ops, sign=None):
+def Dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,
+                            super_fermi_ops: sf_op.SuperFermionicOperatorType,
+                            sign: Union[int, None] = None
+                            ) -> Tuple[sparse.csc_matrix, sparse.csc_matrix]:
     """Retruns the dissipator of a fermionic system coupled to a thermal
     fermionic bath, therefore the particle number can change due to the
     dissipator.
@@ -75,7 +80,7 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, super_fermi_ops, sign=None):
         spins = ["up", "do"]
 
     if super_fermi_ops.tilde_conjugationrule_phase:
-        print("Dissipative Lindbladian is set with tilde conjugation rule.")
+        print("Dissipative Lindbladian is set with complex phase.")
         for ii in range(nsite):
             for jj in range(nsite):
                 for spin in spins:
@@ -103,6 +108,8 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, super_fermi_ops, sign=None):
                         )
         return L_Gamma1, L_Gamma2
 
+    print("Dissipative Lindbladian is set without complex phase.")
+    print("Sign set to: ", sign)
     for ii in range(nsite):
         for jj in range(nsite):
             for spin in spins:
@@ -135,7 +142,10 @@ def Dissipator_thermal_bath(Gamma1, Gamma2, super_fermi_ops, sign=None):
     return L_Gamma1, L_Gamma2
 
 
-def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, super_fermi_ops, sign=1):
+def Dissipator_thermal_radiation_mode(
+        Gamma1: np.ndarray, Gamma2: np.ndarray,
+        super_fermi_ops: sf_op.SuperFermionicOperatorType,
+        sign: int = 1) -> Tuple[sparse.csc_matrix, sparse.csc_matrix]:
     """Retruns the dissipator of a fermionic system coupled to a single mode
     bosonic bath.
 
@@ -216,9 +226,9 @@ def Dissipator_thermal_radiation_mode(Gamma1, Gamma2, super_fermi_ops, sign=1):
 
 
 class Lindbladian:
-    def __init__(self, super_fermi_ops,
-                 Hamiltonian=ham.hubbard_hamiltonian,
-                 Dissipator=Dissipator_thermal_bath) -> None:
+    def __init__(self, super_fermi_ops: sf_op.SuperFermionicOperatorType,
+                 Hamiltonian: Callable = ham.hubbard_hamiltonian,
+                 Dissipator: Callable = Dissipator_thermal_bath) -> None:
         """Class for setting up a Lindbladian
 
         Parameters
@@ -299,7 +309,7 @@ class Lindbladian:
         self.L_Gamma2 = None
         self.L_tot = None
 
-    def set_unitay_part(self, T_mat, U_mat):
+    def set_unitay_part(self, T_mat: np.ndarray, U_mat: np.ndarray) -> None:
         """Set the unitary part of the Lindbladian describing a unitary
         propagation
 
@@ -321,7 +331,8 @@ class Lindbladian:
                  Hamil_Fock)
              )
 
-    def set_dissipation(self, Gamma1, Gamma2, sign=None):
+    def set_dissipation(self, Gamma1: np.ndarray, Gamma2: np.ndarray,
+                        sign: Union[int, None] = None) -> None:
         """Set the dissipative part of the Lindbladian describing a non-unitary
         propagation
 
@@ -351,13 +362,16 @@ class Lindbladian:
             self.L_Gamma1, self.L_Gamma2 = self.Dissipator(
                 Gamma1, Gamma2, self.super_fermi_ops, sign=sign)
 
-    def set_total_linbladian(self):
+    def set_total_linbladian(self) -> None:
         """Set the total Lindbladian"""
         self.L_tot = self.L_unitary + self.L_Gamma1 + \
             self.L_Gamma2
 
-    def update(self, T_mat=None, U_mat=None, Gamma1=None,
-               Gamma2=None, sign=None):
+    def update(self, T_mat: Union[np.ndarray, None] = None,
+               U_mat: Union[np.ndarray, None] = None,
+               Gamma1: Union[np.ndarray, None] = None,
+               Gamma2: Union[np.ndarray, None] = None,
+               sign: Union[int, None] = None) -> None:
         """Update the model parameter and recalculate the Lindbladian.
 
         _extended_summary_

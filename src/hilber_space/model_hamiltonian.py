@@ -1,10 +1,10 @@
-# %%
+from typing import Tuple, Union
 import numpy as np
 from scipy import sparse
 import src.hilber_space.define_fock_space_operators as op
 
 
-def hubbard_U_center(nsite, U):
+def hubbard_U_center(nsite: int, U: float) -> np.ndarray:
     """Return an on-site interaction matrix with dimension (nsite,).
     The central element at (nsite-1)/2 equals U all other elements vanish.
 
@@ -38,7 +38,10 @@ def hubbard_U_center(nsite, U):
     return Vmat
 
 
-def get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts, boundary=None):
+def get_1D_chain_nearest_neighbor_hopping_matrix(nsite: int, es: np.ndarray,
+                                                 ts: np.ndarray,
+                                                 boundary: bool = None
+                                                 ) -> np.ndarray:
     """Return a hopping matrix of a tight binding chain with onsite energies
     'es', nearest neighbor hopping terms 'ts' and a boundary condition
     'boundary'.
@@ -59,7 +62,7 @@ def get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts, boundary=None):
 
     Returns
     -------
-    Tmat:
+    Tmat: numpy.ndarray (nsite,nsite)
         hopping matrix with tridiagonal structure
     """
     assert type(es) == type(ts)
@@ -78,10 +81,14 @@ def get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts, boundary=None):
     return Tmat
 
 ###############################################################################
-# %%
 
 
-def hubbard_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
+def hubbard_hamiltonian(T: np.ndarray, V: np.ndarray,
+                        eop: Union[op.FermionicFockOperators, None] = None,
+                        spinless: bool = False,
+                        nelec: Union[int, None] = None
+                        ) -> Union[Tuple[np.ndarray, np.ndarray],
+                                   np.ndarray]:
     """Returns the Hamiltonian with on-site interaction and any geometry.
 
     Parameters
@@ -163,7 +170,13 @@ def hubbard_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
         return H_full
 
 
-def general_fermionic_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
+def general_fermionic_hamiltonian(T: np.ndarray, V: np.ndarray,
+                                  eop: Union[op.FermionicFockOperators,
+                                             None] = None,
+                                  spinless: bool = False,
+                                  nelec: Union[int, None] = None
+                                  ) -> Union[Tuple[np.ndarray, np.ndarray],
+                                             np.ndarray]:
     """Returns the Hamiltonian with any kind of interaction and any geometry.
 
     Parameters
@@ -280,7 +293,6 @@ def general_fermionic_hamiltonian(T, V, eop=None, spinless=False, nelec=None):
         return H_full
 
 
-# %%
 if __name__ == "__main__":
     compare_hamiltonian = np.zeros(10)
     for i in range(10):
@@ -313,4 +325,3 @@ if __name__ == "__main__":
         Tmat, Us, eop=fermionic_op, spinless=True, nelec=1)
     print(H_spinless[0].toarray())
     print(H_spinless[1].toarray())
-# %%

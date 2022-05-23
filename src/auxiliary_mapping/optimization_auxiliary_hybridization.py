@@ -1,9 +1,11 @@
+from typing import Union, Tuple, List, Dict
 import numpy as np
 import src.auxiliary_mapping.auxiliary_system_parameter as auxp
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du
 from scipy.integrate import simps
-from scipy.optimize import minimize
+from scipy.optimize import minimize, Bounds
+from scipy.optimize.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 # TODO: 1. enable complex optimization
 # TODO: 2. use a optimization which converges for reliably for NB>2
@@ -12,8 +14,10 @@ import matplotlib.pyplot as plt
 # XXX: optimization doesn't converge reliably for Nb>2
 
 
-def cost_function(hybridization, auxiliary_hybridization, weight=None,
-                  normalize=True):
+def cost_function(hybridization: fg.FrequencyGreen,
+                  auxiliary_hybridization: fg.FrequencyGreen,
+                  weight: Union[np.ndarray, None] = None,
+                  normalize: bool = True) -> float:
     """Cost function returns the weoght, integrated, elementwise squared difference
     between the retarded and Keldysh component of two supplied
     frequency, single particle Green's function type objects.
@@ -55,7 +59,7 @@ def cost_function(hybridization, auxiliary_hybridization, weight=None,
     return norm * simps((diff_ret + diff_kel) * weight, hybridization.freq)
 
 
-def optimize_subroutine(x0, *args):
+def optimize_subroutine(x0: np.ndarray, *args) -> float:
     """Optimization function of the hybridization function.
     Set the current hybridization function from x0 and compare to the target
     hybridization function, with parameters supplied in args.
@@ -94,11 +98,17 @@ def optimize_subroutine(x0, *args):
     return cost_function(hybridization, hyb_aux, weight)
 
 
-def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
-                              N_try=1, dtype=float, bounds=None,
+def optimization_ph_symmertry(Nb: int, hybridization: fg.FrequencyGreen,
+                              weight: Union[np.ndarray, None] = None,
+                              x_start: Union[np.ndarray, None] = None,
+                              N_try: int = 1, dtype: type = float,
+                              bounds: Union[List[Tuple],
+                                            Bounds, None] = None,
                               constraints=(),
-                              options={"disp": True, "maxiter": 200,
-                                       "return_all": True, 'gtol': 1e-5}):
+                              options: Dict = {"disp": True, "maxiter": 200,
+                                               "return_all": True,
+                                               'gtol': 1e-5}
+                              ) -> OptimizeResult:
     """Approximation of the supplied hybridization function by a auxiliary
     hybridization function of an auxiliary system with Nb left and right
     auxiliary sites.
@@ -164,7 +174,8 @@ def optimization_ph_symmertry(Nb, hybridization, weight=None, x_start=None,
     return result
 
 
-def get_aux_hyb(res, Nb, freq):
+def get_aux_hyb(res: np.ndarray, Nb: int, freq: np.ndarray
+                ) -> fg.FrequencyGreen:
     """Returns the hybridization function of an auxiliary system
 
 
@@ -195,7 +206,8 @@ def get_aux_hyb(res, Nb, freq):
     return green.get_self_enerqy()
 
 
-def get_aux(res, Nb, freq):
+def get_aux(res: np.ndarray, Nb: int, freq: np.ndarray
+            ) -> auxp.AuxiliarySystem:
     """Returns a auxiliary system
 
     Parameters

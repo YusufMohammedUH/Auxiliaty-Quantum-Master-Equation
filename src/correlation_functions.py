@@ -7,11 +7,13 @@ import numpy as np
 from numba import njit, prange
 import src.super_fermionic_space.model_lindbladian as lind
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
-import src.exact_decomposition as ed_lind
+import src.solvers.exact_decomposition as ed_lind
 import src.auxiliary_mapping.auxiliary_system_parameter as aux
 import src.greens_function.frequency_greens_function as fg
 
 # XXX: works only for a single impurity site of interest
+# XXX: works only for spin 1/2 fermions
+
 # TODO: Restructure:
 #       - Correlators should be a interface class
 #       - a Solver should be supplied to the class:
@@ -22,6 +24,7 @@ import src.greens_function.frequency_greens_function as fg
 #
 #           -> should the solvers be children of the correlator class or
 #              should the correlator have an attribute
+#               !! Best use attributes -> can be used independently of rest!!
 #
 #       - should should it do:
 #           - have subspace Lindbladian
@@ -120,9 +123,13 @@ class Correlators:
         ValueError
             If there are more then one steady-steate density of states
         """
+        if self.Lindbladian.super_fermi_ops.fock_ops.spinless:
+            sector0 = 0
+        else:
+            sector0 = (0, 0)
 
         L_00 = self.Lindbladian.super_fermi_ops.get_subspace_object(
-            self.Lindbladian.L_tot, (0, 0), (0, 0))
+            self.Lindbladian.L_tot, sector0, sector0)
 
         vals, _, vec_r = ed_lind.exact_spectral_decomposition(
             L_00.todense())
@@ -150,7 +157,7 @@ class Correlators:
             self.Lindbladian.super_fermi_ops.get_subspace_object(
                 (self.Lindbladian.super_fermi_ops.left_vacuum
                  ).transpose().conjugate(),
-                sector_right=(0, 0)).todense()
+                sector_right=sector0).todense()
 
         self.rho_stready_state /= self.left_vacuum * self.rho_stready_state
 
@@ -175,10 +182,12 @@ class Correlators:
         self.vec_r_sector = {}
 
         for sector in self.Lindbladian.super_fermi_ops.spin_sectors:
+            if not self.Lindbladian.super_fermi_ops.fock_ops.spinless:
+                sector = tuple(sector)
             L_sector = self.Lindbladian.super_fermi_ops.get_subspace_object(
-                self.Lindbladian.L_tot, tuple(sector), tuple(sector))
-            self.vals_sector[tuple(sector)], self.vec_l_sector[tuple(sector)],\
-                self.vec_r_sector[tuple(sector)] = \
+                self.Lindbladian.L_tot, sector, sector)
+            self.vals_sector[sector], self.vec_l_sector[sector],\
+                self.vec_r_sector[sector] = \
                 ed_lind.exact_spectral_decomposition(L_sector.todense())
 
     def reset_correlator_data(self):
@@ -1387,11 +1396,11 @@ def find_index_max_time(list_of_parameters):
 if __name__ == "__main__":
     # import matplotlib.pyplot as plt
     # Set parameters
-    ws = np.linspace(-5, 5, 200)
+    ws = np.linspace(-10, 10, 200)
 
     Nb = 1
     nsite = 2 * Nb + 1
-    U_imp = 1.0
+    U_imp = 0.0
     es = np.array([1])
     ts = np.array([0.5])
     Us = np.zeros(nsite)
@@ -1400,8 +1409,8 @@ if __name__ == "__main__":
 
     # Initializing Lindblad class
     spin_sector_max = 1
-    spinless = False
-    tilde_conjugationrule_phase = True
+    spinless = True
+    tilde_conjugationrule_phase = False
     super_fermi_ops = sf_sub.SpinSectorDecomposition(
         nsite, spin_sector_max, spinless=spinless,
         tilde_conjugationrule_phase=tilde_conjugationrule_phase)

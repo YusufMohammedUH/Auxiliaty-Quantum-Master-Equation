@@ -1,3 +1,4 @@
+from typing import List, Tuple, Union
 import numpy as np
 from scipy import sparse
 import src.super_fermionic_space.define_super_fermionic_operators as sf_op
@@ -10,12 +11,16 @@ import src.super_fermionic_space.define_super_fermionic_operators as sf_op
 #      could be created
 
 
-def add_spin_sectors(sector1, sector2):
+def add_spin_sectors(sector1: Tuple, sector2: Tuple) -> Tuple:
     return (sector1[0] + sector2[0], sector1[1] + sector2[1])
 
 
-def get_subspace_object(object, permutation_op_left=None,
-                        permutation_op_right=None):
+def get_subspace_object(object: sparse.csc_matrix,
+                        permutation_op_left: Union[
+                            sparse.csc_matrix, None] = None,
+                        permutation_op_right: Union[
+                            sparse.csc_matrix, None] = None
+                        ) -> sparse.csc_matrix:
     """Extract an Liouville space operator or vector in the desired spin
     sector subspace.
 
@@ -82,7 +87,8 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
         Parent class
     """
 
-    def particle_number_fock_subspace_projector(self, nelec):
+    def particle_number_fock_subspace_projector(self, nelec: int
+                                                ) -> sparse.csc_matrix:
         """Projector for given particle number nelec in Fock space in the
         super-fermionic representation.
 
@@ -122,7 +128,8 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
 
         return pnum_projector
 
-    def get_permutation_operator(self, indices, full=False):
+    def get_permutation_operator(self, indices: np.ndarray, full: bool = False
+                                 ) -> Tuple[int, sparse.csc_matrix]:
         """Returns a permutation operator, permuting desired sectors to the
         upper left corner of a the liouville space matrix.
 
@@ -148,8 +155,9 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
 
         Returns
         -------
-        out: scipy.sparse.csc_matrix (dim, dim)
-            Permutation operator for the desired sector.
+        out: Tuple[int,scipy.sparse.csc_matrix (dim, dim)]
+            Dimension of permutation operator and permutation operator for the
+            desired sector.
         """
 
         indices = np.sort(indices)
@@ -182,8 +190,9 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
 
         return dim_subspace, perm_op_sector.tocsc()
 
-    def particle_number_fock_subspace_permutation_operator(self, nelec,
-                                                           full=False):
+    def particle_number_fock_subspace_permutation_operator(
+            self, nelec: int, full: bool = False
+    ) -> Tuple[int, sparse.csc_matrix]:
         """Returns a permutation operator, permuting desired Fock particle
         number sector "nelec" to the upper left corner of a the liouville
         space matrix.
@@ -211,8 +220,8 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
         Returns
         -------
         out: scipy.sparse.csc_matrix (dim, dim)
-            Permutation operator for the desired Fock particle number sector
-            "nelec".
+            Dimension of permutation operator and permutation operator for the
+            desired Fock particle number sector "nelec".
         """
         pnum_fock = self.particle_number_fock_subspace_projector(nelec)
         pnum_fock_index = np.where(
@@ -232,8 +241,10 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         Parent class
     """
 
-    def __init__(self, nsite, spin_sector_max, target_sites=None,
-                 spinless=False, tilde_conjugationrule_phase=True) -> None:
+    def __init__(self, nsite: int, spin_sector_max: int,
+                 target_sites: Union[List, None] = None,
+                 spinless: bool = False,
+                 tilde_conjugationrule_phase: bool = True) -> None:
         assert spin_sector_max >= 0
         SubspaceDecomposition.__init__(
             self, nsite=nsite, spinless=spinless,
@@ -249,7 +260,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             self.target_sites = target_sites
         self.set_spin_subspace()
 
-    def spin_sector_projector(self, sector):
+    def spin_sector_projector(self, sector: Union[Tuple[int, int], int]
+                              ) -> sparse.csc_matrix:
         """Projector for given spin sector "sector" in the liouville space.
 
 
@@ -301,7 +313,9 @@ class SpinSectorDecomposition(SubspaceDecomposition):
 
             return pnum_per_spin_projector
 
-    def spin_sector_permutation_operator(self, sector, full=False):
+    def spin_sector_permutation_operator(self, sector: Union[
+            Tuple[int, int], int], full: bool = False
+    ) -> Tuple[int, sparse.csc_matrix]:
         """Returns a permutation operator, permuting desired spin sector
         "sector" to the upper left corner of a the liouville space matrix.
 
@@ -345,7 +359,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         return self.get_permutation_operator(
             pnum_index, full)
 
-    def set_possible_spin_sectors(self):
+    def set_possible_spin_sectors(self) -> None:
         """Calculate all relevant spin sectors, that can be reached with the
         highest, desired correlator. Set all possible sectors as attribute of
         the object.
@@ -366,7 +380,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         else:
             self.spin_sectors = sector_range
 
-    def set_spin_sectors_permutation_ops(self):
+    def set_spin_sectors_permutation_ops(self) -> None:
         """Calculate and store all perutation operators projecting on to
         the relevant spin sectors in self.projectors.
         """
@@ -380,7 +394,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 self.projectors[com] = \
                     self.spin_sector_permutation_operator(com)
 
-    def set_spin_sectors_fermionic_ops(self):
+    def set_spin_sectors_fermionic_ops(self) -> None:
         """Calculate and store the fermionic operators within the accessible
         spin sectors subspace. The spin sectors are stored in
         self.spin_sectors. This reduces the dimension of the operators in
@@ -498,12 +512,15 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 self.spin_sector_fermi_ops[site]['cdag_tilde'] = \
                     cdag_tilde_sector
 
-    def set_spin_subspace(self):
+    def set_spin_subspace(self) -> None:
         self.set_possible_spin_sectors()
         self.set_spin_sectors_permutation_ops()
         self.set_spin_sectors_fermionic_ops()
 
-    def get_subspace_object(self, object, sector_left=None, sector_right=None):
+    def get_subspace_object(self, object: sparse.csc_matrix,
+                            sector_left: Union[Tuple[int, int], int] = None,
+                            sector_right: Union[Tuple[int, int], int] = None
+                            ) -> sparse.csc_matrix:
         assert not ((sector_right is None) and (sector_left is None))
         if sector_left is None:
             return get_subspace_object(
@@ -519,7 +536,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 permutation_op_left=self.projectors[sector_left],
                 permutation_op_right=self.projectors[sector_right])
 
-    def c_sector(self, sector, site, spin=None):
+    def c_sector(self, sector: Union[Tuple[int, int], int], site: int,
+                 spin: bool = None) -> sparse.csc_matrix:
         r"""Returns the "normal" space annihilation operator at in sector
         'sector', site/orbital 'site' and with spin 'spin'
 
@@ -571,7 +589,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
-    def c_tilde_sector(self, sector, site, spin=None):
+    def c_tilde_sector(self, sector: Union[Tuple[int, int], int], site: int,
+                       spin: bool = None) -> sparse.csc_matrix:
         r"""Returns the "tilde" space annihilation operator at in sector
         'sector', site/orbital 'site' and with spin 'spin'
 
@@ -625,7 +644,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
-    def cdag_sector(self, sector, site, spin=None):
+    def cdag_sector(self, sector: Union[Tuple[int, int], int], site: int,
+                    spin: bool = None) -> sparse.csc_matrix:
         r"""Returns the "normal" space creation operator at in sector
         'sector', site/orbital 'site' and with spin 'spin'
 
@@ -677,7 +697,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
-    def cdag_tilde_sector(self, sector, site, spin=None):
+    def cdag_tilde_sector(self, sector: Union[Tuple[int, int], int], site: int,
+                          spin: bool = None) -> sparse.csc_matrix:
         r"""Returns the 'tilde' space creation operator at in sector
         'sector', site/orbital 'site' and with spin 'spin'
 
@@ -730,3 +751,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                     sector]
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+
+
+SuperFermionicOperatorType = Union[sf_op.SuperFermionicOperators,
+                                   SpinSectorDecomposition,
+                                   SubspaceDecomposition]

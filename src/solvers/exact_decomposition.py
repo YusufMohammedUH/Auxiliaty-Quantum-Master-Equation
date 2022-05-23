@@ -1,10 +1,13 @@
+from typing import Tuple
 import numpy as np
 from scipy import linalg
 from numba import njit
 
 
 @njit(cache=True)
-def _exact_spectral_decomposition(vals, vec_r_tmp):
+def _exact_spectral_decomposition(vals: np.ndarray, vec_r_tmp: np.ndarray
+                                  ) -> Tuple[np.ndarray, np.ndarray,
+                                             np.ndarray]:
     """Buy jit optimized function returning the eigenvalue and
     eigenvectors.
 
@@ -38,7 +41,9 @@ def _exact_spectral_decomposition(vals, vec_r_tmp):
     return vals, vec_l, vec_r
 
 
-def exact_spectral_decomposition(matrix):
+def exact_spectral_decomposition(matrix: np.ndarray
+                                 ) -> Tuple[np.ndarray, np.ndarray,
+                                            np.ndarray]:
     """Exact diagonalization of the matrix, setting the attributes
     vals, containing the eigen values, vec_l and vec_r containing the left
     and right eigen vectors respectively.
@@ -62,8 +67,12 @@ def exact_spectral_decomposition(matrix):
 
 
 @njit(cache=True)
-def time_propagation_all_times_exact_diagonalization(times, vec0, vals, vec_l,
-                                                     vec_r):
+def time_propagation_all_times_exact_diagonalization(times: np.ndarray,
+                                                     vec0: np.ndarray,
+                                                     vals: np.ndarray,
+                                                     vec_l: np.ndarray,
+                                                     vec_r: np.ndarray
+                                                     ) -> np.ndarray:
     """Retruns the time propagated vector "vec0" propagated by supplying
     eigenvectors ("vec_l","vec_r"), eigenvalues "vals" for all times "times".
 
@@ -100,16 +109,20 @@ def time_propagation_all_times_exact_diagonalization(times, vec0, vals, vec_l,
 
 
 @njit(cache=True)
-def time_propagation_exact_diagonalization(time, vec0, vals, vec_l,
-                                           vec_r):
-    """Retruns the time propagated vector "vec0" propagated by supplying
-    eigenvectors ("vec_l","vec_r"), eigenvalues "vals" for all time "time".
+def time_propagation_exact_diagonalization(time: np.ndarray,
+                                           vec0: np.ndarray,
+                                           vals: np.ndarray,
+                                           vec_l: np.ndarray,
+                                           vec_r: np.ndarray
+                                           ) -> np.ndarray:
+    """Returns the time propagated vector "vec0" propagated by supplying
+    eigenvectors ("vec_l","vec_r"), eigenvalues "vals" for time "time".
 
 
     Parameters
     ----------
-    times : numpy.ndarray (dim,)
-        array of times for which the propagated vector is to be calculated
+    time : float
+        time for which the propagated vector is to be calculated
 
     vec0 : numpy.ndarray (dim,1)
         Initial vector.
@@ -138,14 +151,15 @@ def time_propagation_exact_diagonalization(time, vec0, vals, vec_l,
 
 
 @njit(cache=True)
-def time_evolution_operator(time, vals, vec_l, vec_r):
+def time_evolution_operator(time: float, vals: np.ndarray, vec_l: np.ndarray,
+                            vec_r: np.ndarray) -> np.ndarray:
     """Retruns the time evolution operator for given time "time", by
     using the supplied eigen decomposition.
 
     Parameters
     ----------
-    times : numpy.ndarray (dim,)
-        array of times for which the propagated vector is to be calculated
+    times : float
+        time for which the propagated vector is to be calculated
 
     vals : numpy.ndarray (dim,)
         Eigenvalues.

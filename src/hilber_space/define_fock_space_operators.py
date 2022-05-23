@@ -1,9 +1,12 @@
+from typing import Union
 import numpy as np
+import numpy.typing as npt
 from scipy.special import binom
 from scipy import sparse
 
 
-def commutator(a, b):
+def commutator(a: npt.ArrayLike, b: npt.ArrayLike
+               ) -> npt.ArrayLike:
     """Returns the commutation of a and b.
 
 
@@ -22,7 +25,8 @@ def commutator(a, b):
     return a.dot(b) - b.dot(a)
 
 
-def anti_commutator(a, b):
+def anti_commutator(a: npt.ArrayLike, b: npt.ArrayLike
+                    ) -> npt.ArrayLike:
     """Returns the anti-commutation of a and b.
 
     Parameters
@@ -41,7 +45,8 @@ def anti_commutator(a, b):
 
 
 class FermionicFockOperators:
-    def __init__(self, nsite, spinless=False, sorted_particle_number=True):
+    def __init__(self, nsite: int, spinless: bool = False,
+                 sorted_particle_number: bool = True) -> None:
         """Class of fermiononic creation and annihilation operators in Fock
         space.
 
@@ -219,7 +224,7 @@ class FermionicFockOperators:
     #   do - spin down
     #   up - spin up
 
-    def c(self, ii, spin=None):
+    def c(self, ii: int, spin: Union[str, None] = None) -> sparse.csc_matrix:
         """Returns the annihilation operator at site/orbital 'ii' and with
         spin 'spin'
 
@@ -264,7 +269,8 @@ class FermionicFockOperators:
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
-    def cdag(self, ii, spin=None):
+    def cdag(self, ii: int, spin: Union[str, None] = None
+             ) -> sparse.csc_matrix:
         """Returns the creation operator at site/orbital 'ii' and with
         spin 'spin'
 
@@ -308,7 +314,8 @@ class FermionicFockOperators:
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
-    def n(self, ii, spin=None, nelec=None):
+    def n(self, ii: int, spin: Union[str, None] = None, nelec: int = None
+          ) -> sparse.csc_matrix:
         if self.sorted_particle_number:
             raise ValueError('ERROR: The Fock space is not sorted!')
         if (ii > self.nsite - 1):
@@ -329,7 +336,7 @@ class FermionicFockOperators:
 
 class BosonicFockOperators:
 
-    def __init__(self, nmodes, nb_max):
+    def __init__(self, nmodes: int, nb_max: int) -> None:
         """Class of creation and annihilation for spinless bosons in Fock space
 
         The bosonic Fock space consists of a number of modes (nmodes) with the
@@ -391,7 +398,7 @@ class BosonicFockOperators:
             self.annihilators[ii] = b_temp
             self.creators[ii] = bdag_temp
 
-    def b(self, ii=0):
+    def b(self, ii: int = 0) -> sparse.csc_matrix:
         """Returns the annihilation operator at mode 'ii'
 
         Parameters
@@ -416,7 +423,7 @@ class BosonicFockOperators:
 
         return self.annihilators[ii]
 
-    def bdag(self, ii=0):
+    def bdag(self, ii: int = 0) -> sparse.csc_matrix:
         """Returns the creation operator at mode 'ii'
 
         Parameters
@@ -440,8 +447,3 @@ class BosonicFockOperators:
             exit()
 
         return self.creators[ii]
-
-
-# TODO: Include example for bosonic operators
-# TODO: Include tests
-# %%

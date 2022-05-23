@@ -5,8 +5,8 @@ import src.hilber_space.define_fock_space_operators as fop
 
 
 class SuperFermionicOperators:
-    def __init__(self, nsite, spinless=False,
-                 tilde_conjugationrule_phase=True):
+    def __init__(self, nsite: int, spinless: bool = False,
+                 tilde_conjugationrule_phase: bool = True) -> None:
         """Class of fermionic operators in the super-fermionic space,
         constructed form fermionic operators in Fock space.
         The fermions can have a 1/2 spin or be spinless.
@@ -136,7 +136,7 @@ class SuperFermionicOperators:
             self.tilde_operator_sign = {
                 'c': 1, 'cdag': 1, 'cdag_tilde': 1, 'c_tilde': -1}
 
-    def c(self, ii, spin=None):
+    def c(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
         """Returns the super-fermionic space annihilation operator of site 'ii' and
         spin 'spin'.
 
@@ -162,7 +162,7 @@ class SuperFermionicOperators:
                            self.unity_tilde,
                            format="csc")
 
-    def cdag(self, ii, spin=None):
+    def cdag(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
         """Returns the super-fermionic space creation operator of site 'ii' and
         spin 'spin'.
 
@@ -188,7 +188,7 @@ class SuperFermionicOperators:
                            self.unity_tilde,
                            format="csc")
 
-    def c_tilde(self, ii, spin=None):
+    def c_tilde(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
         """Returns the super-fermionic space tilde annihilation operator of site 'ii'
         and spin 'spin'.
 
@@ -216,7 +216,7 @@ class SuperFermionicOperators:
                            self.fock_ops.c(ii, spin),
                            format="csc")
 
-    def cdag_tilde(self, ii, spin=None):
+    def cdag_tilde(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
         """Returns the super-fermionic space tilde creation operator of site 'ii' and
         spin 'spin'.
 
@@ -244,7 +244,8 @@ class SuperFermionicOperators:
                            self.fock_ops.cdag(ii, spin),
                            format="csc")
 
-    def get_super_fermionic_operator(self, fock_operator):
+    def get_super_fermionic_operator(self, fock_operator: sparse.csc_matrix
+                                     ) -> sparse.csc_matrix:
         """Returns the super-fermionic space representation of an Fock space operator
 
         These super-fermionic space operators are used, when they are appear
@@ -270,7 +271,9 @@ class SuperFermionicOperators:
                                       dtype=complex, format="csc"),
                            format="csc")
 
-    def get_super_fermionic_tilde_operator(self, fock_operator):
+    def get_super_fermionic_tilde_operator(self,
+                                           fock_operator: sparse.csc_matrix
+                                           ) -> sparse.csc_matrix:
         """Returns the super-fermionic space tilde representation of an Fock
         space operator
 
