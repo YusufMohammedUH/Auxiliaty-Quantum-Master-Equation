@@ -1,74 +1,80 @@
 # %%
+from typing import Union
 import numpy as np
 from scipy import sparse
 import src.hilber_space.define_fock_space_operators as fop
 
 
 class SuperFermionicOperators:
+    """SuperFermionicOperators(nsite: int, spinless: bool = False,
+    tilde_conjugationrule_phase: bool = True)
+
+    Class of fermionic operators in the super-fermionic space,
+    constructed form fermionic operators in Fock space.
+    The fermions can have a 1/2 spin or be spinless.
+
+    This class follows the publication by Dzhioev et. al ( J. Chem. Phys.
+    134, 044121 (2011); https://doi.org/10.1063/1.3548065).
+
+    Parameters
+    ----------
+    nsite : int
+        number of sites/ orbitals of the fermionic system
+
+    spinless : bool, optional
+        Indicates if the fermions are spinless, by default False
+
+    tilde_conjugationrule_phase: bool, optional
+        If True a the tilde conjugation rule is applied with an imaginary
+        phase for the tilde operators and the left vacuum state. If False,
+        the phase is set to one, by default False
+
+    Attributes
+    ----------
+    fock_ops: define_fock_space_operators.FermionicFockOperators
+        Fock space object containing the creation and annihilation
+        operators of a fermionic system with nsite sites/orbitals and
+        spin 1/2 if spinless is None, spinless otherwise.
+
+    left_vacuum: scipy.sparse.csc_matrix (dim,1)
+        left vacuum state according to Dzhioev et. al.
+
+    tilde_conjugationrule_phase: bool
+        If True a the tilde conjugation rule is applied with an imaginary
+        phase for the tilde operators and the left vacuum state. If False,
+        the phase is set to one.
+
+    Delta_N_up: scipy.sparse.csc_matrix (dim, dim)
+        Difference of total paricel number of electrons with spin up
+        between "normal" and "tilde" space
+
+    Delta_N_do: scipy.sparse.csc_matrix (dim, dim)
+        Difference of total paricel number of electrons with spin down
+        between "normal" and "tilde" space
+
+    N: scipy.sparse.csc_matrix (dim, dim)
+        Total paricel number of in "normal" space
+
+    N_tilde: scipy.sparse.csc_matrix (dim, dim)
+        Total paricel number of in "tilde" space
+
+    unity_tilde: scipy.sparse.csc_matrix (dim, dim)
+        Matrix encoding commutation relation between "normal" and "tilde"
+        space.
+
+    tilde_operator_name: dict
+        Dictionary linking the fermionic operators in the "normal" space to
+        the fermionic operators of the "tilde" space.
+
+    tilde_operator_sign: dict
+        Dictionary containing the phase picked up by transitioning
+        fermionic operators from "normal" to "tilde" space.
+
+    """
+
     def __init__(self, nsite: int, spinless: bool = False,
                  tilde_conjugationrule_phase: bool = True) -> None:
-        """Class of fermionic operators in the super-fermionic space,
-        constructed form fermionic operators in Fock space.
-        The fermions can have a 1/2 spin or be spinless.
-
-        This class follows the publication by Dzhioev et. al ( J. Chem. Phys.
-        134, 044121 (2011); https://doi.org/10.1063/1.3548065).
-
-        Parameters
-        ----------
-        nsite : int
-            number of sites/ orbitals of the fermionic system
-
-        spinless : bool, optional
-            Indicates if the fermions are spinless, by default False
-
-        tilde_conjugationrule_phase: bool, optional
-            If True a the tilde conjugation rule is applied with an imaginary
-            phase for the tilde operators and the left vacuum state. If False,
-            the phase is set to one, by default False
-
-
-        Attributes
-        ----------
-        fock_ops: define_fock_space_operators.FermionicFockOperators
-            Fock space object containing the creation and annihilation
-            operators of a fermionic system with nsite sites/orbitals and
-            spin 1/2 if spinless is None, spinless otherwise.
-
-        left_vacuum: scipy.sparse.csc_matrix (dim,1)
-            left vacuum state according to Dzhioev et. al.
-
-        tilde_conjugationrule_phase: bool
-            If True a the tilde conjugation rule is applied with an imaginary
-            phase for the tilde operators and the left vacuum state. If False,
-            the phase is set to one.
-
-        Delta_N_up: scipy.sparse.csc_matrix (dim, dim)
-            Difference of total paricel number of electrons with spin up
-            between "normal" and "tilde" space
-
-        Delta_N_do: scipy.sparse.csc_matrix (dim, dim)
-            Difference of total paricel number of electrons with spin down
-            between "normal" and "tilde" space
-
-        N: scipy.sparse.csc_matrix (dim, dim)
-            Total paricel number of in "normal" space
-
-        N_tilde: scipy.sparse.csc_matrix (dim, dim)
-            Total paricel number of in "tilde" space
-
-        unity_tilde: scipy.sparse.csc_matrix (dim, dim)
-            Matrix encoding commutation relation between "normal" and "tilde"
-            space.
-
-        tilde_operator_name: dict
-            Dictionary linking the fermionic operators in the "normal" space to
-            the fermionic operators of the "tilde" space.
-
-        tilde_operator_sign: dict
-            Dictionary containing the phase picked up by transitioning
-            fermionic operators from "normal" to "tilde" space.
-
+        """Initialize self.  See help(type(self)) for accurate signature.
         """
         self.fock_ops = fop.FermionicFockOperators(
             nsite, spinless, sorted_particle_number=False)
@@ -136,9 +142,9 @@ class SuperFermionicOperators:
             self.tilde_operator_sign = {
                 'c': 1, 'cdag': 1, 'cdag_tilde': 1, 'c_tilde': -1}
 
-    def c(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
-        """Returns the super-fermionic space annihilation operator of site 'ii' and
-        spin 'spin'.
+    def c(self, ii: int, spin: Union[str, None] = None) -> sparse.csc_matrix:
+        """Returns the super-fermionic space annihilation operator of site
+        'ii' and spin 'spin'.
 
         These operators are used, when they are placed left from the density
         matrix in the Fock space formulation of, e.g the Lindblad equation.
@@ -162,7 +168,8 @@ class SuperFermionicOperators:
                            self.unity_tilde,
                            format="csc")
 
-    def cdag(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
+    def cdag(self, ii: int, spin: Union[str, None] = None
+             ) -> sparse.csc_matrix:
         """Returns the super-fermionic space creation operator of site 'ii' and
         spin 'spin'.
 
@@ -188,7 +195,7 @@ class SuperFermionicOperators:
                            self.unity_tilde,
                            format="csc")
 
-    def c_tilde(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
+    def c_tilde(self, ii: int, spin: Union[str, None] = None) -> sparse.csc_matrix:
         """Returns the super-fermionic space tilde annihilation operator of site 'ii'
         and spin 'spin'.
 
@@ -216,7 +223,7 @@ class SuperFermionicOperators:
                            self.fock_ops.c(ii, spin),
                            format="csc")
 
-    def cdag_tilde(self, ii: int, spin: bool = None) -> sparse.csc_matrix:
+    def cdag_tilde(self, ii: int, spin: Union[str, None] = None) -> sparse.csc_matrix:
         """Returns the super-fermionic space tilde creation operator of site 'ii' and
         spin 'spin'.
 
