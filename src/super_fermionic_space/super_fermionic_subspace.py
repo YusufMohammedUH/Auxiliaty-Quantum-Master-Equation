@@ -11,7 +11,22 @@ import src.super_fermionic_space.define_super_fermionic_operators as sf_op
 #      could be created
 
 
-def add_spin_sectors(sector1: Tuple, sector2: Tuple) -> Tuple:
+def add_spin_sectors(sector1: Tuple[int, int], sector2: Tuple[int, int]
+                     ) -> Tuple[int, int]:
+    """Add to tuples of lenght 2, by adding each index together.
+
+    Parameters
+    ----------
+    sector1 : Tuple
+        First tuple of length 2
+    sector2 : Tuple
+        Second tuple of length 2
+
+    Returns
+    -------
+    Tuple
+        Added tuple of length 2
+    """
     return (sector1[0] + sector2[0], sector1[1] + sector2[1])
 
 
@@ -250,6 +265,15 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             self, nsite=nsite, spinless=spinless,
             tilde_conjugationrule_phase=tilde_conjugationrule_phase)
         self.spin_sector_max = spin_sector_max
+        if spinless:
+            self.operator_sectors = {"cdag": 1, 'c': -1, "c_tilde": 1,
+                                     "cdag_tilde": -1}
+        else:
+            self.operator_sectors = {"cdag": {"up": (1, 0), 'do': (0, 1)},
+                                     'c': {'up': (-1, 0), 'do': (0, -1)},
+                                     "c_tilde": {"up": (1, 0), 'do': (0, 1)},
+                                     'cdag_tilde': {'up': (-1, 0),
+                                                    'do': (0, -1)}}
 
         # TODO: default self.target_sites should in general be a list of all
         #       sites only special cases need a specific value
@@ -258,7 +282,44 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 int((self.fock_ops.nsite - 1) / 2)]
         else:
             self.target_sites = target_sites
+
+        self.projectors = {}
+        self.spin_sector_fermi_ops = {site: {'c': {}, 'c_tilde': {},
+                                      'cdag': {}, 'cdag_tilde': {}} for site in
+                                      self.target_sites}
+        self.spin_sectors = None
+
         self.set_spin_subspace()
+
+    def get_left_sector(self, right_sector: Union[int, Tuple], operator: str,
+                        spin: str = None) -> Union[int, Tuple]:
+        """Starting from a right spin sector 'right_sector' the final spin
+        sector after acting with a super-fermionic annihilation or creation
+        operator is returned.
+
+        Parameters
+        ----------
+        left_sector : Union[int, Tuple]
+            Spin sector (N_up - N_up_tilde, N_do - N_do_tilde) if spinful
+            fermions or difference N - N_tilde if spinless fermions
+
+        operator : str
+            Annihilation/creation operator in super-fermionic space 'cdag',
+            'c','cdag_tilde' or 'c_tilde'
+
+        spin : str, optional
+            Spin can be 'up','do' or None, by default None
+
+        Returns
+        -------
+        Union[int, Tuple]
+            Sector to the right
+        """
+        if self.fock_ops.spinless:
+            return self.operator_sectors[operator] + right_sector
+        else:
+            return add_spin_sectors(self.operator_sectors[operator][spin],
+                                    right_sector)
 
     def spin_sector_projector(self, sector: Union[Tuple[int, int], int]
                               ) -> sparse.csc_matrix:
@@ -375,8 +436,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             allowed_combinations = np.sum(np.abs(spin_sectors), -1)
             allowed_combinations = allowed_combinations <= self.spin_sector_max
             self.spin_sectors = spin_sectors[allowed_combinations]
-            self.spin_sectors = list(map(lambda x: tuple(x),
-                                         self.spin_sectors))
+            self.spin_sectors = [tuple(x) for x in self.spin_sectors]
         else:
             self.spin_sectors = sector_range
 
@@ -513,6 +573,10 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                     cdag_tilde_sector
 
     def set_spin_subspace(self) -> None:
+        """Set up all possible spin sectors, calculate the permutation operators
+        in order to project out the spin sectors and calculate the projected
+        super-fermionic operators.
+        """
         self.set_possible_spin_sectors()
         self.set_spin_sectors_permutation_ops()
         self.set_spin_sectors_fermionic_ops()
@@ -521,6 +585,28 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                             sector_left: Union[Tuple[int, int], int] = None,
                             sector_right: Union[Tuple[int, int], int] = None
                             ) -> sparse.csc_matrix:
+        """Extract an Liouville space operator or vector in the desired spin
+        sector subspace.
+
+
+        Parameters
+        ----------
+        object : sparse.csc_matrix (dim, 1), (1, dim) or (dim, dim)
+            Super-fermionic space operator or vector.
+
+        sector_left : Union[Tuple[int, int], int], optional
+            Left spin sector, by default None
+
+        sector_right : Union[Tuple[int, int], int], optional
+            Right spin sector, by default None
+
+        Returns
+        -------
+        out: sparse.csc_matrix( dim, dim)
+        Object in subspace connecting, which connects the spin sectors
+        sector_left and sector_right.
+        """
+
         assert not ((sector_right is None) and (sector_left is None))
         if sector_left is None:
             return get_subspace_object(
@@ -536,117 +622,9 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 permutation_op_left=self.projectors[sector_left],
                 permutation_op_right=self.projectors[sector_right])
 
-    def c_sector(self, sector: Union[Tuple[int, int], int], site: int,
-                 spin: bool = None) -> sparse.csc_matrix:
-        r"""Returns the "normal" space annihilation operator at in sector
-        'sector', site/orbital 'site' and with spin 'spin'
-
-        Parameters
-        ----------
-        sector : int or tuple
-            Spin sector of interest. If spinless fermions, than use integer.
-            The sector is than given by a fixed value for
-            (\Delta N=N-N_{tilde}).
-            If spinfull fermions, the sector is than given by a tuple with
-            fixed value for (\Delta N_{up},\Delta N_{do}), e.g. (0,0).
-
-        site : int
-            site/orbital index
-
-        spin : string, optional
-            Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
-            None. In case of spinless fermions the argument doesn't need to
-            be supplied. If it is supplied, the annihilation operator at
-            site/orbital 'site' is returned.
-
-        Returns
-        -------
-        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
-                                    2**self.spin_times_site)
-            Annihilation operator of site/orbital index 'site' and spin index
-            'spin' in sector 'sector'.
-
-        Raises
-        ------
-        IndexError
-            If site/orbital index is out of bound
-        ValueError
-            If spin is not 'up' or 'do' in spin 1/2 fermions
-        """
-        if (site not in self.target_sites):
-            raise IndexError('ERROR: index out of bound!')
-
-        if self.fock_ops.spinless:
-            if spin is not None:
-                print("Spinless fermions don't need the argument spin to be " +
-                      "passed")
-            return self.spin_sector_fermi_ops[site]['c'][sector]
-        else:
-            if spin == "up":
-                return self.spin_sector_fermi_ops[site]['c']['up'][sector]
-            elif spin == "do":
-                return self.spin_sector_fermi_ops[site]['c']['do'][sector]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
-
-    def c_tilde_sector(self, sector: Union[Tuple[int, int], int], site: int,
-                       spin: bool = None) -> sparse.csc_matrix:
-        r"""Returns the "tilde" space annihilation operator at in sector
-        'sector', site/orbital 'site' and with spin 'spin'
-
-        Parameters
-        ----------
-        sector : int or tuple
-            Spin sector of interest. If spinless fermions, than use integer.
-            The sector is than given by a fixed value for
-            (\Delta N=N-N_{tilde}).
-            If spinfull fermions, the sector is than given by a tuple with
-            fixed value for (\Delta N_{up},\Delta N_{do}), e.g. (0,0).
-
-        site : int
-            site/orbital index
-
-        spin : string, optional
-            Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
-            None. In case of spinless fermions the argument doesn't need to
-            be supplied. If it is supplied, the annihilation operator at
-            site/orbital 'site' is returned.
-
-        Returns
-        -------
-        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
-                                    2**self.spin_times_site)
-            Annihilation operator of site/orbital index 'site' and spin index
-            'spin' in sector 'sector'.
-
-        Raises
-        ------
-        IndexError
-            If site/orbital index is out of bound
-        ValueError
-            If spin is not 'up' or 'do' in spin 1/2 fermions
-        """
-        if (site not in self.target_sites):
-            raise IndexError('ERROR: index out of bound!')
-
-        if self.fock_ops.spinless:
-            if spin is not None:
-                print("Spinless fermions don't need the argument spin to be " +
-                      "passed")
-            return self.spin_sector_fermi_ops[site]['c_tilde'][sector]
-        else:
-            if spin == "up":
-                return self.spin_sector_fermi_ops[site]['c_tilde']['up'][
-                    sector]
-            elif spin == "do":
-                return self.spin_sector_fermi_ops[site]['c_tilde']['do'][
-                    sector]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
-
     def cdag_sector(self, sector: Union[Tuple[int, int], int], site: int,
-                    spin: bool = None) -> sparse.csc_matrix:
-        r"""Returns the "normal" space creation operator at in sector
+                    spin: Union[str, None] = None) -> sparse.csc_matrix:
+        r"""Returns the 'normal' space creation operator at in sector
         'sector', site/orbital 'site' and with spin 'spin'
 
         Parameters
@@ -697,8 +675,61 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
+    def c_sector(self, sector: Union[Tuple[int, int], int], site: int,
+                 spin: Union[str, None] = None) -> sparse.csc_matrix:
+        r"""Returns the 'normal' space annihilation operator at in sector
+        'sector', site/orbital 'site' and with spin 'spin'
+
+        Parameters
+        ----------
+        sector : int or tuple
+            Spin sector of interest. If spinless fermions, than use integer.
+            The sector is than given by a fixed value for
+            (\Delta N=N-N_{tilde}).
+            If spinfull fermions, the sector is than given by a tuple with
+            fixed value for (\Delta N_{up},\Delta N_{do}), e.g. (0,0).
+
+        site : int
+            site/orbital index
+
+        spin : string, optional
+            Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
+            None. In case of spinless fermions the argument doesn't need to
+            be supplied. If it is supplied, the annihilation operator at
+            site/orbital 'site' is returned.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                    2**self.spin_times_site)
+            Annihilation operator of site/orbital index 'site' and spin index
+            'spin' in sector 'sector'.
+
+        Raises
+        ------
+        IndexError
+            If site/orbital index is out of bound
+        ValueError
+            If spin is not 'up' or 'do' in spin 1/2 fermions
+        """
+        if (site not in self.target_sites):
+            raise IndexError('ERROR: index out of bound!')
+
+        if self.fock_ops.spinless:
+            if spin is not None:
+                print("Spinless fermions don't need the argument spin to be " +
+                      "passed")
+            return self.spin_sector_fermi_ops[site]['c'][sector]
+        else:
+            if spin == "up":
+                return self.spin_sector_fermi_ops[site]['c']['up'][sector]
+            elif spin == "do":
+                return self.spin_sector_fermi_ops[site]['c']['do'][sector]
+            else:
+                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+
     def cdag_tilde_sector(self, sector: Union[Tuple[int, int], int], site: int,
-                          spin: bool = None) -> sparse.csc_matrix:
+                          spin: Union[str, None] = None) -> sparse.csc_matrix:
         r"""Returns the 'tilde' space creation operator at in sector
         'sector', site/orbital 'site' and with spin 'spin'
 
@@ -748,6 +779,61 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                     sector]
             elif spin == "do":
                 return self.spin_sector_fermi_ops[site]['cdag_tilde']['do'][
+                    sector]
+            else:
+                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+
+    def c_tilde_sector(self, sector: Union[Tuple[int, int], int], site: int,
+                       spin: Union[str, None] = None) -> sparse.csc_matrix:
+        r"""Returns the 'tilde' space annihilation operator at in sector
+        'sector', site/orbital 'site' and with spin 'spin'
+
+        Parameters
+        ----------
+        sector : int or tuple
+            Spin sector of interest. If spinless fermions, than use integer.
+            The sector is than given by a fixed value for
+            (\Delta N=N-N_{tilde}).
+            If spinfull fermions, the sector is than given by a tuple with
+            fixed value for (\Delta N_{up},\Delta N_{do}), e.g. (0,0).
+
+        site : int
+            site/orbital index
+
+        spin : string, optional
+            Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
+            None. In case of spinless fermions the argument doesn't need to
+            be supplied. If it is supplied, the annihilation operator at
+            site/orbital 'site' is returned.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                    2**self.spin_times_site)
+            Annihilation operator of site/orbital index 'site' and spin index
+            'spin' in sector 'sector'.
+
+        Raises
+        ------
+        IndexError
+            If site/orbital index is out of bound
+        ValueError
+            If spin is not 'up' or 'do' in spin 1/2 fermions
+        """
+        if (site not in self.target_sites):
+            raise IndexError('ERROR: index out of bound!')
+
+        if self.fock_ops.spinless:
+            if spin is not None:
+                print("Spinless fermions don't need the argument spin to be " +
+                      "passed")
+            return self.spin_sector_fermi_ops[site]['c_tilde'][sector]
+        else:
+            if spin == "up":
+                return self.spin_sector_fermi_ops[site]['c_tilde']['up'][
+                    sector]
+            elif spin == "do":
+                return self.spin_sector_fermi_ops[site]['c_tilde']['do'][
                     sector]
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")

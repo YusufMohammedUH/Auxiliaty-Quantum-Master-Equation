@@ -27,7 +27,7 @@ import src.super_fermionic_space.super_fermionic_subspace as sf_op
 #          Dissipator_thermal_bath
 
 
-def Dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,
+def dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,
                             super_fermi_ops: sf_op.SuperFermionicOperatorType,
                             sign: Union[int, None] = None
                             ) -> Tuple[sparse.csc_matrix, sparse.csc_matrix]:
@@ -142,7 +142,7 @@ def Dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,
     return L_Gamma1, L_Gamma2
 
 
-def Dissipator_thermal_radiation_mode(
+def dissipator_thermal_radiation_mode(
         Gamma1: np.ndarray, Gamma2: np.ndarray,
         super_fermi_ops: sf_op.SuperFermionicOperatorType,
         sign: int = 1) -> Tuple[sparse.csc_matrix, sparse.csc_matrix]:
@@ -228,7 +228,7 @@ def Dissipator_thermal_radiation_mode(
 class Lindbladian:
     def __init__(self, super_fermi_ops: sf_op.SuperFermionicOperatorType,
                  Hamiltonian: Callable = ham.hubbard_hamiltonian,
-                 Dissipator: Callable = Dissipator_thermal_bath) -> None:
+                 Dissipator: Callable = dissipator_thermal_bath) -> None:
         """Class for setting up a Lindbladian
 
         Parameters

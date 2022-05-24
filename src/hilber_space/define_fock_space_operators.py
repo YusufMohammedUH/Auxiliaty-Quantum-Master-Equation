@@ -45,86 +45,91 @@ def anti_commutator(a: npt.ArrayLike, b: npt.ArrayLike
 
 
 class FermionicFockOperators:
+    """FermionicFockOperators(nsite: int, spinless: bool = False,
+                 sorted_particle_number: bool = True)
+    Class of fermiononic creation and annihilation operators in Fock
+    space.
+
+    The Operators are constructed using the Jordan-Wigner transformation
+    and afterwards sorted by particle number. The fermions can be either
+    spinless or can have spin 1/2.
+
+    Parameters
+    ----------
+    nsite : int
+        Number of sites/ orbitals in the Fermionic problem
+
+    spinless : bool, optional
+        Indicates if fermions are spinless or spin 1/2.
+        If set to True, than the fermions are spinless, by default False.
+
+    sorted_particle_number: bool, optional
+        The Fock space is sorted in incrising order if set to True, by
+        default False.
+
+    Attributes
+    ----------
+    spinless: bool
+        Indicates if fermions are spinless or spin 1/2.
+
+    nsite: int
+        Number of sites/ orbitals in the Fermionic problem
+
+    sigma_plus: scipy.sparse.csc_matrix (2,2)
+        Pauli sigma plus matrix
+
+    sorted_particle_number: bool
+        The Fock space is sorted in incrising order if set to True, by
+        default False.
+
+    sigma_minus: scipy.sparse.csc_matrix (2,2)
+        Pauli sigma minus matrix
+
+    sigma_z: scipy.sparse.csc_matrix (2,2)
+        Pauli sigma z matrix
+
+    unit2: scipy.sparse.csc_matrix (2,2)
+        Unitary matrix of dimension (2,2)
+
+    spin_times_site: int
+        Number of spins multiplied by site, necessary to determen the
+        Fock space dimension
+
+    annihilators: np.ndarray(self.spin_times_site,)
+        Contains the annihilation operators. In case of spin 1/2 fermions,
+        for site/orbital i the array contains the annihilator for spin up
+        at 2*i and spin down at 2*i+1. In case of spinless fermions the
+        annihilator of site/orbital i is given by the i-th element.
+
+    creators: np.ndarray(self.spin_times_site,)
+        Contains the creator operators. In case of spin 1/2 fermions,
+        for site/orbital i the array contains the creator for spin up
+        at 2*i and spin down at 2*i+1. In case of spinless fermions the
+        creator of site/orbital i is given by the i-th element.
+
+    N: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                2**self.spin_times_site)
+        Total particle number operator.
+
+    P: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                2**self.spin_times_site)
+        Permutation operator used to sort the operators by particle number.
+
+    pascal_indices:  list
+        List of supspace dimensions with certain particle numbers.
+
+    N_up: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                2**self.spin_times_site)
+        Total particle operator of spin up fermions.
+
+    N_do: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                2**self.spin_times_site)
+        Total particle operator of spin down fermions.
+    """
+
     def __init__(self, nsite: int, spinless: bool = False,
                  sorted_particle_number: bool = True) -> None:
-        """Class of fermiononic creation and annihilation operators in Fock
-        space.
-
-        The Operators are constructed using the Jordan-Wigner transformation
-        and afterwards sorted by particle number. The fermions can be either
-        spinless or can have spin 1/2.
-
-        Parameters
-        ----------
-        nsite : int
-            Number of sites/ orbitals in the Fermionic problem
-
-        spinless : bool, optional
-            Indicates if fermions are spinless or spin 1/2.
-            If set to True, than the fermions are spinless, by default False.
-
-        sorted_particle_number: bool, optional
-            The Fock space is sorted in incrising order if set to True, by
-            default False.
-
-        Attributes
-        ----------
-        spinless: bool
-            Indicates if fermions are spinless or spin 1/2.
-
-        nsite: int
-            Number of sites/ orbitals in the Fermionic problem
-
-        sigma_plus: scipy.sparse.csc_matrix (2,2)
-            Pauli sigma plus matrix
-
-        sorted_particle_number: bool
-            The Fock space is sorted in incrising order if set to True, by
-            default False.
-
-        sigma_minus: scipy.sparse.csc_matrix (2,2)
-            Pauli sigma minus matrix
-
-        sigma_z: scipy.sparse.csc_matrix (2,2)
-            Pauli sigma z matrix
-
-        unit2: scipy.sparse.csc_matrix (2,2)
-            Unitary matrix of dimension (2,2)
-
-        spin_times_site: int
-            Number of spins multiplied by site, necessary to determen the
-            Fock space dimension
-
-        annihilators: np.ndarray(self.spin_times_site,)
-            Contains the annihilation operators. In case of spin 1/2 fermions,
-            for site/orbital i the array contains the annihilator for spin up
-            at 2*i and spin down at 2*i+1. In case of spinless fermions the
-            annihilator of site/orbital i is given by the i-th element.
-
-        creators: np.ndarray(self.spin_times_site,)
-            Contains the creator operators. In case of spin 1/2 fermions,
-            for site/orbital i the array contains the creator for spin up
-            at 2*i and spin down at 2*i+1. In case of spinless fermions the
-            creator of site/orbital i is given by the i-th element.
-
-        N: scipy.sparse.csc_matrix (2**self.spin_times_site,
-                                    2**self.spin_times_site)
-            Total particle number operator.
-
-        P: scipy.sparse.csc_matrix (2**self.spin_times_site,
-                                    2**self.spin_times_site)
-           Permutation operator used to sort the operators by particle number.
-
-        pascal_indices:  list
-            List of supspace dimensions with certain particle numbers.
-
-        N_up: scipy.sparse.csc_matrix (2**self.spin_times_site,
-                                    2**self.spin_times_site)
-            Total particle operator of spin up fermions.
-
-        N_do: scipy.sparse.csc_matrix (2**self.spin_times_site,
-                                    2**self.spin_times_site)
-            Total particle operator of spin down fermions.
+        """Initialize self.  See help(type(self)) for accurate signature.
         """
         if spinless:
             print("Constructing spinless fermionic Fock space.")
