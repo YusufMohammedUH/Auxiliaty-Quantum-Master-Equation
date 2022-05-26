@@ -3,13 +3,13 @@
 """
 # %%
 import numpy as np
+import matplotlib.pyplot as plt
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.correlation_functions as corr
-import matplotlib.pyplot as plt
 
 # ############################### Parameters ##################################
 # Parameters of the system
