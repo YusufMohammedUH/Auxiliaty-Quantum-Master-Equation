@@ -5,11 +5,11 @@
     """
 # %%
 import numpy as np
+import matplotlib.pyplot as plt
 import src.hilber_space.model_hamiltonian as ham
 import src.super_fermionic_space.model_lindbladian as lind
 import src.super_fermionic_space.super_fermionic_subspace as sf_op
-import src.exact_decomposition as ed_lind
-import matplotlib.pyplot as plt
+import src.solvers.exact_decomposition as ed_lind
 
 # ########################### Unitary propagation #############################
 # Local Hamiltonian parameters of two site Problem
@@ -22,7 +22,7 @@ spinless = True
 super_fermi_ops = sf_op.SubspaceDecomposition(nsite, spinless=spinless)
 # Initializing Lindblad class
 L = lind.Lindbladian(super_fermi_ops,
-                     Dissipator=lind.Dissipator_thermal_radiation_mode)
+                     Dissipator=lind.dissipator_thermal_radiation_mode)
 
 # Setting hopping matrix
 Tmat = ham.get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts)
