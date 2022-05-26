@@ -6,3 +6,4 @@
 **/*.svg
 **/*.txt
 **/*.spyproject
+newrelic_agent.log
