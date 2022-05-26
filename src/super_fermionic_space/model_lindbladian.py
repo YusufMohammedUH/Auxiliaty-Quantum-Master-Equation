@@ -11,9 +11,9 @@ import src.super_fermionic_space.super_fermionic_subspace as sf_op
 #      [ ] Spinless fermions with interaction coupled to
 #          Dissipator_thermal_radiation_mode
 
-#      [ ] Spinfull fermions without interaction coupled to
+#      [ ] Spinful fermions without interaction coupled to
 #          Dissipator_thermal_radiation_mode
-#      [ ] Spinfull fermions with interaction coupled to
+#      [ ] Spinful fermions with interaction coupled to
 #          Dissipator_thermal_radiation_mode
 
 #      [ ] Spinless fermions without interaction coupled to
@@ -21,9 +21,9 @@ import src.super_fermionic_space.super_fermionic_subspace as sf_op
 #      [ ] Spinless fermions with interaction coupled to
 #          Dissipator_thermal_bath
 
-#      [ ] Spinfull fermions without interaction coupled to
+#      [ ] Spinful fermions without interaction coupled to
 #          Dissipator_thermal_bath
-#      [ ] Spinfull fermions with interaction coupled to
+#      [ ] Spinful fermions with interaction coupled to
 #          Dissipator_thermal_bath
 
 
