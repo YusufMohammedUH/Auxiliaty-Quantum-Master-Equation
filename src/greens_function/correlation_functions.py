@@ -591,7 +591,7 @@ if __name__ == "__main__":
 
     Nb = 1
     nsite = 2 * Nb + 1
-    U_imp = 0.0
+    U_imp = 1.0
     es = np.array([1])
     ts = np.array([0.5])
     Us = np.zeros(nsite)
