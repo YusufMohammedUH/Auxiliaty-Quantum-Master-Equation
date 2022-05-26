@@ -245,7 +245,12 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
 
 
 class SpinSectorDecomposition(SubspaceDecomposition):
-    r"""SubspaceDecomposition child class decomposes the super-fermionic
+    r"""SuperFermionicOperators(nsite: int, spin_sector_max: int,
+                 target_sites: Union[List, None] = None,
+                 spinless: bool = False,
+                 tilde_conjugationrule_phase: bool = True) -> None
+
+    SubspaceDecomposition child class decomposes the super-fermionic
     creation and annihilation in spin sectors (\Delta N_{up},\Delta N_{do}).
     In case of spinless fermions the sectors are given by
     (\Delta N=N-N_{tilde})
@@ -260,6 +265,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                  target_sites: Union[List, None] = None,
                  spinless: bool = False,
                  tilde_conjugationrule_phase: bool = True) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature.
+        """
         assert spin_sector_max >= 0
         SubspaceDecomposition.__init__(
             self, nsite=nsite, spinless=spinless,

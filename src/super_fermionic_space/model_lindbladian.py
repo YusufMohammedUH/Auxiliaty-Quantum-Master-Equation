@@ -26,6 +26,8 @@ import src.super_fermionic_space.super_fermionic_subspace as sf_op
 #      [ ] Spinful fermions with interaction coupled to
 #          Dissipator_thermal_bath
 
+# TODO: write classe such that Lindbladian is directly calculated in sectors
+
 
 def dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,
                             super_fermi_ops: sf_op.SuperFermionicOperatorType,
@@ -226,74 +228,81 @@ def dissipator_thermal_radiation_mode(
 
 
 class Lindbladian:
+    """Lindbladian(self, super_fermi_ops: sf_op.SuperFermionicOperatorType,
+                 Hamiltonian: Callable = ham.hubbard_hamiltonian,
+                 Dissipator: Callable = dissipator_thermal_bath) -> None
+
+    Class for setting up a Lindbladian
+
+    Parameters
+    ----------
+    nsite : int
+        number of sites/ orbitals of the fermionic system
+
+    super_fermi_ops: src.SuperFermionicOperators type
+        This object defines the super-fermionic space of the
+        lindbladian
+
+    spinless : bool, optional
+        Indicates if the fermions are spinless, by default False
+
+    tilde_conjugationrule_phase: bool, optional
+        If True a the tilde conjugation rule is applied with an imaginary
+        phase for the tilde operators and the left vacuum state. If False,
+        the phase is set to one, by default False
+
+    Hamiltonian : function returning a sparse matrix, optional
+        Hamiltonian of the reduced system, by default
+        ham.hubbard_hamiltonian
+
+    Dissipator : function returning a tuple of sparse matrices, optional
+        Function describing the dissipation/coupling between the reduced
+        system and the surrounding bath, by default Dissipator_thermal_bath
+
+    Attributes
+    ----------
+    super_fermi_ops:  SuperFermionicOperators
+    Contains the fermionic creation and annihilation operators Liouville
+    space and converts Fock space operators in to Liouville space operators
+
+    Hamiltonian: function returning a sparse matrix, optional
+        Hamiltonian of the reduced system, by default
+        ham.hubbard_hamiltonian
+
+    Dissipator: function returning a tuple of sparse matrices, optional
+        Function describing the dissipation/coupling between the reduced
+        system and the surrounding bath, by default Dissipator_thermal_bath
+
+    L_tot: scipy.sparse.csc_matrix (dim,dim)
+        Full Lindbladian sparse matrix
+
+    L_unitary: scipy.sparse.csc_matrix (dim,dim)
+        Unitary component of the Lindbladian sparse matrix
+
+    L_Gamma1: scipy.sparse.csc_matrix (dim,dim)
+        Dissipative component of the Lindbladian sparse matrix, describing
+        the removal of electrons
+
+    L_Gamma2: scipy.sparse.csc_matrix (dim,dim)
+        Dissipative component of the Lindbladian sparse matrix,
+        describing the injection of electrons
+
+    vals: numpy.ndarray (dim,)
+        Containing the eigen values of the Lindbladian
+
+    vec_l: numpy.ndarray (dim, 1, dim)
+        Contains the left eigen vectors ot the Lindbladian. The order
+        corresponds to the order of the eigen vectors
+
+    vec_r: numpy.ndarray (dim, dim, 1)
+        Contains the right eigen vectors ot the Lindbladian. The order
+        corresponds to the order of the eigen vectors
+    """
+
     def __init__(self, super_fermi_ops: sf_op.SuperFermionicOperatorType,
                  Hamiltonian: Callable = ham.hubbard_hamiltonian,
                  Dissipator: Callable = dissipator_thermal_bath) -> None:
-        """Class for setting up a Lindbladian
-
-        Parameters
-        ----------
-        nsite : int
-            number of sites/ orbitals of the fermionic system
-
-        super_fermi_ops: src.SuperFermionicOperators type
-            This object defines the super-fermionic space of the
-            lindbladian
-
-        spinless : bool, optional
-            Indicates if the fermions are spinless, by default False
-
-        tilde_conjugationrule_phase: bool, optional
-            If True a the tilde conjugation rule is applied with an imaginary
-            phase for the tilde operators and the left vacuum state. If False,
-            the phase is set to one, by default False
-
-        Hamiltonian : function returning a sparse matrix, optional
-            Hamiltonian of the reduced system, by default
-            ham.hubbard_hamiltonian
-
-        Dissipator : function returning a tuple of sparse matrices, optional
-            Function describing the dissipation/coupling between the reduced
-            system and the surrounding bath, by default Dissipator_thermal_bath
-
-        Attributes
-        ----------
-        super_fermi_ops:  SuperFermionicOperators
-        Contains the fermionic creation and annihilation operators Liouville
-        space and converts Fock space operators in to Liouville space operators
-
-        Hamiltonian: function returning a sparse matrix, optional
-            Hamiltonian of the reduced system, by default
-            ham.hubbard_hamiltonian
-
-        Dissipator: function returning a tuple of sparse matrices, optional
-            Function describing the dissipation/coupling between the reduced
-            system and the surrounding bath, by default Dissipator_thermal_bath
-
-        L_tot: scipy.sparse.csc_matrix (dim,dim)
-            Full Lindbladian sparse matrix
-
-        L_unitary: scipy.sparse.csc_matrix (dim,dim)
-            Unitary component of the Lindbladian sparse matrix
-
-        L_Gamma1: scipy.sparse.csc_matrix (dim,dim)
-            Dissipative component of the Lindbladian sparse matrix, describing
-            the removal of electrons
-
-        L_Gamma2: scipy.sparse.csc_matrix (dim,dim)
-            Dissipative component of the Lindbladian sparse matrix,
-            describing the injection of electrons
-
-        vals: numpy.ndarray (dim,)
-            Containing the eigen values of the Lindbladian
-
-        vec_l: numpy.ndarray (dim, 1, dim)
-            Contains the left eigen vectors ot the Lindbladian. The order
-            corresponds to the order of the eigen vectors
-
-        vec_r: numpy.ndarray (dim, dim, 1)
-            Contains the right eigen vectors ot the Lindbladian. The order
-            corresponds to the order of the eigen vectors
+        """Initialize self.  See help(type(self)) for accurate signature.
         """
         self.super_fermi_ops = super_fermi_ops
         self.Hamiltonian = Hamiltonian
