@@ -34,12 +34,12 @@ freq = np.linspace(-freq_max, freq_max, N_freq)
 #  Selfconsistency conditions
 error = 1e-7
 mixing = 0.2
-max_iter = 30
+max_iter = 50
 
 spin_sector_max = 1
 spinless = False
 tilde_conjugationrule_phase = True
-
+err = {}
 for U in [1., 2., 3., 4., 5.]:
 
     Us[Nb] = U
@@ -63,7 +63,7 @@ for U in [1., 2., 3., 4., 5.]:
 
     optimization_options = {"disp": False, "maxiter": 500, 'ftol': 1e-5}
 
-    err = []
+    err[U] = []
     x_start = [0., 0.1, 0.5, -0.1, 0.2]
     # plt.figure()
     for i in range(max_iter):
@@ -108,10 +108,10 @@ for U in [1., 2., 3., 4., 5.]:
         sigma = G_aux.get_self_enerqy() - hyb_aux
         # ######### Calculate the system single particle Green's function #####
         G_sys.dyson(aux_sys.ws, hybridization + dmft_hyb + sigma)
-        err.append(opt.cost_function(G_sys, G_tmp, normalize=False))
-        if err[-1] < error:
+        err[U].append(opt.cost_function(G_sys, G_tmp, normalize=False))
+        if err[U][-1] < error:
             break
-        print(f"Error is: {err[i]}")
+        print(f"Error is: {err[U][i]}")
         G_tmp = fg.FrequencyGreen(aux_sys.ws, retarded=(
             (1.0 - mixing) * G_sys.retarded + mixing * G_tmp.retarded),
             keldysh=((1.0 - mixing) * G_sys.keldysh + mixing * G_tmp.keldysh))
