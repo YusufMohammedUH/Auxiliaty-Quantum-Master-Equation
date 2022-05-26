@@ -7,7 +7,7 @@ from scipy import sparse
 # TODO: test SpinSectorDecomposition operators have stored in
 # spin_sector_fermi_ops have to have the right sector
 
-class TestClassSubspaceDecompositionSpinfull:
+class TestClassSubspaceDecompositionSpinful:
     nsite = 2
     fl_op = sf_op.SubspaceDecomposition(nsite,
                                         tilde_conjugationrule_phase=True)
@@ -170,7 +170,7 @@ class TestClassSubspaceDecompositionSpinless:
             assert pnum_index == N_subspace.shape[0]
 
 
-class TestClassSpinSectorDecompositionSpinfull:
+class TestClassSpinSectorDecompositionSpinful:
     nsite = 2
     spinless = False
     fl_op = sf_op.SpinSectorDecomposition(nsite, spin_sector_max=2,
