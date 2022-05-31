@@ -5,6 +5,7 @@ correlation functions.
 # %%
 from typing import Tuple, Union
 import numpy as np
+from numba.typed import List
 import src.solvers.ed_solver_get_correlator_jit as corr
 import src.solvers.ed_solver_precalculate_jit as precalc
 import src.solvers.exact_decomposition as ed
@@ -47,6 +48,7 @@ class EDSolver:
         self.rho_stready_state = None
         self.left_vacuum = None
         self.precalc_correlator = None
+        self.e_cut_off = None
 
     def prepare(self, correlators: dict = None) -> None:
         """Set precalculated expectation values keys.
@@ -130,10 +132,16 @@ class EDSolver:
                 print("eigen values")
                 raise ValueError(
                     "There are more than one stready states values")
+            e_cut_off_tmp = np.abs(vals_close_zero_sorted[0] * 100)
+            e_cut_off_tmp = np.round(e_cut_off_tmp, -int(
+                np.floor(np.log10(abs(e_cut_off_tmp)))))
             self.rho_stready_state = vec_r[mask][mask2][0]
         else:
+            e_cut_off_tmp = np.abs(vals_close_zero[0] * 100)
+            e_cut_off_tmp = np.round(e_cut_off_tmp, -int(
+                np.floor(np.log10(abs(e_cut_off_tmp)))))
             self.rho_stready_state = vec_r[mask][0]
-
+        self.e_cut_off = e_cut_off_tmp
         self.left_vacuum = \
             Lindbladian.super_fermi_ops.get_subspace_object(
                 (Lindbladian.super_fermi_ops.left_vacuum
@@ -141,6 +149,22 @@ class EDSolver:
                 sector_right=sector0).todense()
 
         self.rho_stready_state /= self.left_vacuum * self.rho_stready_state
+
+    def get_expectation_value(self, operator_sector00: np.ndarray) -> complex:
+        """Get expectation value of an operator in the ((0,0),(0,0)) sector.
+
+        Parameters
+        ----------
+        operator_sector00 : np.ndarray
+            operator in the ((0,0),(0,0)) sector
+
+        Returns
+        -------
+        out: complex
+            expectation value
+        """
+        return self.left_vacuum.dot(operator_sector00).dot(
+            self.rho_stready_state)
 
     def update(self, Lindbladian: lind.Lindbladian) -> None:
         """Update the exact decomposition.
@@ -189,34 +213,40 @@ class EDSolver:
             vec_l_sector = []
             for site, op_key in zip(sites, operator_keys):
                 tmp = None
-                operator, spin, sector = op_key
+                operator, spin_or_channel, sector = op_key
 
                 if operator == 'cdag':
                     tmp = ((Lindbladian.super_fermi_ops
-                            ).cdag_sector(sector, site, spin).todense() *
+                            ).cdag_sector(sector, site, spin_or_channel
+                                          ).todense() *
                            (Lindbladian.super_fermi_ops
                             ).tilde_operator_sign[operator])
                 elif operator == 'c':
                     tmp = ((Lindbladian.super_fermi_ops
-                            ).c_sector(sector, site, spin).todense() *
+                            ).c_sector(sector, site, spin_or_channel
+                                       ).todense() *
                            (Lindbladian.super_fermi_ops
                             ).tilde_operator_sign[operator])
                 elif operator == 'cdag_tilde':
                     tmp = ((Lindbladian.super_fermi_ops
-                            ).cdag_tilde_sector(sector, site, spin).todense() *
+                            ).cdag_tilde_sector(sector, site, spin_or_channel
+                                                ).todense() *
                            (Lindbladian.super_fermi_ops
                             ).tilde_operator_sign[operator])
                 elif operator == 'c_tilde':
                     tmp = ((Lindbladian.super_fermi_ops
-                            ).c_tilde_sector(sector, site, spin).todense() *
+                            ).c_tilde_sector(sector, site, spin_or_channel
+                                             ).todense() *
                            (Lindbladian.super_fermi_ops
                             ).tilde_operator_sign[operator])
-                elif operator == 'rho':
+                elif operator == 'n_channel':
                     tmp = (Lindbladian.super_fermi_ops
-                           ).rho_sector(sector, site, spin).todense()
-                elif operator == 'rho_tilde':
+                           ).n_channel_sector(sector, site, spin_or_channel
+                                              ).todense()
+                elif operator == 'n_channel_tilde':
                     tmp = (Lindbladian.super_fermi_ops
-                           ).rho_tilde_sector(sector, site, spin).todense()
+                           ).n_channel_tilde_sector(sector, site,
+                                                    spin_or_channel).todense()
 
                 spin_sector_fermi_ops.append(tmp)
 
@@ -301,7 +331,6 @@ class EDSolver:
         tensor_shapes = [tuple([self.vals_sector[op_key[2][1]].shape[0]
                                 for op_key in op_keys[:-1]]) for op_keys
                          in operator_keys]
-
         # precalculate expectation values at t=0. Reduces computation.
         precalc_correlators = []
         for op_key, tensor_shape in zip(operator_keys, tensor_shapes):
@@ -316,8 +345,8 @@ class EDSolver:
             vals_sectors = tuple([tuple([self.vals_sector[op_key[2][0]]
                                          for op_key in op_keys[1:]])[0]
                                   for op_keys in operator_keys])
-            green_component_plus = np.zeros(freq.shape, dtype=np.complex128)
-            green_component_minus = np.zeros(freq.shape, dtype=np.complex128)
+            green_component_plus = np.zeros(freq.shape, dtype=np.complex64)
+            green_component_minus = np.zeros(freq.shape, dtype=np.complex64)
             # Calculate single particle green's function component
             if component == (1, 0):
                 corr.get_two_point_correlator_frequency(green_component_plus,
@@ -339,50 +368,50 @@ class EDSolver:
         # calculate three point correlation function
         elif n == 3:
             # Save eigenvalues in each sector used in jited function
-            vals_sectors = tuple([tuple([self.vals_sector[op_key[2][0]]
-                                         for op_key in op_keys[1:]])
-                                  for op_keys in operator_keys])
+            vals_sectors = [tuple([self.vals_sector[op_key[2][0]]
+                                   for op_key in op_keys[1:]])
+                            for op_keys in operator_keys]
             # Calculate correlator component
             green_component = np.zeros((freq.shape[0], freq.shape[0]),
-                                       dtype=np.complex128)
+                                       dtype=np.complex64)
             if component == (0, 0, 0):
                 corr.get_three_point_correlator_frequency_mmm(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
 
             elif component == (1, 0, 0):
                 corr.get_three_point_correlator_frequency_pmm(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
 
             elif component == (0, 1, 0):
                 corr.get_three_point_correlator_frequency_mpm(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
             elif component == (0, 0, 1):
                 corr.get_three_point_correlator_frequency_mmp(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
 
             elif component == (1, 1, 0):
                 corr.get_three_point_correlator_frequency_ppm(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
 
             elif component == (1, 0, 1):
                 corr.get_three_point_correlator_frequency_pmp(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
 
             elif component == (0, 1, 1):
                 corr.get_three_point_correlator_frequency_mpp(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
 
             elif component == (1, 1, 1):
                 corr.get_three_point_correlator_frequency_ppp(
                     green_component, freq, precalc_correlators, vals_sectors,
-                    tensor_shapes, permutation_sign, prefactor)
+                    tensor_shapes, permutation_sign, prefactor, self.e_cut_off)
             return green_component
 
 

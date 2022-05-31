@@ -65,7 +65,8 @@ def get_three_point_correlator_frequency_mmm(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (---)
     from parameters
 
@@ -100,56 +101,80 @@ def get_three_point_correlator_frequency_mmm(green_component: np.ndarray,
         w1 = freq[i]
         for j in prange(len(freq)):
             G = 0 + 0j
-
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor * precalc_correlators[0][n, m] * (1.0 / (
-                        (1j * w1 + L_n) * (1j * (w1 + w2) + L_n + L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * precalc_correlators[0][n, m] \
+                                * (1.0 / ((1j * w1 + L_n) *
+                                          (1j * (w1 + w2) + L_n + L_m)))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * permutation_sign[2]\
-                        * precalc_correlators[1][n, m] * (-1 / (
-                            (1j * w1 + L_n) * (1j * w2 - L_n - L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2]\
+                                * precalc_correlators[1][n, m] * (-1 / (
+                                    (1j * w1 + L_n) * (1j * w2 - L_n - L_m)))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * precalc_correlators[2][n, m] * (1 / (
-                            (1j * (w1 + w2) + L_n + L_m) * (1j * w2 + L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * precalc_correlators[2][n, m] * (1 / (
+                                    (1j * (w1 + w2) + L_n + L_m)
+                                    * (1j * w2 + L_n)))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * precalc_correlators[3][n, m] * (-1 / (
-                            (1j * w1 - L_n - L_m) * (1j * w2 + L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1]\
+                                * precalc_correlators[3][n, m] * (-1 / (
+                                    (1j * w1 - L_n - L_m) * (1j * w2 + L_n)))
 
             for n in prange(tensor_shapes[4][0]):
                 L_n = vals_sectors[4][0][n]
-                for m in prange(tensor_shapes[4][1]):
-                    L_m = vals_sectors[4][1][m]
-                    G += prefactor * permutation_sign[1] * permutation_sign[2]\
-                        * precalc_correlators[4][n, m] * (1 / (
-                            (1j * (w1 + w2) - L_n) * (1j * w2 - L_n - L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[4][1]):
+                        L_m = vals_sectors[4][1][m]
+
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[1] \
+                                * permutation_sign[2]\
+                                * precalc_correlators[4][n, m] * (1 / (
+                                    (1j * (w1 + w2) - L_n)
+                                    * (1j * w2 - L_n - L_m)))
 
             for n in prange(tensor_shapes[5][0]):
                 L_n = vals_sectors[5][0][n]
-                for m in prange(tensor_shapes[5][1]):
-                    L_m = vals_sectors[5][1][m]
-                    G += prefactor * permutation_sign[1] \
-                        * permutation_sign[2] * permutation_sign[0] \
-                        * precalc_correlators[5][n, m]\
-                        * (1 / ((1j * w1 - L_n - L_m) * (1j * (w1 + w2) - L_n))
-                           )
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[5][1]):
+                        L_m = vals_sectors[5][1][m]
+
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[1] \
+                                * permutation_sign[2] \
+                                * permutation_sign[0] \
+                                * precalc_correlators[5][n, m]\
+                                * (1 / ((1j * w1 - L_n - L_m)
+                                        * (1j * (w1 + w2) - L_n))
+                                   )
 
             green_component[i, j] = G
 
@@ -162,7 +187,8 @@ def get_three_point_correlator_frequency_pmm(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (+--)
     from parameters
 
@@ -201,33 +227,44 @@ def get_three_point_correlator_frequency_pmm(green_component: np.ndarray,
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor * precalc_correlators[0][n, m] * (1.0 / (
-                        (1j * w1 + L_n) * (1j * w2 + L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * precalc_correlators[0][n, m] \
+                                * (1.0 / (
+                                    (1j * w1 + L_n) * (1j * w2 + L_m)))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * precalc_correlators[1][n, m] * (-1 / (
-                        (1j * w1 - L_n - L_m) * (1j * w2 + L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * precalc_correlators[1][n, m] \
+                                * (-1 / (
+                                    (1j * w1 - L_n - L_m) * (1j * w2 + L_m)))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * permutation_sign[2]\
-                        * precalc_correlators[2][n, m] * (-1 / (
-                            (1j * w1 + L_n) * (1j * (w1 + w2) - L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2]\
+                                * precalc_correlators[2][n, m] * (-1 / (
+                                    (1j * w1 + L_n) * (1j * (w1 + w2) - L_m)))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[2]\
-                        * precalc_correlators[3][n, m] * (1 / (
-                            (1j * w1 - L_n - L_m) * (1j * (w1 + w2) - L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2]\
+                                * precalc_correlators[3][n, m] * (1 / (
+                                    (1j * w1 - L_n - L_m)
+                                    * (1j * (w1 + w2) - L_n)))
 
             green_component[i, j] = G
 
@@ -240,7 +277,8 @@ def get_three_point_correlator_frequency_mpm(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (-+-)
     from parameters
 
@@ -279,37 +317,46 @@ def get_three_point_correlator_frequency_mpm(green_component: np.ndarray,
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * precalc_correlators[0][n, m] * (1.0 / (
-                            (1j * w1 + L_m) * (1j * w2 + L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * precalc_correlators[0][n, m] * (1.0 / (
+                                    (1j * w1 + L_m) * (1j * w2 + L_n)))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * precalc_correlators[1][n, m] * (-1 / (
-                            (1j * w1 + L_n) * (1j * w2 - L_n - L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * precalc_correlators[1][n, m] * (-1 / (
+                                    (1j * w1 + L_n) * (1j * w2 - L_n - L_m)))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * permutation_sign[1]\
-                        * precalc_correlators[2][n, m] * (-1 / (
-                            (1j * (w1 + w2) - L_m) * (1j * w2 + L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * permutation_sign[1]\
+                                * precalc_correlators[2][n, m] * (-1 / (
+                                    (1j * (w1 + w2) - L_m) * (1j * w2 + L_n)))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * permutation_sign[1]\
-                        * precalc_correlators[3][n, m] * (1 / (
-                            (1j * w2 - L_n - L_m) * (1j * (w1 + w2) - L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * permutation_sign[1]\
+                                * precalc_correlators[3][n, m] * (1 / (
+                                    (1j * w2 - L_n - L_m)
+                                    * (1j * (w1 + w2) - L_n)))
 
             green_component[i, j] = G
 
@@ -322,7 +369,8 @@ def get_three_point_correlator_frequency_mmp(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (--+)
     from parameters
 
@@ -361,39 +409,49 @@ def get_three_point_correlator_frequency_mmp(green_component: np.ndarray,
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor * permutation_sign[1]\
-                        * permutation_sign[2]\
-                        * precalc_correlators[0][n, m] * (-1 / (
-                            (1j * w1 + L_m) * (1j * (w1 + w2) - L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[1]\
+                                * permutation_sign[2]\
+                                * precalc_correlators[0][n, m] * (-1 / (
+                                    (1j * w1 + L_m) * (1j * (w1 + w2) - L_n)))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * permutation_sign[1]\
-                        * permutation_sign[2]\
-                        * precalc_correlators[1][n, m] * (1 / (
-                            (1j * w1 + L_n) * (1j * (w1 + w2) + L_n + L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[1]\
+                                * permutation_sign[2]\
+                                * precalc_correlators[1][n, m] * (1 / (
+                                    (1j * w1 + L_n)
+                                    * (1j * (w1 + w2) + L_n + L_m)))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * permutation_sign[1]\
-                        * permutation_sign[2] * permutation_sign[0]\
-                        * precalc_correlators[2][n, m] * (-1 / (
-                            (1j * w2 + L_m) * (1j * (w1 + w2) - L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[1]\
+                                * permutation_sign[2] * permutation_sign[0]\
+                                * precalc_correlators[2][n, m] * (-1 / (
+                                    (1j * w2 + L_m) * (1j * (w1 + w2) - L_n)))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[1]\
-                        * permutation_sign[2] * permutation_sign[0]\
-                        * precalc_correlators[3][n, m] * (1 / (
-                            (1j * w2 + L_n) * (1j * (w1 + w2) + L_n + L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[1]\
+                                * permutation_sign[2] * permutation_sign[0]\
+                                * precalc_correlators[3][n, m] * (1 / (
+                                    (1j * w2 + L_n)
+                                    * (1j * (w1 + w2) + L_n + L_m)))
 
             green_component[i, j] = G
 
@@ -406,7 +464,8 @@ def get_three_point_correlator_frequency_ppm(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (++-)
     from parameters
 
@@ -445,52 +504,68 @@ def get_three_point_correlator_frequency_ppm(green_component: np.ndarray,
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor * precalc_correlators[0][n, m] * (1.0 / (
-                        (1j * (w1 + w2) + L_n + L_m) * (1j * w2 + L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * precalc_correlators[0][n, m] \
+                                * (1.0 / ((1j * (w1 + w2) + L_n + L_m)
+                                          * (1j * w2 + L_m)))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * precalc_correlators[1][n, m] * (-1 / (
-                        (1j * w1 - L_n - L_m) * (1j * w2 + L_n)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * precalc_correlators[1][n, m] \
+                                * (-1 / ((1j * w1 - L_n - L_m)
+                                         * (1j * w2 + L_n)))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * precalc_correlators[2][n, m]\
-                        * ((1 / (1j * w1 - L_n - L_m))
-                           - (1 / (1j * (w1 + w2) - L_m))
-                           ) * (1 / (1j * w2 + L_n))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * precalc_correlators[2][n, m]\
+                                * ((1 / (1j * w1 - L_n - L_m))
+                                   - (1 / (1j * (w1 + w2) - L_m))
+                                   ) * (1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * precalc_correlators[3][n, m]\
-                        * ((1 / (1j * w1 + L_m))
-                           - (1 / (1j * (w1 + w2) + L_n + L_m))
-                           ) * (1 / (1j * w2 + L_n))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * precalc_correlators[3][n, m]\
+                                * ((1 / (1j * w1 + L_m))
+                                   - (1 / (1j * (w1 + w2) + L_n + L_m))
+                                   ) * (1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[4][0]):
                 L_n = vals_sectors[4][0][n]
-                for m in prange(tensor_shapes[4][1]):
-                    L_m = vals_sectors[4][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * precalc_correlators[4][n, m] * (-1 / (
-                            (1j * (w1 + w2) - L_m) * (1j * w2 - L_n - L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[4][1]):
+                        L_m = vals_sectors[4][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * precalc_correlators[4][n, m] * (-1 / (
+                                    (1j * (w1 + w2) - L_m)
+                                    * (1j * w2 - L_n - L_m)))
 
             for n in prange(tensor_shapes[5][0]):
                 L_n = vals_sectors[5][0][n]
-                for m in prange(tensor_shapes[5][1]):
-                    L_m = vals_sectors[5][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * precalc_correlators[5][n, m] * (1 / (
-                            (1j * (w1 + w2) - L_m) * (1j * w2 - L_n - L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[5][1]):
+                        L_m = vals_sectors[5][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * precalc_correlators[5][n, m] * (1 / (
+                                    (1j * (w1 + w2) - L_m)
+                                    * (1j * w2 - L_n - L_m)))
 
             green_component[i, j] = G
 
@@ -503,7 +578,8 @@ def get_three_point_correlator_frequency_pmp(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (+-+)
     from parameters
 
@@ -542,55 +618,74 @@ def get_three_point_correlator_frequency_pmp(green_component: np.ndarray,
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor * permutation_sign[2]\
-                        * precalc_correlators[0][n, m] * (1 / (
-                            (1j * (w1 + w2) - L_m) * (1j * w2 - L_n - L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2]\
+                                * precalc_correlators[0][n, m] * (1 / (
+                                    (1j * (w1 + w2) - L_m)
+                                    * (1j * w2 - L_n - L_m)))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * permutation_sign[2]\
-                        * precalc_correlators[1][n, m]\
-                        * ((1 / (1j * w1 - L_n - L_m))
-                           - (1 / (1j * (w1 + w2) - L_n))
-                           ) * (1 / (1j * w2 + L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2]\
+                                * precalc_correlators[1][n, m]\
+                                * ((1 / (1j * w1 - L_n - L_m))
+                                   - (1 / (1j * (w1 + w2) - L_n))
+                                   ) * (1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * permutation_sign[2]\
-                        * precalc_correlators[2][n, m]\
-                        * (1 / (1j * w1 - L_n - L_m)) * (-1 / (1j * w2 + L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2]\
+                                * precalc_correlators[2][n, m]\
+                                * (1 / (1j * w1 - L_n - L_m)) \
+                                * (-1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[2] * permutation_sign[1]\
-                        * precalc_correlators[3][n, m]\
-                        * (-1 / (1j * w1 + L_m)) * (1 / (1j * w2 - L_n - L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2] \
+                                * permutation_sign[1]\
+                                * precalc_correlators[3][n, m]\
+                                * (-1 / (1j * w1 + L_m)) \
+                                * (1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[4][0]):
                 L_n = vals_sectors[4][0][n]
-                for m in prange(tensor_shapes[4][1]):
-                    L_m = vals_sectors[4][1][m]
-                    G += prefactor * permutation_sign[2] * permutation_sign[1]\
-                        * precalc_correlators[4][n, m]\
-                        * ((1 / (1j * w1 + L_n))
-                           - (1 / (1j * (w1 + w2) + L_n + L_m))
-                           ) * (1 / (1j * w2 + L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[4][1]):
+                        L_m = vals_sectors[4][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2] \
+                                * permutation_sign[1]\
+                                * precalc_correlators[4][n, m]\
+                                * ((1 / (1j * w1 + L_n))
+                                   - (1 / (1j * (w1 + w2) + L_n + L_m))
+                                   ) * (1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[5][0]):
                 L_n = vals_sectors[5][0][n]
-                for m in prange(tensor_shapes[5][1]):
-                    L_m = vals_sectors[5][1][m]
-                    G += prefactor * permutation_sign[2] * permutation_sign[1]\
-                        * precalc_correlators[5][n, m] * (1 / (
-                            (1j * (w1 + w2) + L_n + L_m) * (1j * w2 + L_m)))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[5][1]):
+                        L_m = vals_sectors[5][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2] \
+                                * permutation_sign[1]\
+                                * precalc_correlators[5][n, m] * (1 / (
+                                    (1j * (w1 + w2) + L_n + L_m)
+                                    * (1j * w2 + L_m)))
 
             green_component[i, j] = G
 
@@ -603,7 +698,8 @@ def get_three_point_correlator_frequency_mpp(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (-++)
     from parameters
 
@@ -642,57 +738,80 @@ def get_three_point_correlator_frequency_mpp(green_component: np.ndarray,
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor * permutation_sign[0] \
-                        * permutation_sign[1] * precalc_correlators[0][n, m]\
-                        * ((1 / (1j * w1 - L_n - L_m))
-                           - (1 / (1j * (w1 + w2) - L_m))
-                           ) * (1 / (1j * w2 + L_n))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1] \
+                                * precalc_correlators[0][n, m]\
+                                * ((1 / (1j * w1 - L_n - L_m))
+                                   - (1 / (1j * (w1 + w2) - L_m))
+                                   ) * (1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * precalc_correlators[1][n, m]\
-                        * (1 / (1j * (w1 + w2) - L_n)) * (
-                            1 / (1j * w2 - L_n - L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1]\
+                                * precalc_correlators[1][n, m]\
+                                * (1 / (1j * (w1 + w2) - L_n)) * (
+                                    1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * precalc_correlators[2][n, m]\
-                        * (-1 / (1j * w1 + L_m)) * (1 / (1j * w2 - L_n - L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1]\
+                                * precalc_correlators[2][n, m]\
+                                * (-1 / (1j * w1 + L_m)) \
+                                * (1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * permutation_sign[2] * precalc_correlators[3][n, m]\
-                        * (1 / (1j * w1 - L_n - L_m)) * (-1 / (1j * w2 + L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1]\
+                                * permutation_sign[2] \
+                                * precalc_correlators[3][n, m]\
+                                * (1 / (1j * w1 - L_n - L_m))\
+                                * (-1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[4][0]):
                 L_n = vals_sectors[4][0][n]
-                for m in prange(tensor_shapes[4][1]):
-                    L_m = vals_sectors[4][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * permutation_sign[2] * precalc_correlators[4][n, m]\
-                        * (1 / (1j * (w1 + w2) + L_n + L_m)) * (
-                            1 / (1j * w2 + L_n))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[4][1]):
+                        L_m = vals_sectors[4][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1]\
+                                * permutation_sign[2] \
+                                * precalc_correlators[4][n, m]\
+                                * (1 / (1j * (w1 + w2) + L_n + L_m)) * (
+                                    1 / (1j * w2 + L_n))
 
             for n in prange(tensor_shapes[5][0]):
                 L_n = vals_sectors[5][0][n]
-                for m in prange(tensor_shapes[5][1]):
-                    L_m = vals_sectors[5][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * permutation_sign[2] * precalc_correlators[5][n, m]\
-                        * ((1 / (1j * w1 + L_m)) - (
-                            1 / (1j * (w1 + w2) + L_n + L_m))
-                           ) * (1 / (1j * w2 + L_n))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[5][1]):
+                        L_m = vals_sectors[5][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1]\
+                                * permutation_sign[2] \
+                                * precalc_correlators[5][n, m]\
+                                * ((1 / (1j * w1 + L_m)) - (
+                                    1 / (1j * (w1 + w2) + L_n + L_m))
+                                   ) * (1 / (1j * w2 + L_n))
 
             green_component[i, j] = G
 
@@ -705,7 +824,8 @@ def get_three_point_correlator_frequency_ppp(green_component: np.ndarray,
                                              vals_sectors: List[np.ndarray],
                                              tensor_shapes: Tuple,
                                              permutation_sign: Tuple,
-                                             prefactor: complex):
+                                             prefactor: complex,
+                                             e_cut_off: float):
     """Calculate the three point correlation function component (+++)
     from parameters
 
@@ -744,55 +864,72 @@ def get_three_point_correlator_frequency_ppp(green_component: np.ndarray,
             w2 = freq[j]
             for n in range(tensor_shapes[0][0]):
                 L_n = vals_sectors[0][0][n]
-                for m in range(tensor_shapes[0][1]):
-                    L_m = vals_sectors[0][1][m]
-                    G += prefactor\
-                        * precalc_correlators[0][n, m]\
-                        * (1 / (1j * w1 - L_n - L_m)) * (
-                            1 / (1j * (w1 + w2) - L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in range(tensor_shapes[0][1]):
+                        L_m = vals_sectors[0][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor\
+                                * precalc_correlators[0][n, m]\
+                                * (1 / (1j * w1 - L_n - L_m)) * (
+                                    1 / (1j * (w1 + w2) - L_m))
 
             for n in prange(tensor_shapes[1][0]):
                 L_n = vals_sectors[1][0][n]
-                for m in prange(tensor_shapes[1][1]):
-                    L_m = vals_sectors[1][1][m]
-                    G += prefactor * permutation_sign[2]\
-                        * precalc_correlators[1][n, m]\
-                        * (1 / (1j * w1 - L_n - L_m)) * (-1 / (1j * w2 + L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[1][1]):
+                        L_m = vals_sectors[1][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[2]\
+                                * precalc_correlators[1][n, m]\
+                                * (1 / (1j * w1 - L_n - L_m)) \
+                                * (-1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[2][0]):
                 L_n = vals_sectors[2][0][n]
-                for m in prange(tensor_shapes[2][1]):
-                    L_m = vals_sectors[2][1][m]
-                    G += prefactor * permutation_sign[0]\
-                        * precalc_correlators[2][n, m]\
-                        * (1 / (1j * (w1 + w2) - L_m)) * (
-                            1 / (1j * w2 - L_n - L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[2][1]):
+                        L_m = vals_sectors[2][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0]\
+                                * precalc_correlators[2][n, m]\
+                                * (1 / (1j * (w1 + w2) - L_m)) * (
+                                    1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[3][0]):
                 L_n = vals_sectors[3][0][n]
-                for m in prange(tensor_shapes[3][1]):
-                    L_m = vals_sectors[3][1][m]
-                    G += prefactor * permutation_sign[0] \
-                        * permutation_sign[1] * precalc_correlators[3][n, m]\
-                        * (-1 / (1j * w1 + L_m)) * (
-                            -1 / (1j * w2 - L_n - L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[3][1]):
+                        L_m = vals_sectors[3][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1] \
+                                * precalc_correlators[3][n, m]\
+                                * (-1 / (1j * w1 + L_m)) * (
+                                    -1 / (1j * w2 - L_n - L_m))
 
             for n in prange(tensor_shapes[4][0]):
                 L_n = vals_sectors[4][0][n]
-                for m in prange(tensor_shapes[4][1]):
-                    L_m = vals_sectors[4][1][m]
-                    G += prefactor * permutation_sign[1] * permutation_sign[2]\
-                        * precalc_correlators[4][n, m]\
-                        * (1 / (1j * (w1 + w2) + L_n + L_m)) * (
-                            1 / (1j * w2 + L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[4][1]):
+                        L_m = vals_sectors[4][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[1] \
+                                * permutation_sign[2]\
+                                * precalc_correlators[4][n, m]\
+                                * (1 / (1j * (w1 + w2) + L_n + L_m)) * (
+                                    1 / (1j * w2 + L_m))
 
             for n in prange(tensor_shapes[5][0]):
                 L_n = vals_sectors[5][0][n]
-                for m in prange(tensor_shapes[5][1]):
-                    L_m = vals_sectors[5][1][m]
-                    G += prefactor * permutation_sign[0] * permutation_sign[1]\
-                        * permutation_sign[2] * precalc_correlators[5][n, m]\
-                        * (1 / (1j * w1 + L_m)) * (
-                            1 / (1j * (w1 + w2) + L_n + L_m))
+                if np.abs(L_n) > e_cut_off:
+                    for m in prange(tensor_shapes[5][1]):
+                        L_m = vals_sectors[5][1][m]
+                        if np.abs(L_m) > e_cut_off:
+                            G += prefactor * permutation_sign[0] \
+                                * permutation_sign[1]\
+                                * permutation_sign[2] \
+                                * precalc_correlators[5][n, m]\
+                                * (1 / (1j * w1 + L_m)) * (
+                                    1 / (1j * (w1 + w2) + L_n + L_m))
 
             green_component[i, j] = G
