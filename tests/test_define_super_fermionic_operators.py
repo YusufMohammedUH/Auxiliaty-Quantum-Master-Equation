@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 from scipy import sparse
 import src.super_fermionic_space.define_super_fermionic_operators as sf_op
 import src.hilber_space.define_fock_space_operators as fop
