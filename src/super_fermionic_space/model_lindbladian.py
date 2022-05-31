@@ -73,9 +73,9 @@ def dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,
     nsite = super_fermi_ops.fock_ops.nsite
     spin_times_site = super_fermi_ops.fock_ops.spin_times_site
     L_Gamma1 = sparse.csc_matrix(
-        (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
+        (4**(spin_times_site), 4**(spin_times_site)), dtype=np.complex64)
     L_Gamma2 = sparse.csc_matrix(
-        (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
+        (4**(spin_times_site), 4**(spin_times_site)), dtype=np.complex64)
     if super_fermi_ops.fock_ops.spinless:
         spins = [None]
     else:
@@ -175,9 +175,9 @@ def dissipator_thermal_radiation_mode(
     nsite = super_fermi_ops.fock_ops.nsite
     spin_times_site = super_fermi_ops.fock_ops.spin_times_site
     L_Gamma1 = sparse.csc_matrix(
-        (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
+        (4**(spin_times_site), 4**(spin_times_site)), dtype=np.complex64)
     L_Gamma2 = sparse.csc_matrix(
-        (4**(spin_times_site), 4**(spin_times_site)), dtype=complex)
+        (4**(spin_times_site), 4**(spin_times_site)), dtype=np.complex64)
     if super_fermi_ops.fock_ops.spinless:
         spins = [None]
     else:

@@ -31,8 +31,8 @@ def _exact_spectral_decomposition(vals: np.ndarray, vec_r_tmp: np.ndarray
     """
     dim = vals.shape[0]
     vec_l_tmp = np.linalg.inv(vec_r_tmp.T)
-    vec_l = np.zeros((dim, 1, dim), dtype=np.complex128)
-    vec_r = np.zeros((dim, dim, 1), dtype=np.complex128)
+    vec_l = np.zeros((dim, 1, dim), dtype=np.complex64)
+    vec_r = np.zeros((dim, dim, 1), dtype=np.complex64)
 
     for i in range(dim):
         vec_r[i] = vec_r_tmp[:, i].reshape((dim, 1))
@@ -100,7 +100,7 @@ def time_propagation_all_times_exact_diagonalization(times: np.ndarray,
         propagated vector at time times[i]
     """
     dim = vec0.shape[0]
-    vec = np.zeros((dim,) + times.shape, dtype=np.complex128)
+    vec = np.zeros((dim,) + times.shape, dtype=np.complex64)
     dim_times = times.shape[0]
     for l1 in np.arange(dim):
         vec += np.exp(vals[l1] * times)[:].reshape((1, dim_times))\
@@ -143,7 +143,7 @@ def time_propagation_exact_diagonalization(time: np.ndarray,
         propagated vector at time times[i]
     """
     dim = vec0.shape[0]
-    vec = np.zeros((dim, 1), dtype=np.complex128)
+    vec = np.zeros((dim, 1), dtype=np.complex64)
     for l1 in np.arange(dim):
         vec += np.exp(vals[l1] * time) * vec_r[l1] * (
             (vec_l[l1]).dot(vec0))
@@ -178,7 +178,7 @@ def time_evolution_operator(time: float, vals: np.ndarray, vec_l: np.ndarray,
     """
 
     dim = vals.shape[0]
-    time_evolution_operator = np.zeros((dim, dim), dtype=np.complex128)
+    time_evolution_operator = np.zeros((dim, dim), dtype=np.complex64)
     for l1 in np.arange(dim):
         time_evolution_operator += np.exp(vals[l1]
                                           * time) * vec_r[l1] * vec_l[l1]

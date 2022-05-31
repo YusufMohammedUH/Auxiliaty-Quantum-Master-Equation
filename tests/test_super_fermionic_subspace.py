@@ -13,7 +13,7 @@ class TestClassSubspaceDecompositionSpinful:
                                         tilde_conjugationrule_phase=True)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=complex, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
 
     def test_particle_number_fock_subspace_projector_is_projector(self):
         for nelec in range(2 * self.fl_op.fock_ops.nsite + 1):
@@ -95,7 +95,7 @@ class TestClassSubspaceDecompositionSpinless:
                                         tilde_conjugationrule_phase=True)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=complex, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
 
     def test_particle_number_fock_subspace_projector_is_projector(self):
         for nelec in range(2 * self.fl_op.fock_ops.nsite + 1):
@@ -178,7 +178,7 @@ class TestClassSpinSectorDecompositionSpinful:
                                           tilde_conjugationrule_phase=True)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=complex, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
 
     def test_spin_sector_projector_is_projector(self):
         for sector in self.fl_op.spin_sectors:
@@ -274,7 +274,7 @@ class TestClassSpinSectorDecompositionSpinless:
                                           tilde_conjugationrule_phase=True)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=complex, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
 
     def test_spin_sector_projector_is_projector(self):
         for sector in self.fl_op.spin_sectors:
