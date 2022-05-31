@@ -125,12 +125,16 @@ class FermionicFockOperators:
     N_do: scipy.sparse.csc_matrix (2**self.spin_times_site,
                                 2**self.spin_times_site)
         Total particle operator of spin down fermions.
+    channel: List[str]
+        Contains the abbreviation for the charge and spin channels used in
+        charge and spin channels density operator.
     """
 
     def __init__(self, nsite: int, spinless: bool = False,
                  sorted_particle_number: bool = True) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
+        self.channels = ['ch', 'x', 'y', 'z']
         if spinless:
             print("Constructing spinless fermionic Fock space.")
         self.spinless = spinless
@@ -140,19 +144,29 @@ class FermionicFockOperators:
         # fermionic operators
 
         # Set up sigma matrices
-        sigma_plus = np.zeros((2, 2))
+        sigma_plus = np.zeros((2, 2), dtype=np.complex64)
         sigma_plus[0, 1] = 1.0
         self.sigma_plus = sparse.csc_matrix(sigma_plus)
 
-        sigma_minus = np.zeros((2, 2))
+        sigma_minus = np.zeros((2, 2), dtype=np.complex64)
         sigma_minus[1, 0] = 1.0
         self.sigma_minus = sparse.csc_matrix(sigma_minus)
 
-        sigma_z = np.identity(2)
+        sigma_z = np.identity(2, dtype=np.complex64)
         sigma_z[1, 1] = -1.0
         self.sigma_z = sparse.csc_matrix(sigma_z)
 
         self.unit2 = sparse.eye(2).tocsc()
+
+        sigma_x = np.zeros((2, 2), dtype=np.complex64)
+        sigma_x[0, 1] = 1.0
+        sigma_x[1, 0] = 1.0
+        self.sigma_x = sparse.csc_matrix(sigma_x)
+
+        sigma_y = np.zeros((2, 2), dtype=np.complex64)
+        sigma_y[0, 1] = -1.0j
+        sigma_y[1, 0] = 1.0j
+        self.sigma_y = sparse.csc_matrix(sigma_y)
 
         self.spin_times_site = 2 * self.nsite  # number of spins times site
         if spinless:
@@ -336,25 +350,83 @@ class FermionicFockOperators:
             return n[self.pascal_indices[nelec - 1]:self.pascal_indices[nelec],
                      self.pascal_indices[nelec - 1]:self.pascal_indices[nelec]]
 
+    def n_channel(self, ii: int, channel: str = 'ch'
+                  ) -> sparse.csc_matrix:
+        """Returns the charge or spin density operator at site/orbital
+        'ii'. Channel is one of 'ch','x', 'y' or 'z', where 'ch' is the charge
+        channel and 'x','y','z' the spin channels. In case of spinless fermions
+        the density operator is returned.
+
+        Parameters
+        ----------
+        ii : int
+            site/orbital index
+
+        channel : string, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                    2**self.spin_times_site)
+            Charge or spin density operator at site/orbital 'ii'.
+
+        Raises
+        ------
+        IndexError
+            If site/orbital index is out of bound
+        ValueError
+            If channel passed is not one of 'ch', 'x', 'y', 'z'.
+        """
+        if channel not in self.channels:
+            raise ValueError('ERROR: Channel passed have to be in' +
+                             ' self.channels!')
+        if self.spinless:
+            print("Calculating charge/spin density operator for spinless " +
+                  "fermions")
+            return self.n(ii)
+        else:
+            nchannel = sparse.csc_matrix(
+                (2**self.spin_times_site, 2**self.spin_times_site))
+            tmp = None
+            if channel == 'ch' or channel is None:
+                tmp = self.unit2
+            elif channel == 'x':
+                tmp = self.sigma_x
+            elif channel == 'y':
+                tmp = self.sigma_y
+            elif channel == 'z':
+                tmp = self.sigma_y
+
+            for i, spin1 in enumerate(['up', 'do']):
+                for j, spin2 in enumerate(['up', 'do']):
+                    if tmp[i, j] != 0:
+                        nchannel += tmp[i, j] * self.cdag(
+                            ii=ii, spin=spin1).dot(
+                            self.c(ii=ii, spin=spin2))
+            return nchannel
+
 ###############################################################################
 
 
 class BosonicFockOperators:
+    """Class of creation and annihilation for spinless bosons in Fock space
+
+    The bosonic Fock space consists of a number of modes (nmodes) with the
+    same cutoff maximum particle number (nb_max). Due to the cutoff of the
+    Fock space normal ordering has to be mantained when constructing
+    operators out of the creation and annihilation operators.
+
+    Parameters
+    ----------
+    nmodes : int
+        Number of different bosonic modes
+    nb_max : int
+        Largest number of phonon in a mode
+    """
 
     def __init__(self, nmodes: int, nb_max: int) -> None:
-        """Class of creation and annihilation for spinless bosons in Fock space
-
-        The bosonic Fock space consists of a number of modes (nmodes) with the
-        same cutoff maximum particle number (nb_max). Due to the cutoff of the
-        Fock space normal ordering has to be mantained when constructing
-        operators out of the creation and annihilation operators.
-
-        Parameters
-        ----------
-        nmodes : int
-            Number of different bosonic modes
-        nb_max : int
-            Largest number of phonon in a mode
+        """Initialize self.  See help(type(self)) for accurate signature.
         """
         # number of bosonic modes
         self.nmodes = nmodes
@@ -374,7 +446,7 @@ class BosonicFockOperators:
                         for i in range(1, self.nb_max + 1)], k=1)
         destroy = destroy.tocsc()
         unit_nb_max = sparse.eye(self.nb_max,
-                                 dtype=complex, format="csc")
+                                 dtype=np.complex64, format="csc")
 
         # Jordan-Wigner type construction
         # bosonic operators
