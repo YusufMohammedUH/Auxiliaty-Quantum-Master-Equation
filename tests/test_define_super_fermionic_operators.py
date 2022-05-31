@@ -12,7 +12,7 @@ class TestClassSuperFermionicOperatorsNoComplexPhaseSpinless:
                                           tilde_conjugationrule_phase=False)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex128, format="csc")
 
     def test_commutation_relation_fock_subspace(self):
         for i in range(self.nsite):
@@ -289,7 +289,7 @@ class TestClassSuperFermionicOperatorsComplexPhaseSpinless:
                                           tilde_conjugationrule_phase=True)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex128, format="csc")
 
     def test_commutation_relation_fock_subspace(self):
         for i in range(self.nsite):
@@ -565,7 +565,7 @@ class TestClassSuperFermionicOperatorsNoComplexPhase:
                                           tilde_conjugationrule_phase=False)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex128, format="csc")
 
     def test_commutation_relation_fock_subspace(self):
         for i in range(self.nsite):
@@ -869,7 +869,7 @@ class TestClassSuperFermionicOperatorsComplexPhase:
                                           tilde_conjugationrule_phase=True)
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex128, format="csc")
 
     def test_commutation_relation_fock_subspace(self):
         for i in range(self.nsite):

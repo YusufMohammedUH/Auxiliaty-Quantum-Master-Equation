@@ -127,16 +127,16 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
         pnum_index = np.where(self.fock_ops.N.diagonal() == nelec)[0]
         pnum_projector = sparse.csc_matrix(
             (4**(self.fock_ops.spin_times_site),
-             4**(self.fock_ops.spin_times_site)), dtype=np.complex64)
+             4**(self.fock_ops.spin_times_site)), dtype=np.complex128)
 
         for n in pnum_index:
             n_vector = sparse.lil_matrix(
-                (2**self.fock_ops.spin_times_site, 1), dtype=np.complex64)
+                (2**self.fock_ops.spin_times_site, 1), dtype=np.complex128)
             n_vector[n, 0] = 1.0
 
             for m in pnum_index:
                 m_vector = sparse.lil_matrix(
-                    (2**self.fock_ops.spin_times_site, 1), dtype=np.complex64)
+                    (2**self.fock_ops.spin_times_site, 1), dtype=np.complex128)
                 m_vector[m, 0] = 1
                 nm_vector = sparse.kron(n_vector, m_vector, format="csc")
                 pnum_projector += nm_vector * nm_vector.transpose()
@@ -191,7 +191,7 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
         perm_op_sector = sparse.lil_matrix(
             (4**(self.fock_ops.spin_times_site),
                 4**(self.fock_ops.spin_times_site)
-             ), dtype=np.complex64)
+             ), dtype=np.complex128)
 
         for n in range(dim_subspace):
             perm_op_sector[n, indices[n]] = 1.0
@@ -359,7 +359,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             pnum_per_spin_projector = sparse.lil_matrix(
                 (4**(self.fock_ops.spin_times_site),
                     4**((self.fock_ops
-                         ).spin_times_site)), dtype=np.complex64)
+                         ).spin_times_site)), dtype=np.complex128)
 
             for n in pnum_index:
                 pnum_per_spin_projector[n, n] = 1.0
@@ -374,7 +374,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             pnum_per_spin_projector = sparse.lil_matrix(
                 (4**(self.fock_ops.spin_times_site),
                     4**((self.fock_ops
-                         ).spin_times_site)), dtype=np.complex64)
+                         ).spin_times_site)), dtype=np.complex128)
 
             for n in pnum_index:
                 pnum_per_spin_projector[n, n] = 1.0

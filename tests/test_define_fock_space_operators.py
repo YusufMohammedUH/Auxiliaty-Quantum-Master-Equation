@@ -23,7 +23,7 @@ def test_anti_commutator():
 class TestClassFermionicFockOperatorsSpinlessSortedParticleNumber:
     nsite = 2
     f_op = fock.FermionicFockOperators(nsite, spinless=True)
-    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex64)
+    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex128)
 
     def test_FermionicFockOperators_anticommutation(self):
         for i in range(self.nsite):
@@ -69,7 +69,7 @@ class TestClassFermionicFockOperatorsSpinlessUnsortedParticleNumber:
     nsite = 2
     f_op = fock.FermionicFockOperators(nsite, spinless=True,
                                        sorted_particle_number=False)
-    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex64)
+    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex128)
 
     def test_FermionicFockOperators_anticommutation(self):
         for i in range(self.nsite):
@@ -118,7 +118,7 @@ class TestClassFermionicFockOperatorsSpinlessUnsortedParticleNumber:
 class TestClassFermionicFockOperatorsSpinfulSortedParticleNumber:
     nsite = 2
     f_op = fock.FermionicFockOperators(nsite)
-    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex64)
+    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex128)
 
     def test_FermionicFockOperators_anticommutation(self):
         for i in range(self.nsite):
@@ -165,7 +165,7 @@ class TestClassFermionicFockOperatorsSpinfulSortedParticleNumber:
 class TestClassFermionicFockOperatorsSpinfulUnortedParticleNumber:
     nsite = 2
     f_op = fock.FermionicFockOperators(nsite, sorted_particle_number=False)
-    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex64)
+    identity = sparse.eye(2**f_op.spin_times_site, dtype=np.complex128)
 
     def test_FermionicFockOperators_anticommutation(self):
         for i in range(self.nsite):

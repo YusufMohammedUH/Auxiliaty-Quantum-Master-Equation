@@ -345,8 +345,8 @@ class EDSolver:
             vals_sectors = tuple([tuple([self.vals_sector[op_key[2][0]]
                                          for op_key in op_keys[1:]])[0]
                                   for op_keys in operator_keys])
-            green_component_plus = np.zeros(freq.shape, dtype=np.complex64)
-            green_component_minus = np.zeros(freq.shape, dtype=np.complex64)
+            green_component_plus = np.zeros(freq.shape, dtype=np.complex128)
+            green_component_minus = np.zeros(freq.shape, dtype=np.complex128)
             # Calculate single particle green's function component
             if component == (1, 0):
                 corr.get_two_point_correlator_frequency(green_component_plus,
@@ -373,7 +373,7 @@ class EDSolver:
                             for op_keys in operator_keys]
             # Calculate correlator component
             green_component = np.zeros((freq.shape[0], freq.shape[0]),
-                                       dtype=np.complex64)
+                                       dtype=np.complex128)
             if component == (0, 0, 0):
                 corr.get_three_point_correlator_frequency_mmm(
                     green_component, freq, precalc_correlators, vals_sectors,

@@ -144,26 +144,26 @@ class FermionicFockOperators:
         # fermionic operators
 
         # Set up sigma matrices
-        sigma_plus = np.zeros((2, 2), dtype=np.complex64)
+        sigma_plus = np.zeros((2, 2), dtype=np.complex128)
         sigma_plus[0, 1] = 1.0
         self.sigma_plus = sparse.csc_matrix(sigma_plus)
 
-        sigma_minus = np.zeros((2, 2), dtype=np.complex64)
+        sigma_minus = np.zeros((2, 2), dtype=np.complex128)
         sigma_minus[1, 0] = 1.0
         self.sigma_minus = sparse.csc_matrix(sigma_minus)
 
-        sigma_z = np.identity(2, dtype=np.complex64)
+        sigma_z = np.identity(2, dtype=np.complex128)
         sigma_z[1, 1] = -1.0
         self.sigma_z = sparse.csc_matrix(sigma_z)
 
         self.unit2 = sparse.eye(2).tocsc()
 
-        sigma_x = np.zeros((2, 2), dtype=np.complex64)
+        sigma_x = np.zeros((2, 2), dtype=np.complex128)
         sigma_x[0, 1] = 1.0
         sigma_x[1, 0] = 1.0
         self.sigma_x = sparse.csc_matrix(sigma_x)
 
-        sigma_y = np.zeros((2, 2), dtype=np.complex64)
+        sigma_y = np.zeros((2, 2), dtype=np.complex128)
         sigma_y[0, 1] = -1.0j
         sigma_y[1, 0] = 1.0j
         self.sigma_y = sparse.csc_matrix(sigma_y)
@@ -446,7 +446,7 @@ class BosonicFockOperators:
                         for i in range(1, self.nb_max + 1)], k=1)
         destroy = destroy.tocsc()
         unit_nb_max = sparse.eye(self.nb_max,
-                                 dtype=np.complex64, format="csc")
+                                 dtype=np.complex128, format="csc")
 
         # Jordan-Wigner type construction
         # bosonic operators

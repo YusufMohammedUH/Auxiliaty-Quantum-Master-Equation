@@ -102,7 +102,7 @@ class SuperFermionicOperators:
         # Set up left vacuum state |I> with or witout the complex phase in the
         # tilde conjugation rule.
         self.left_vacuum = sparse.lil_matrix(
-            (4**(self.fock_ops.spin_times_site), 1), dtype=np.complex64)
+            (4**(self.fock_ops.spin_times_site), 1), dtype=np.complex128)
 
         # Find and Set |0>x|0>
         vacuum_index = np.where(
@@ -115,20 +115,20 @@ class SuperFermionicOperators:
         if self.tilde_conjugationrule_phase:
             sign = -1j
         left_vacuum_constructor = sparse.eye(
-            4**(self.fock_ops.spin_times_site), dtype=np.complex64)
+            4**(self.fock_ops.spin_times_site), dtype=np.complex128)
         if not spinless:
             for site in range(self.fock_ops.nsite):
                 for spin in ["up", "do"]:
                     left_vacuum_constructor = left_vacuum_constructor * (
                         sparse.eye(4**(self.fock_ops.spin_times_site),
-                                   dtype=np.complex64) + sign * self.cdag(
+                                   dtype=np.complex128) + sign * self.cdag(
                                        site, spin) * self.cdag_tilde(
                                            site, spin))
         else:
             for site in range(self.fock_ops.nsite):
                 left_vacuum_constructor = left_vacuum_constructor * (
                     sparse.eye(4**(self.fock_ops.spin_times_site),
-                               dtype=np.complex64) + sign * self.cdag(
+                               dtype=np.complex128) + sign * self.cdag(
                                    site) * self.cdag_tilde(site))
         # construct the left vacuum state
         self.left_vacuum = left_vacuum_constructor * self.left_vacuum
@@ -219,7 +219,7 @@ class SuperFermionicOperators:
         """
 
         return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex64, format="csc"),
+                                      dtype=np.complex128, format="csc"),
                            self.fock_ops.c(ii, spin),
                            format="csc")
 
@@ -247,7 +247,7 @@ class SuperFermionicOperators:
         """
 
         return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex64, format="csc"),
+                                      dtype=np.complex128, format="csc"),
                            self.fock_ops.cdag(ii, spin),
                            format="csc")
 
@@ -315,7 +315,7 @@ class SuperFermionicOperators:
             2**self.fock_ops.spin_times_site)
         return sparse.kron(fock_operator,
                            sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex64, format="csc"),
+                                      dtype=np.complex128, format="csc"),
                            format="csc")
 
     def get_super_fermionic_tilde_operator(self,
@@ -344,7 +344,7 @@ class SuperFermionicOperators:
             2**self.fock_ops.spin_times_site)
 
         return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex64, format="csc"),
+                                      dtype=np.complex128, format="csc"),
                            fock_operator.transpose(), format="csc")
 
 
@@ -356,7 +356,7 @@ if __name__ == "__main__":
     print("Checking commutation relation")
 
     identity_super_fermionic = sparse.eye(
-        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex64, format="csc")
+        4**(fl_op.fock_ops.spin_times_site), dtype=np.complex128, format="csc")
 
     for i in range(nsite):
         for j in range(nsite):
@@ -446,10 +446,10 @@ if __name__ == "__main__":
 
     N = sparse.kron(fl_op.fock_ops.N,
                     sparse.eye(2**fl_op.fock_ops.spin_times_site,
-                               dtype=np.complex64, format="csc"))
+                               dtype=np.complex128, format="csc"))
 
     N_T = sparse.kron(sparse.eye(2**fl_op.fock_ops.spin_times_site,
-                                 dtype=np.complex64, format="csc"),
+                                 dtype=np.complex128, format="csc"),
                       fl_op.fock_ops.N)
     operator_equal_operator_tilse = N.dot(fl_op.left_vacuum) - \
         N_T.dot(fl_op.left_vacuum)

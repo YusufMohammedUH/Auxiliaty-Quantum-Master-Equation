@@ -130,9 +130,9 @@ def hubbard_hamiltonian(T: np.ndarray, V: np.ndarray,
     assert eop.nsite == norbs
 
     T_mat = sparse.csc_matrix(
-        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex64)
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex128)
     V_mat = sparse.csc_matrix(
-        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex64)
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex128)
 
     for ii in range(norbs):
         if spinless:
@@ -219,9 +219,9 @@ def general_fermionic_hamiltonian(T: np.ndarray, V: np.ndarray,
     assert eop.nsite == norbs
 
     T_mat = sparse.csc_matrix(
-        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex64)
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex128)
     V_mat = sparse.csc_matrix(
-        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex64)
+        (2**eop.spin_times_site, 2**eop.spin_times_site), dtype=np.complex128)
 
     for ii in range(norbs):
         for jj in range(norbs):

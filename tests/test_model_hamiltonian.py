@@ -103,7 +103,7 @@ def test_hubbard_hamiltonian_two_site_no_interaction_explicit():
 
     H = ham.hubbard_hamiltonian(T_mat, V, eop=fermionic_op)
 
-    H_test = np.zeros(H.shape, dtype=np.complex64)
+    H_test = np.zeros(H.shape, dtype=np.complex128)
     H_test[1, 3] = H_test[2, 4] = H_test[5, 8] = H_test[8, 10] = ts
     H_test[7, 10] = H_test[5, 7] = H_test[11, 13] = H_test[12, 14] = -ts
     H_test = H_test + H_test.conj().T + fermionic_op.N
@@ -173,7 +173,7 @@ def test_general_fermionic_hamiltonian_two_site_no_interaction_explicit():
 
     H = ham.general_fermionic_hamiltonian(T_mat, V, eop=fermionic_op)
 
-    H_test = np.zeros(H.shape, dtype=np.complex64)
+    H_test = np.zeros(H.shape, dtype=np.complex128)
     H_test[1, 3] = H_test[2, 4] = H_test[5, 8] = H_test[8, 10] = ts
     H_test[7, 10] = H_test[5, 7] = H_test[11, 13] = H_test[12, 14] = -ts
     H_test = H_test + H_test.conj().T + fermionic_op.N

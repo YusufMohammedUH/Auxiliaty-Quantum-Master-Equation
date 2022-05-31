@@ -65,8 +65,8 @@ class AuxiliarySystem:
         assert len(es) == self.Nb, "es doesn't have size Nb"
         assert len(ts) == self.Nb, "ts doesn't have size Nb"
 
-        t = np.array([*ts, *(ts[::-1])], dtype=np.complex64)
-        E = np.array([*es, 0, *(es[::-1] * (-1))], dtype=np.complex64)
+        t = np.array([*ts, *(ts[::-1])], dtype=np.complex128)
+        E = np.array([*es, 0, *(es[::-1] * (-1))], dtype=np.complex128)
         offset = [-1, 0, 1]
         self.E = diags([t, E, t], offset).toarray()
 
@@ -86,7 +86,7 @@ class AuxiliarySystem:
         assert len(ts) == self.N - 1, "ts doesn't have size N-1"
 
         offset = [-1, 0, 1]
-        self.E = diags([ts, es, ts], offset, dtype=np.complex64).toarray()
+        self.E = diags([ts, es, ts], offset, dtype=np.complex128).toarray()
 
     def get_Gamma_from_upper_tiagonal(self, G_upper: np.ndarray) -> np.ndarray:
         """Returns full gamma matrix (see [1]) from upper triangular matrix
@@ -132,7 +132,7 @@ class AuxiliarySystem:
             gammas), ("gamma has wrong length, should be (N-1)N/2,"
                       + " with N = 2*self.Nb + 1")
 
-        Gamma = np.zeros((self.N, self.N), dtype=np.complex64)
+        Gamma = np.zeros((self.N, self.N), dtype=np.complex128)
         n = 0
         ff = self.Nb
         for i in range(self.N):

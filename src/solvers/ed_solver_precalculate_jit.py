@@ -41,7 +41,7 @@ def precalculate_two_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     given by spin_sector_ops
     """
     assert n == 2
-    precalc_corr_tmp = np.zeros(shape, dtype=np.complex64)
+    precalc_corr_tmp = np.zeros(shape, dtype=np.complex128)
     tmp = 0. + 0.j
     for i in prange(shape[0]):
         tmp = left_vacuum.dot(spin_sector_fermi_ops[0]).dot(
@@ -90,7 +90,7 @@ def precalculate_three_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     given by spin_sector_ops
     """
     assert n == 3
-    precalc_corr_tmp = np.zeros(shape, dtype=np.complex64)
+    precalc_corr_tmp = np.zeros(shape, dtype=np.complex128)
 
     expectation_start = left_vacuum.dot(spin_sector_fermi_ops[0])
     tmp = 0. + 0.j
@@ -145,7 +145,7 @@ def precalculate_four_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     given by spin_sector_ops
     """
     assert n == 4
-    precalc_corr_tmp = np.zeros(shape, dtype=np.complex64)
+    precalc_corr_tmp = np.zeros(shape, dtype=np.complex128)
 
     expectation_start = left_vacuum.dot(spin_sector_fermi_ops[0])
 

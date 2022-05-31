@@ -557,7 +557,7 @@ class Correlators:
         else:
             three_point_vertex = np.zeros(
                 (freq.shape[0], freq.shape[0], 2, 2, 2),
-                dtype=np.complex64)
+                dtype=np.complex128)
             for i, j, k in self.correlators[3][
                     ("up", "up", 'ch')]:
                 three_point_vertex[:, :, i, j, k] = \

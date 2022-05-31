@@ -43,7 +43,7 @@ vals, vec_l, vec_r = ed_lind.exact_spectral_decomposition(L.L_tot.todense())
 
 # defining initial desity operator with one electron in upper level
 dim = int(np.sqrt(L.L_tot.shape[0]))
-rho0 = np.zeros((dim, dim), dtype=np.complex64)
+rho0 = np.zeros((dim, dim), dtype=np.complex128)
 rho0[2, 2] = 1
 
 # Time evolution parameters

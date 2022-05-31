@@ -40,9 +40,9 @@ def _z_aux(ws: np.ndarray, N: int, Nb: int, E: np.ndarray, Gamma1: np.ndarray,
         particle greens function in frequency domain.
     """
     id = np.identity(N)
-    Z_R_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex64)
-    Z_A_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex64)
-    Z_K_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex64)
+    Z_R_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex128)
+    Z_A_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex128)
+    Z_K_aux = np.zeros((ws.shape[0], N, N), dtype=np.complex128)
     for i, w in enumerate(ws):
         Z_R_aux[i] = np.linalg.inv(
             w * id - E + 1.0j * (Gamma2 + Gamma1))
@@ -80,11 +80,11 @@ def _get_self_enerqy(green_0_ret_inverse: np.ndarray, green_ret: np.ndarray,
         in frequency domain.
     """
     green_ret_w_inverse = np.zeros(
-        green_kel.shape, dtype=np.complex64)
+        green_kel.shape, dtype=np.complex128)
     sigma_ret_w = np.zeros(
-        green_kel.shape, dtype=np.complex64)
+        green_kel.shape, dtype=np.complex128)
     sigma_kel_w = np.zeros(
-        green_kel.shape, dtype=np.complex64)
+        green_kel.shape, dtype=np.complex128)
     for i in range(green_0_ret_inverse.shape[0]):
         if green_ret[i] == 0:
             green_ret_w_inverse[i] = np.inf
@@ -142,13 +142,13 @@ class FrequencyGreen:
         self.freq = freq
         self.freq.flags.writeable = False
         if retarded is None:
-            self.retarded = np.zeros(len(freq), dtype=np.complex64)
+            self.retarded = np.zeros(len(freq), dtype=np.complex128)
         else:
             if freq.shape != retarded.shape:
                 raise ValueError("freq and retarded must have same shape")
             self.retarded = np.copy(retarded)
         if keldysh is None:
-            self.keldysh = np.zeros(len(freq), dtype=np.complex64)
+            self.keldysh = np.zeros(len(freq), dtype=np.complex128)
         else:
             if freq.shape != keldysh.shape:
                 raise ValueError("freq and keldysh must have same shape")
