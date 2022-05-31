@@ -41,14 +41,16 @@ def precalculate_two_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     given by spin_sector_ops
     """
     assert n == 2
-    precalc_corr_tmp = np.zeros(shape, dtype=np.complex128)
-
+    precalc_corr_tmp = np.zeros(shape, dtype=np.complex64)
+    tmp = 0. + 0.j
     for i in prange(shape[0]):
-        precalc_corr_tmp[i] = left_vacuum.dot(spin_sector_fermi_ops[0]).dot(
+        tmp = left_vacuum.dot(spin_sector_fermi_ops[0]).dot(
             vec_r_sector[0][i]).dot(
             vec_l_sector[0][i]).dot(
             spin_sector_fermi_ops[1]).dot(
             rho_stready_state)[0, 0]
+        if np.abs(tmp) > 1e-30:
+            precalc_corr_tmp[i] = tmp
 
     return precalc_corr_tmp
 
@@ -88,10 +90,10 @@ def precalculate_three_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     given by spin_sector_ops
     """
     assert n == 3
-    precalc_corr_tmp = np.zeros(shape, dtype=np.complex128)
+    precalc_corr_tmp = np.zeros(shape, dtype=np.complex64)
 
     expectation_start = left_vacuum.dot(spin_sector_fermi_ops[0])
-
+    tmp = 0. + 0.j
     for i in prange(shape[0]):
         expectation_val = expectation_start.dot(
             vec_r_sector[0][i]).dot(
@@ -99,12 +101,13 @@ def precalculate_three_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
             spin_sector_fermi_ops[1])
 
         for j in prange(shape[1]):
-            precalc_corr_tmp[i, j] = expectation_val.dot(
+            tmp = expectation_val.dot(
                 vec_r_sector[1][j]).dot(
                 vec_l_sector[1][j]).dot(
                 spin_sector_fermi_ops[2]).dot(
                 rho_stready_state)[0, 0]
-
+            if np.abs(tmp) > 1e-30:
+                precalc_corr_tmp[i, j] = tmp
     return precalc_corr_tmp
 
 
@@ -142,7 +145,7 @@ def precalculate_four_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     given by spin_sector_ops
     """
     assert n == 4
-    precalc_corr_tmp = np.zeros(shape, dtype=np.complex128)
+    precalc_corr_tmp = np.zeros(shape, dtype=np.complex64)
 
     expectation_start = left_vacuum.dot(spin_sector_fermi_ops[0])
 
