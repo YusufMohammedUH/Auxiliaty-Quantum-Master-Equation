@@ -26,7 +26,7 @@ import src.super_fermionic_space.super_fermionic_subspace as sf_op
 #      [ ] Spinful fermions with interaction coupled to
 #          Dissipator_thermal_bath
 
-# TODO: write classe such that Lindbladian is directly calculated in sectors
+# TODO: write class such that Lindbladian is directly calculated in sectors
 
 
 def dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,

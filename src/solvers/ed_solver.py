@@ -5,7 +5,6 @@ correlation functions.
 # %%
 from typing import Tuple, Union
 import numpy as np
-from numba.typed import List
 import src.solvers.ed_solver_get_correlator_jit as corr
 import src.solvers.ed_solver_precalculate_jit as precalc
 import src.solvers.exact_decomposition as ed
@@ -349,21 +348,26 @@ class EDSolver:
             green_component_minus = np.zeros(freq.shape, dtype=np.complex128)
             # Calculate single particle green's function component
             if component == (1, 0):
-                corr.get_two_point_correlator_frequency(green_component_plus,
-                                                        green_component_minus,
-                                                        freq,
-                                                        precalc_correlators,
-                                                        vals_sectors,
-                                                        tensor_shapes,
-                                                        permutation_sign)
+                corr.get_two_point_correlator_frequency_mp_pm(
+                    green_component_plus, green_component_minus, freq,
+                    precalc_correlators, vals_sectors, tensor_shapes,
+                    permutation_sign)
             elif component == (0, 1):
-                corr.get_two_point_correlator_frequency(green_component_plus,
-                                                        green_component_minus,
-                                                        freq,
-                                                        precalc_correlators,
-                                                        vals_sectors,
-                                                        tensor_shapes,
-                                                        permutation_sign)
+                corr.get_two_point_correlator_frequency_mp_pm(
+                    green_component_plus, green_component_minus, freq,
+                    precalc_correlators, vals_sectors, tensor_shapes,
+                    permutation_sign)
+            elif component == (0, 0):
+                corr.get_two_point_correlator_frequency_mm_pp(
+                    green_component_plus, green_component_minus, freq,
+                    precalc_correlators, vals_sectors, tensor_shapes,
+                    permutation_sign)
+            elif component == (1, 1):
+                corr.get_two_point_correlator_frequency_mm_pp(
+                    green_component_plus, green_component_minus, freq,
+                    precalc_correlators, vals_sectors, tensor_shapes,
+                    permutation_sign)
+
             return green_component_plus, green_component_minus
         # calculate three point correlation function
         elif n == 3:

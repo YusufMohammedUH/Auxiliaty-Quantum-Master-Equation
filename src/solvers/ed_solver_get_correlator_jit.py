@@ -6,14 +6,68 @@ from numba import njit, prange
 
 
 @njit(parallel=True, cache=True)
-def get_two_point_correlator_frequency(green_component_plus: np.ndarray,
-                                       green_component_minus: np.ndarray,
-                                       freq: np.ndarray,
-                                       precalc_correlators: List[np.ndarray],
-                                       vals_sectors: List[np.ndarray],
-                                       tensor_shapes: Tuple,
-                                       permutation_sign: complex):
-    """Calculate the two point correlation function from parameters
+def get_two_point_correlator_frequency_mm_pp(green_component_plus: np.ndarray,
+                                             green_component_minus: np.ndarray,
+                                             freq: np.ndarray,
+                                             precalc_correlators: List[
+                                                 np.ndarray],
+                                             vals_sectors: List[np.ndarray],
+                                             tensor_shapes: Tuple,
+                                             permutation_sign: complex):
+    """Calculate the two point correlation function purely on the upper or 
+    lower branch.
+
+    Parameters
+    ----------
+    green_component_plus : np.ndarray
+        Component for positive times
+
+    green_component_minus : np.ndarray
+        Component for negative times
+
+    freq : np.ndarray
+        1D frequency grid
+
+    precalc_correlators : List[np.ndarray]
+        Precalculated expectation value of operators at t=0
+
+    vals_sectors : List[np.ndarray]
+        List of eigenvalues
+
+    tensor_shapes : Tuple
+        Tuple of total number of eigenvalues in each sector (diagonal)
+
+    permutation_sign : complex
+        Permutation sign
+    """
+
+    for i in prange(len(freq)):
+        G_plus = 0 + 0j
+        G_minus = 0 + 0j
+
+        for n in prange(tensor_shapes[0][0]):
+            L_n = vals_sectors[0][n]
+            G_minus += (precalc_correlators[0][n] /
+                        ((1j * freq[i] + L_n)))
+
+        for n in prange(tensor_shapes[1][0]):
+            L_n = vals_sectors[1][n]
+            G_plus += (precalc_correlators[1][n] /
+                       ((1j * freq[i] - L_n)))
+
+        green_component_plus[i] = -1j * G_plus * permutation_sign
+        green_component_minus[i] = -1j * G_minus * permutation_sign
+
+
+@njit(parallel=True, cache=True)
+def get_two_point_correlator_frequency_mp_pm(green_component_plus: np.ndarray,
+                                             green_component_minus: np.ndarray,
+                                             freq: np.ndarray,
+                                             precalc_correlators: List[np.ndarray],
+                                             vals_sectors: List[np.ndarray],
+                                             tensor_shapes: Tuple,
+                                             permutation_sign: complex):
+    """Calculate the two point correlation function on mixed branches.
 
     Parameters
     ----------
