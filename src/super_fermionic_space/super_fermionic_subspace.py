@@ -127,16 +127,16 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
         pnum_index = np.where(self.fock_ops.N.diagonal() == nelec)[0]
         pnum_projector = sparse.csc_matrix(
             (4**(self.fock_ops.spin_times_site),
-             4**(self.fock_ops.spin_times_site)), dtype=complex)
+             4**(self.fock_ops.spin_times_site)), dtype=np.complex64)
 
         for n in pnum_index:
             n_vector = sparse.lil_matrix(
-                (2**self.fock_ops.spin_times_site, 1), dtype=complex)
+                (2**self.fock_ops.spin_times_site, 1), dtype=np.complex64)
             n_vector[n, 0] = 1.0
 
             for m in pnum_index:
                 m_vector = sparse.lil_matrix(
-                    (2**self.fock_ops.spin_times_site, 1), dtype=complex)
+                    (2**self.fock_ops.spin_times_site, 1), dtype=np.complex64)
                 m_vector[m, 0] = 1
                 nm_vector = sparse.kron(n_vector, m_vector, format="csc")
                 pnum_projector += nm_vector * nm_vector.transpose()
@@ -191,7 +191,7 @@ class SubspaceDecomposition(sf_op.SuperFermionicOperators):
         perm_op_sector = sparse.lil_matrix(
             (4**(self.fock_ops.spin_times_site),
                 4**(self.fock_ops.spin_times_site)
-             ), dtype=complex)
+             ), dtype=np.complex64)
 
         for n in range(dim_subspace):
             perm_op_sector[n, indices[n]] = 1.0
@@ -274,26 +274,13 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         self.spin_sector_max = spin_sector_max
         if spinless:
             self.operator_sectors = {"cdag": 1, 'c': -1, "c_tilde": 1,
-                                     "cdag_tilde": -1, 'rho': 0,
-                                     'rho_tilde': 0}
+                                     "cdag_tilde": -1}
         else:
             self.operator_sectors = {"cdag": {"up": (1, 0), 'do': (0, 1)},
                                      'c': {'up': (-1, 0), 'do': (0, -1)},
-                                     'rho':
-                                     {('up', 'up'): [(1, 0), (-1, 0)],
-                                      ('do', 'do'): [(0, 1), (0, -1)],
-                                      ('up', 'do'): [(1, 0), (0, -1)],
-                                      ('do', 'up'): [(0, 1), (-1, 0)]
-                                      },
                                      "c_tilde": {"up": (1, 0), 'do': (0, 1)},
                                      'cdag_tilde': {'up': (-1, 0),
-                                                    'do': (0, -1)},
-                                     'rho_tilde':
-                                     {('up', 'up'): [(-1, 0), (1, 0)],
-                                      ('do', 'do'): [(0, -1), (0, 1)],
-                                      ('do', 'up'): [(0, -1), (1, 0)],
-                                      ('up', 'do'): [(-1, 0), (0, 1)]
-                                      }}
+                                                    'do': (0, -1)}}
 
         # TODO: default self.target_sites should in general be a list of all
         #       sites only special cases need a specific value
@@ -338,12 +325,6 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         if self.fock_ops.spinless:
             return self.operator_sectors[operator] + right_sector
         else:
-            if 'rho' in operator:
-                sectors_tmp = self.operator_sectors[operator][spin]
-                sector_tmp = right_sector
-                for sector in sectors_tmp[::-1]:
-                    sector_tmp = add_spin_sectors(sector, sector_tmp)
-                return sector_tmp
 
             return add_spin_sectors(self.operator_sectors[operator][spin],
                                     right_sector)
@@ -378,7 +359,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             pnum_per_spin_projector = sparse.lil_matrix(
                 (4**(self.fock_ops.spin_times_site),
                     4**((self.fock_ops
-                         ).spin_times_site)), dtype=complex)
+                         ).spin_times_site)), dtype=np.complex64)
 
             for n in pnum_index:
                 pnum_per_spin_projector[n, n] = 1.0
@@ -393,7 +374,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             pnum_per_spin_projector = sparse.lil_matrix(
                 (4**(self.fock_ops.spin_times_site),
                     4**((self.fock_ops
-                         ).spin_times_site)), dtype=complex)
+                         ).spin_times_site)), dtype=np.complex64)
 
             for n in pnum_index:
                 pnum_per_spin_projector[n, n] = 1.0
@@ -489,9 +470,13 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         """
 
         self.spin_sector_fermi_ops = {site: {'c': {}, 'c_tilde': {},
-                                      'cdag': {}, 'cdag_tilde': {}} for site in
-                                      self.target_sites}
+                                      'cdag': {}, 'cdag_tilde': {},
+                                             'n_channel': {},
+                                             'n_channel_tilde': {}}
+                                      for site in self.target_sites}
         if not self.fock_ops.spinless:
+            n_channel = {'ch': {}, 'x': {}, 'y': {}, 'z': {}}
+            n_channel_tilde = {'ch': {}, 'x': {}, 'y': {}, 'z': {}}
             cdag_up_sector = {}
             cdag_up_tilde_sector = {}
             c_up_sector = {}
@@ -514,6 +499,170 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                     up_minus = add_spin_sectors((-1, 0), sector)
                     do_plus = add_spin_sectors((0, 1), sector)
                     do_minus = add_spin_sectors((0, -1), sector)
+                    n_channel_up_up = (add_spin_sectors((1, 0), up_minus),
+                                       sector)
+                    n_channel_up_do = (add_spin_sectors((1, 0), do_minus),
+                                       sector)
+                    n_channel_do_up = (add_spin_sectors((0, 1), up_minus),
+                                       sector)
+                    n_channel_do_do = (add_spin_sectors((0, 1), do_minus),
+                                       sector)
+
+                    if n_channel_up_up[0] in self.spin_sectors:
+                        n_channel['ch'][n_channel_up_up] = get_subspace_object(
+                            self.n_channel(site, 'ch'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+                        n_channel['x'][n_channel_up_up] = get_subspace_object(
+                            self.n_channel(site, 'x'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+                        n_channel['y'][n_channel_up_up] = get_subspace_object(
+                            self.n_channel(site, 'y'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+                        n_channel['z'][n_channel_up_up] = get_subspace_object(
+                            self.n_channel(site, 'z'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+
+                        n_channel_tilde['ch'][n_channel_up_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'ch'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+                        n_channel_tilde['x'][n_channel_up_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'x'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+                        n_channel_tilde['y'][n_channel_up_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'y'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+                        n_channel_tilde['z'][n_channel_up_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'z'), self.projectors[
+                                n_channel_up_up[0]], self.projectors[
+                                    n_channel_up_up[1]])
+
+                    if n_channel_up_do[0] in self.spin_sectors:
+                        n_channel['ch'][n_channel_up_do] = get_subspace_object(
+                            self.n_channel(site, 'ch'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+                        n_channel['x'][n_channel_up_do] = get_subspace_object(
+                            self.n_channel(site, 'x'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+                        n_channel['y'][n_channel_up_do] = get_subspace_object(
+                            self.n_channel(site, 'y'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+                        n_channel['z'][n_channel_up_do] = get_subspace_object(
+                            self.n_channel(site, 'z'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+
+                        n_channel_tilde['ch'][n_channel_up_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'ch'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+                        n_channel_tilde['x'][n_channel_up_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'x'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+                        n_channel_tilde['y'][n_channel_up_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'y'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+                        n_channel_tilde['z'][n_channel_up_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'z'), self.projectors[
+                                n_channel_up_do[0]], self.projectors[
+                                    n_channel_up_do[1]])
+
+                    if n_channel_do_up[0] in self.spin_sectors:
+                        n_channel['ch'][n_channel_do_up] = get_subspace_object(
+                            self.n_channel(site, 'ch'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+                        n_channel['x'][n_channel_do_up] = get_subspace_object(
+                            self.n_channel(site, 'x'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+                        n_channel['y'][n_channel_do_up] = get_subspace_object(
+                            self.n_channel(site, 'y'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+                        n_channel['z'][n_channel_do_up] = get_subspace_object(
+                            self.n_channel(site, 'z'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+
+                        n_channel_tilde['ch'][n_channel_do_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'ch'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+                        n_channel_tilde['x'][n_channel_do_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'x'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+                        n_channel_tilde['y'][n_channel_do_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'y'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+                        n_channel_tilde['z'][n_channel_do_up] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'z'), self.projectors[
+                                n_channel_do_up[0]], self.projectors[
+                                    n_channel_do_up[1]])
+
+                    if n_channel_do_do[0] in self.spin_sectors:
+                        n_channel['ch'][n_channel_do_do] = get_subspace_object(
+                            self.n_channel(site, 'ch'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
+                        n_channel['x'][n_channel_do_do] = get_subspace_object(
+                            self.n_channel(site, 'x'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
+                        n_channel['y'][n_channel_do_do] = get_subspace_object(
+                            self.n_channel(site, 'y'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
+                        n_channel['z'][n_channel_do_do] = get_subspace_object(
+                            self.n_channel(site, 'z'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
+
+                        n_channel_tilde['ch'][n_channel_do_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'ch'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
+                        n_channel_tilde['x'][n_channel_do_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'x'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
+                        n_channel_tilde['y'][n_channel_do_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'y'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
+                        n_channel_tilde['z'][n_channel_do_do] = \
+                            get_subspace_object(self.n_channel_tilde(
+                                site, 'z'), self.projectors[
+                                n_channel_do_do[0]], self.projectors[
+                                    n_channel_do_do[1]])
 
                     if up_plus in self.spin_sectors:
                         cdag_up_sector[(up_plus, sector)] = \
@@ -569,6 +718,10 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                     cdag_up_tilde_sector
                 self.spin_sector_fermi_ops[site]['cdag_tilde']['do'] = \
                     cdag_do_tilde_sector
+
+                self.spin_sector_fermi_ops[site]['n_channel'] = n_channel
+                self.spin_sector_fermi_ops[site]['n_channel_tilde'] = \
+                    n_channel_tilde
             else:
                 for sector in self.spin_sectors:
                     plus = sector + 1
@@ -691,10 +844,13 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ------
         IndexError
             If site/orbital index is out of bound
+
         IndexError
             If sector index is out of bound in spinless system
+
         IndexError
             If sector index is out of bound in spinful system
+
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
@@ -769,6 +925,13 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ------
         IndexError
             If site/orbital index is out of bound
+
+        IndexError
+            If sector index is out of bound in spinless system
+
+        IndexError
+            If sector index is out of bound in spinful system
+
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
@@ -844,6 +1007,13 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ------
         IndexError
             If site/orbital index is out of bound
+
+        IndexError
+            If sector index is out of bound in spinless system
+
+        IndexError
+            If sector index is out of bound in spinful system
+
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
@@ -921,6 +1091,13 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ------
         IndexError
             If site/orbital index is out of bound
+
+        IndexError
+            If sector index is out of bound in spinless system
+
+        IndexError
+            If sector index is out of bound in spinful system
+
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
@@ -956,13 +1133,10 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             else:
                 raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
-    def rho_tilde_sector(self, sector: Union[Tuple[int, int],
-                                             Tuple[Tuple[int, int]]],
-                         site: int,
-                         spin: Union[Tuple[str, str], None] = None
-                         ) -> sparse.csc_matrix:
-        r"""Returns the 'tilde' space charge or spin density operator at in
-        sector 'sector', site/orbital 'site' and with spin 'spin'
+    def n_channel_sector(self, sector: Tuple[Tuple[int, int]], site: int,
+                         channel: str = 'ch') -> sparse.csc_matrix:
+        r"""Returns the 'normal' space charge or spin density operator in
+        sector 'sector' at site/orbital 'site'.
 
         The charge or spin density operator are given by:
             $\rho^{\xi}_i = \sum_{s s'} c^{\dagger}_{i\,s}
@@ -974,72 +1148,48 @@ class SpinSectorDecomposition(SubspaceDecomposition):
 
         Parameters
         ----------
-        sector : Union[Tuple[int, int], Tuple[Tuple[int, int]]]
-            Spin sector of interest. If spinless fermions, than use integer.
-            The sector is than given by a fixed value for
-            (\Delta N=N-N_{tilde}).
-            If spinful fermions, the sector is than given by a tuple with
-            fixed value for (\Delta N_{up},\Delta N_{do}), e.g. (0,0).
+        sector : Tuple[Tuple[int, int]]
+            Spin sector of interest. The sector is than given by a
+            tuple of tuple of two integers:
+             ((\Delta N_{up},\Delta N_{do})_left,
+             (\Delta N_{up},\Delta N_{do})_right), e.g. ((0,1),(0,0)).
 
         site : int
             site/orbital index
 
-        spin : Union[Tuple[str,str], None], optional
-            Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
-            None. In case of spinless fermions the argument doesn't need to
-            be supplied. If it is supplied, the annihilation operator at
-            site/orbital 'site' is returned.
+        channel : str, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
 
         Returns
         -------
         out: scipy.sparse.csc_matrix (2**self.spin_times_site,
                                     2**self.spin_times_site)
-            Annihilation operator of site/orbital index 'site' and spin index
-            'spin' in sector 'sector'.
+            Charge or spin density operator at site/orbital of site/orbital
+            index 'site' and in channel 'channel' in sector 'sector'.
 
         Raises
         ------
         IndexError
             If site/orbital index is out of bound
-        ValueError
-            If spin is not 'up' or 'do' in spin 1/2 fermions
+
+        IndexError
+            If sector out of bound
         """
         assert len(sector) == 2
+        assert not self.fock_ops.spinless
         if (site not in self.target_sites):
             raise IndexError('ERROR: index out of bound!')
 
-        if self.fock_ops.spinless:
-            if np.abs(sector) > self.spin_sector_max:
-                raise IndexError("ERROR: Sector out of bound!")
-            if spin is not None:
-                print("Spinless fermions don't need the argument spin to be " +
-                      "passed")
-            assert sector[0] == sector[-1]
-            middle = self.get_left_sector(sector[-1], 'c_tilde')
-            return self.spin_sector_fermi_ops[site]['cdag_tilde'][
-                (sector[0], middle)].dot(self.spin_sector_fermi_ops[site][
-                    'c_tilde'][(middle, sector[-1])])
-        else:
-            abs_sector = np.array([sum(np.abs(s)) for s in sector])
-            if np.any(abs_sector > self.spin_sector_max):
-                raise IndexError("ERROR: Sector out of bound!")
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
 
-            rho_sectors = self.operator_sectors['rho_tilde'][spin]
-            middle = add_spin_sectors(rho_sectors[-1], sector[-1])
-            final = add_spin_sectors(rho_sectors[0], middle)
-            if final != sector[0]:
-                raise IndexError("ERROR: Sector can't be reached!")
+        return self.spin_sector_fermi_ops[site]['n_channel'][channel][sector]
 
-            return self.spin_sector_fermi_ops[site]['cdag_tilde'][
-                (final, middle)].dot(self.spin_sector_fermi_ops[site][
-                    'c_tilde'][(middle, sector[-1])])
-
-    def rho_sector(self, sector: Union[Tuple[int, int],
-                                       Tuple[Tuple[int, int]]], site: int,
-                   spin: Union[Tuple[str, str], None] = None
-                   ) -> sparse.csc_matrix:
-        r"""Returns the 'tilde' space charge or spin density operator at in
-        sector 'sector', site/orbital 'site' and with spin 'spin'
+    def n_channel_tilde_sector(self, sector: Tuple[Tuple[int, int]], site: int,
+                               channel: str = 'ch') -> sparse.csc_matrix:
+        r"""Returns the 'normal' space charge or spin density operator in
+        sector 'sector' at site/orbital 'site'.
 
         The charge or spin density operator are given by:
             $\rho^{\xi}_i = \sum_{s s'} c^{\dagger}_{i\,s}
@@ -1051,66 +1201,43 @@ class SpinSectorDecomposition(SubspaceDecomposition):
 
         Parameters
         ----------
-        sector : Union[Tuple[int, int], Tuple[Tuple[int, int]]]
-            Spin sector of interest. If spinless fermions, than use integer.
-            The sector is than given by a fixed value for
-            (\Delta N=N-N_{tilde}).
-            If spinful fermions, the sector is than given by a tuple with
-            fixed value for (\Delta N_{up},\Delta N_{do}), e.g. (0,0).
+        sector : Tuple[Tuple[int, int]]
+            Spin sector of interest. The sector is than given by a
+            tuple of tuple of two integers:
+             ((\Delta N_{up},\Delta N_{do})_left,
+             (\Delta N_{up},\Delta N_{do})_right), e.g. ((0,1),(0,0)).
 
         site : int
             site/orbital index
 
-        spin : Union[Tuple[str,str], None], optional
-            Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
-            None. In case of spinless fermions the argument doesn't need to
-            be supplied. If it is supplied, the annihilation operator at
-            site/orbital 'site' is returned.
+        channel : str, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
 
         Returns
         -------
         out: scipy.sparse.csc_matrix (2**self.spin_times_site,
                                     2**self.spin_times_site)
-            Annihilation operator of site/orbital index 'site' and spin index
-            'spin' in sector 'sector'.
+            Charge or spin density operator at site/orbital of site/orbital
+            index 'site' and in channel 'channel' in sector 'sector'.
 
         Raises
         ------
         IndexError
             If site/orbital index is out of bound
-        ValueError
-            If spin is not 'up' or 'do' in spin 1/2 fermions
+
+        IndexError
+            If sector out of bound
         """
         assert len(sector) == 2
+        assert not self.fock_ops.spinless
         if (site not in self.target_sites):
             raise IndexError('ERROR: index out of bound!')
 
-        if self.fock_ops.spinless:
-            if np.abs(sector) > self.spin_sector_max:
-                raise IndexError("ERROR: Sector out of bound!")
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
 
-            if spin is not None:
-                print("Spinless fermions don't need the argument spin to be " +
-                      "passed")
-            assert sector[0] == sector[-1]
-            middle = self.get_left_sector(sector[-1], 'c')
-            return self.spin_sector_fermi_ops[site]['cdag'][
-                (sector[0], middle)].dot(self.spin_sector_fermi_ops[site][
-                    'c'][(middle, sector[-1])])
-        else:
-            abs_sector = np.array([sum(np.abs(s)) for s in sector])
-            if np.any(abs_sector > self.spin_sector_max):
-                raise IndexError("ERROR: Sector out of bound!")
-
-            rho_sectors = self.operator_sectors['rho'][spin]
-            middle = add_spin_sectors(rho_sectors[-1], sector[-1])
-            final = add_spin_sectors(rho_sectors[0], middle)
-            if final != sector[0]:
-                raise IndexError("ERROR: Sector can't be reached!")
-
-            return self.spin_sector_fermi_ops[site]['cdag'][spin[0]][
-                (final, middle)].dot(self.spin_sector_fermi_ops[site][
-                    'c'][spin[1]][(middle, sector[-1])])
+        return self.spin_sector_fermi_ops[site]['n_channel_tilde'][channel][sector]
 
 
 SuperFermionicOperatorType = Union[sf_op.SuperFermionicOperators,

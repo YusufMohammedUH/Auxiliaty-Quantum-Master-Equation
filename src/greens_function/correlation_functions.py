@@ -80,7 +80,7 @@ class Correlators:
         self.set_contour_symmetries(correlators, trilex)
 
         self.operators_default_order = {2: ("c", "cdag"),
-                                        3: ('c', 'cdag', 'rho'),
+                                        3: ('c', 'cdag', 'n_channel'),
                                         4: ('c', 'c', 'cdag', 'cdag')}
         self.set_spin_components(spin_components)
 
@@ -106,10 +106,14 @@ class Correlators:
         """
         if spin_components is None:
             self.spin_components = {2: [("up", "up")],
-                                    3: [('up', 'up', ('up', 'up')),
-                                        ('up', 'up', ('do', 'do')),
-                                        ('up', 'do', ('up', 'do')),
-                                        ('do', 'up', ('do', 'up'))],
+                                    3: [('up', 'up', 'ch'),
+                                        ('do', 'do', 'ch'),
+                                        ('up', 'up', 'z'),
+                                        ('do', 'do', 'z'),
+                                        ('up', 'do', 'x'),
+                                        ('do', 'up', 'x'),
+                                        ('up', 'do', 'y'),
+                                        ('do', 'up', 'y')],
                                     4: [('up', 'up', 'up', 'up'),
                                         ('up', 'do', 'up', 'do')]}
         else:
@@ -197,18 +201,48 @@ class Correlators:
         if self.Lindbladian.super_fermi_ops.fock_ops.spinless:
             sectors = [0]
             for op in operator_list[::-1]:
+
                 sectors.append(
                     self.Lindbladian.super_fermi_ops.get_left_sector(
                         sectors[-1], op))
         else:
             sectors = [(0, 0)]
-            for op in operator_list[::-1]:
-                sectors.append(
-                    self.Lindbladian.super_fermi_ops.get_left_sector(
-                        sectors[-1], op[0], op[1]))
-        sectors.reverse()
-        assert sectors[0] == sectors[-1]
-        sector_keys = [x for x in zip(sectors[:-1], sectors[1:])]
+            for op in operator_list:
+                if "n_channel" in op[0]:
+                    sectors.append(None)
+                else:
+                    sectors.append(
+                        self.Lindbladian.super_fermi_ops.operator_sectors[
+                            op[0]][op[1]])
+            sectors.append((0, 0))
+            # print('sectors: ', sectors)
+            left_ = []
+            current = (0, 0)
+            right_ = [current]
+            for s in sectors[::-1][1:]:
+                if s is None:
+                    break
+                current = sf_sub.add_spin_sectors(
+                    s, current)
+                right_.append(current)
+            right_ = right_[::-1]
+            if len(right_) != len(sectors):
+                current = (0, 0)
+                left_ = [current]
+                for s in sectors[1:]:
+                    if s is None:
+                        break
+                    tmp = (-1 * s[0], -1 * s[1])
+                    current = sf_sub.add_spin_sectors(
+                        tmp, current)
+                    left_.append(current)
+                sector_channel = (left_[-1], right_[0])
+                sector_keys = [*list(zip(left_[:-1], left_[1:])),
+                               sector_channel,
+                               *list(zip(right_[:-1], right_[1:]))]
+            else:
+                sector_keys = list(zip(right_[1:-1], right_[2:]))
+
         return tuple([(*op[0], op[1]) for op in zip(operator_list,
                                                     sector_keys)])
 
@@ -263,7 +297,7 @@ class Correlators:
                                           permutation_sign=permutation_sign)
 
     def get_three_point_vertex_components(
-            self, component, freq, sites=None, spin=('up', 'up', ('up', 'up')),
+            self, component, freq, sites=None, spin=('up', 'up', 'ch'),
             permutation_sign=(-1 + 0j, 1 + 0j, 1 + 0j), prefactor=-1 + 0j):
         """_summary_
 
@@ -278,7 +312,7 @@ class Correlators:
         sites : _type_, optional
             _description_, by default None
         spin : tuple, optional
-            _description_, by default ('up', 'up', ('up', 'up'))
+            _description_, by default ('up', 'up', 'ch')
         permutation_sign : tuple, optional
             _description_, by default (-1 + 0j, 1 + 0j, 1 + 0j)
         prefactor : _type_, optional
@@ -295,25 +329,25 @@ class Correlators:
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in [(('c', spin[0]),
                                          ('cdag', spin[1]),
-                                         ('rho', spin[2])),
+                                         ('n_channel', spin[2])),
 
                                         (('c', spin[0]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('cdag', spin[1])),
 
                                         (('cdag', spin[1]),
                                         ('c', spin[0]),
-                                         ('rho', spin[2])),
+                                         ('n_channel', spin[2])),
 
                                         (('cdag', spin[1]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('c', spin[0])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('c', spin[0]),
                                          ('cdag', spin[1])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('cdag', spin[1]),
                                          ('c', spin[0]))]]
 
@@ -321,17 +355,17 @@ class Correlators:
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in [(('c', spin[0]),
                                          ('cdag', spin[1]),
-                                         ('rho', spin[2])),
+                                         ('n_channel', spin[2])),
 
                                         (('cdag', spin[1]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('cdag_tilde', spin[0])),
 
                                         (('c', spin[0]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('cdag', spin[1])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('cdag', spin[1]),
                                          ('cdag_tilde', spin[0]))
                                         ]]
@@ -340,143 +374,143 @@ class Correlators:
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in [(('cdag', spin[1]),
                                          ('c', spin[0]),
-                                         ('rho', spin[2])),
+                                         ('n_channel', spin[2])),
 
                                         (('c', spin[0]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('c_tilde', spin[1])),
 
                                         (('cdag', spin[1]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('c', spin[0])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('c', spin[0]),
                                          ('c_tilde', spin[1]))]]
 
         elif component == (0, 0, 1):
             operators = [self.append_spin_sector_keys(op_key)
-                         for op_key in [(('rho', spin[2]),
+                         for op_key in [(('n_channel', spin[2]),
                                          ('c', spin[0]),
                                          ('cdag', spin[1])),
 
                                         (('c', spin[0]),
                                         ('cdag', spin[1]),
-                                         ('rho_tilde', spin[2][::-1])),
+                                         ('n_channel_tilde', spin[2])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('cdag', spin[1]),
                                          ('c', spin[0])),
 
                                         (('cdag', spin[1]),
                                         ('c', spin[0]),
-                                         ('rho_tilde', spin[2][::-1]))
+                                         ('n_channel_tilde', spin[2]))
                                         ]]
 
         elif component == (1, 1, 0):
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in [(('c', spin[0]),
                                          ('cdag', spin[1]),
-                                         ('rho', spin[2])),
+                                         ('n_channel', spin[2])),
 
                                         (('cdag', spin[1]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('cdag_tilde', spin[0])),
 
                                         (('cdag', spin[1]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('cdag_tilde', spin[0])),
 
                                         (('cdag', spin[1]),
                                          ('c', spin[0]),
-                                         ('rho', spin[2])),
+                                         ('n_channel', spin[2])),
 
                                         (('c', spin[0]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('c_tilde', spin[1])),
 
                                         (('c', spin[0]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('c_tilde', spin[1]))]]
 
         elif component == (1, 0, 1):
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in [(('c', spin[0]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('cdag', spin[1])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('cdag', spin[1]),
                                          ('cdag_tilde', spin[0])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('cdag', spin[1]),
                                          ('cdag_tilde', spin[0])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('c', spin[0]),
                                          ('cdag', spin[1])),
 
                                         (('c', spin[0]),
                                         ('cdag', spin[1]),
-                                         ('rho_tilde', spin[2][::-1])),
+                                         ('n_channel_tilde', spin[2])),
 
                                         (('c', spin[0]),
                                         ('cdag', spin[1]),
-                                         ('rho_tilde', spin[2][::-1]))]]
+                                         ('n_channel_tilde', spin[2]))]]
 
         elif component == (0, 1, 1):
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in [(('cdag', spin[1]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('c', spin[0])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('c', spin[0]),
                                          ('c_tilde', spin[1])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('c', spin[0]),
                                          ('c_tilde', spin[1])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('cdag', spin[1]),
                                          ('c', spin[0])),
 
                                         (('cdag', spin[1]),
                                         ('c', spin[0]),
-                                         ('rho_tilde', spin[2][::-1])),
+                                         ('n_channel_tilde', spin[2])),
 
                                         (('cdag', spin[1]),
                                         ('c', spin[0]),
-                                         ('rho_tilde', spin[2][::-1]))
+                                         ('n_channel_tilde', spin[2]))
                                         ]]
 
         elif component == (1, 1, 1):
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in [(('cdag', spin[1]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('cdag_tilde', spin[0])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('cdag', spin[1]),
                                          ('cdag_tilde', spin[0])),
 
                                         (('c', spin[0]),
-                                         ('rho', spin[2]),
+                                         ('n_channel', spin[2]),
                                          ('c_tilde', spin[1])),
 
-                                        (('rho', spin[2]),
+                                        (('n_channel', spin[2]),
                                          ('c', spin[0]),
                                          ('c_tilde', spin[1])),
 
                                         (('c', spin[0]),
                                         ('cdag', spin[1]),
-                                         ('rho_tilde', spin[2][::-1])),
+                                         ('n_channel_tilde', spin[2])),
 
                                         (('cdag', spin[1]),
                                         ('c', spin[0]),
-                                         ('rho_tilde', spin[2][::-1]))
+                                         ('n_channel_tilde', spin[2]))
                                         ]]
 
         return self.solver.get_correlator(Lindbladian=self.Lindbladian,
@@ -485,7 +519,8 @@ class Correlators:
                                           permutation_sign=permutation_sign)
 
     def get_three_point_vertex(self, freq: np.ndarray,
-                               spin: Tuple = ('up', 'up', ('up', 'up')),
+                               spin: Tuple = ('up', 'up', 'ch'),
+                               sites: Union[Tuple, None] = None,
                                permutation_sign: Tuple = (-1 +
                                                           0j, 1 + 0j, 1 + 0j),
                                prefactor: complex = -1 + 0j,
@@ -516,17 +551,18 @@ class Correlators:
             for component in self.correlators[3][spin]:
                 self.correlators[3][spin][component] = \
                     self.get_three_point_vertex_components(
-                        component, freq, permutation_sign=permutation_sign,
+                        component=component, freq=freq, sites=sites, spin=spin,
+                        permutation_sign=permutation_sign,
                         prefactor=prefactor)
         else:
             three_point_vertex = np.zeros(
                 (freq.shape[0], freq.shape[0], 2, 2, 2),
-                dtype=np.complex128)
+                dtype=np.complex64)
             for i, j, k in self.correlators[3][
-                    ("up", "up", ("up", "up"))]:
+                    ("up", "up", 'ch')]:
                 three_point_vertex[:, :, i, j, k] = \
                     self.get_three_point_vertex_components(
-                        (i, j, k), freq, spin,
+                        component=(i, j, k), freq=freq, sites=sites, spin=spin,
                     permutation_sign=permutation_sign, prefactor=prefactor)
 
             return three_point_vertex
@@ -585,13 +621,13 @@ class Correlators:
 
 # %%
 if __name__ == "__main__":
-    # import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
     # Set parameters
     ws = np.linspace(-10, 10, 200)
 
     Nb = 1
     nsite = 2 * Nb + 1
-    U_imp = 1.0
+    U_imp = 2.0
     es = np.array([1])
     ts = np.array([0.5])
     Us = np.zeros(nsite)
@@ -646,6 +682,8 @@ if __name__ == "__main__":
     G_gr = G_greater_plus + G_greater_minus
     G_R = G_greater_plus - G_lesser_plus
     G_K = G_greater_plus + G_greater_minus + G_lesser_plus + G_lesser_minus
+    G3_up_up_ch_mmm = corr.get_three_point_vertex_components(
+        component=(0, 0, 0), freq=ws, spin=('up', 'up', 'ch'))
 
     # green2 = fg.FrequencyGreen(sys.ws, retarded=G_R, keldysh=G_K)
     # sigma = green2.get_self_enerqy() - hyb_aux
