@@ -48,6 +48,9 @@ class AuxiliarySystem:
         self.N = 2 * self.Nb + 1
         self.N_gamma = int((self.N - 1) * self.N / 2)
         self.ws = ws
+        self.E = None
+        self.Gamma1 = None
+        self.Gamma2 = None
 
     def set_E_ph_symmetric(self, es: np.ndarray, ts: np.ndarray) -> None:
         """Sets particle-hole symmetric T-Matrix as class attribute E. E is of
@@ -208,16 +211,16 @@ class AuxiliarySystem:
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
-    Nb = 1
-    ws = np.linspace(-5, 5, 1001)
-    es = np.array([1])
-    ts = np.array([0.5])
+    Nb_ = 1
+    ws_ = np.linspace(-5, 5, 1001)
+    es_ = np.array([1])
+    ts_ = np.array([0.5])
     gamma = np.array([0.1 + 0.0j, 0.0 + 0.0j, 0.1 + 0.0j])
 
     # initializing auxiliary system and E, Gamma1 and Gamma2 for a
     # particle-hole symmetric system
-    aux = AuxiliarySystem(Nb, ws)
-    aux.set_ph_symmetric_aux(es, ts, gamma)
+    aux = AuxiliarySystem(Nb_, ws_)
+    aux.set_ph_symmetric_aux(es_, ts_, gamma)
 
     print("E: \n", np.array(aux.E))
     print("Gamma1: \n", aux.Gamma1)
