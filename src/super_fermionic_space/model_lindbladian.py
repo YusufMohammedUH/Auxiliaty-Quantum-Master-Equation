@@ -1,3 +1,6 @@
+"""
+File contains Lindbladian class and Lindbladian dissipators terms
+"""
 # %%
 from typing import Union, Callable, Tuple
 import numpy as np
@@ -373,8 +376,7 @@ class Lindbladian:
 
     def set_total_linbladian(self) -> None:
         """Set the total Lindbladian"""
-        self.L_tot = self.L_unitary + self.L_Gamma1 + \
-            self.L_Gamma2
+        self.L_tot = self.L_unitary + self.L_Gamma1 + self.L_Gamma2
 
     def update(self, T_mat: Union[np.ndarray, None] = None,
                U_mat: Union[np.ndarray, None] = None,

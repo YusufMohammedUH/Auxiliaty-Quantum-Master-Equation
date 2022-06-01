@@ -462,8 +462,8 @@ if __name__ == "__main__":
     L.update(T_mat=T_mat, U_mat=Us, Gamma1=sys.Gamma1,
              Gamma2=sys.Gamma2)
     ed_s = EDSolver(L)
-    correlators = {n: {} for n in range(2, 5)}
-    ed_s.prepare(correlators)
+    correlators_ = {n: {} for n in range(2, 5)}
+    ed_s.prepare(correlators_)
     ed_s.update(L)
 
 # %%

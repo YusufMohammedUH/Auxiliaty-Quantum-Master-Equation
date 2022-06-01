@@ -1,7 +1,7 @@
 def get_two_point_operator_list(spin):
-    """return the ordering of operators for all components of
+    r"""return the ordering of operators for all components of
     a two point correlator
-    $<T_c\{c_{\sigma}(t_1)c^{\dager'}_{\sigma}(t_2)>$
+    $<T_c\{c_{\sigma}(t_1)c^{\dagger'}_{\sigma}(t_2)>$
 
     Parameters
     ----------
@@ -40,9 +40,9 @@ def get_two_point_operator_list(spin):
 
 
 def get_three_point_operator_list(spin):
-    """return the ordering of operators for all components of
+    r"""return the ordering of operators for all components of
     a three point correlator
-    $<T_c\{c_{\sigma}(t_1)c^{\dager'}_{\sigma}(t_2)\rho^{\chi}(t_3)\}>$
+    $<T_c\{c_{\sigma}(t_1)c^{\dagger'}_{\sigma}(t_2)\rho^{\chi}(t_3)\}>$
 
     Parameters
     ----------
