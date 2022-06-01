@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from src import auxiliary_system_parameter as auxp
+import src.auxiliary_mapping.auxiliary_system_parameter as auxp
 
 
 def test_set_E_ph_symmetric_equal_value():
@@ -125,7 +125,6 @@ def test_get_Gamma2_ph_symmetric_value():
                                            - 2. - 2.j, 1. + 1.j]])
 
     Gamma2 = auxsys.get_Gamma2_ph_symmetric(Gamma1)
-    print(Gamma2)
     assert not (Gamma2 - Gamma2_test).any()
 
 

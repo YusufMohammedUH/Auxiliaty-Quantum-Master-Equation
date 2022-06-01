@@ -1,4 +1,3 @@
-# %%
 from scipy.sparse import diags
 import numpy as np
 
@@ -43,14 +42,17 @@ class AuxiliarySystem:
                     Coupling to Markovian bath 2
     """
 
-    def __init__(self, Nb, ws) -> None:
+    def __init__(self, Nb: int, ws: np.ndarray) -> None:
 
         self.Nb = Nb
         self.N = 2 * self.Nb + 1
         self.N_gamma = int((self.N - 1) * self.N / 2)
         self.ws = ws
+        self.E = None
+        self.Gamma1 = None
+        self.Gamma2 = None
 
-    def set_E_ph_symmetric(self, es, ts):
+    def set_E_ph_symmetric(self, es: np.ndarray, ts: np.ndarray) -> None:
         """Sets particle-hole symmetric T-Matrix as class attribute E. E is of
         shape (self.N,self.N).
 
@@ -60,18 +62,18 @@ class AuxiliarySystem:
             Onsite potentials of the reduced, auxiliary system
 
         ts : numpy.ndarray (self.Nb,)
-            Hopping terms of the educed, auxiliary system
+            Hopping terms of the reduced, auxiliary system
         """
 
         assert len(es) == self.Nb, "es doesn't have size Nb"
         assert len(ts) == self.Nb, "ts doesn't have size Nb"
 
-        t = np.array([*ts, *(ts[::-1])], dtype=complex)
-        E = np.array([*es, 0, *(es[::-1] * (-1))], dtype=complex)
+        t = np.array([*ts, *(ts[::-1])], dtype=np.complex128)
+        E = np.array([*es, 0, *(es[::-1] * (-1))], dtype=np.complex128)
         offset = [-1, 0, 1]
         self.E = diags([t, E, t], offset).toarray()
 
-    def set_E_general(self, es, ts):
+    def set_E_general(self, es: np.ndarray, ts: np.ndarray) -> None:
         """Sets general T-Matrix as class attribute E. E is of
         shape (self.N,self.N).
 
@@ -87,9 +89,9 @@ class AuxiliarySystem:
         assert len(ts) == self.N - 1, "ts doesn't have size N-1"
 
         offset = [-1, 0, 1]
-        self.E = diags([ts, es, ts], offset, dtype=complex).toarray()
+        self.E = diags([ts, es, ts], offset, dtype=np.complex128).toarray()
 
-    def get_Gamma_from_upper_tiagonal(self, G_upper):
+    def get_Gamma_from_upper_tiagonal(self, G_upper: np.ndarray) -> np.ndarray:
         """Returns full gamma matrix (see [1]) from upper triangular matrix
 
         Parameters
@@ -108,7 +110,7 @@ class AuxiliarySystem:
         G_adj[np.diag_indices(G_adj.shape[0])] = 0
         return G_upper + G_adj
 
-    def get_Gamma_general(self, gammas):
+    def get_Gamma_general(self, gammas: np.ndarray) -> np.ndarray:
         """Calculate full gamma matrix from array_like gamma containing all
         independent entries of gamma matrix.
 
@@ -133,7 +135,7 @@ class AuxiliarySystem:
             gammas), ("gamma has wrong length, should be (N-1)N/2,"
                       + " with N = 2*self.Nb + 1")
 
-        Gamma = np.zeros((self.N, self.N), dtype=complex)
+        Gamma = np.zeros((self.N, self.N), dtype=np.complex128)
         n = 0
         ff = self.Nb
         for i in range(self.N):
@@ -144,7 +146,7 @@ class AuxiliarySystem:
                         n += 1
         return self.get_Gamma_from_upper_tiagonal(Gamma)
 
-    def get_Gamma2_ph_symmetric(self, Gamma1):
+    def get_Gamma2_ph_symmetric(self, Gamma1: np.ndarray) -> np.ndarray:
         """Returns the Gamma2 matrix calculated from Gamma1 in the particle-hole
         symmetric case
 
@@ -162,7 +164,8 @@ class AuxiliarySystem:
                                                     ((self.N - 1) - i)])
                           for i in range(self.N)] for j in range(self.N)])
 
-    def set_ph_symmetric_aux(self, es, ts, gammas):
+    def set_ph_symmetric_aux(self, es: np.ndarray, ts: np.ndarray,
+                             gammas: np.ndarray) -> None:
         """Set the matrices E, Gamma1,Gamma2 describing the auxiliary system in
         the particle-hole symmetric case.
 
@@ -181,7 +184,8 @@ class AuxiliarySystem:
         self.Gamma1 = self.get_Gamma_general(gammas)
         self.Gamma2 = self.get_Gamma2_ph_symmetric(self.Gamma1)
 
-    def set_general_aux(self, es, ts, gamma1, gamma2):
+    def set_general_aux(self, es: np.ndarray, ts: np.ndarray,
+                        gamma1: np.ndarray, gamma2: np.ndarray) -> None:
         """Set the matrices E, Gamma1,Gamma2 describing the auxiliary system in
         the general case.
 
@@ -204,20 +208,19 @@ class AuxiliarySystem:
         self.Gamma2 = self.get_Gamma_general(gamma2)
 
 
-# %%
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
-    Nb = 1
-    ws = np.linspace(-5, 5, 1001)
-    es = np.array([1])
-    ts = np.array([0.5])
+    Nb_ = 1
+    ws_ = np.linspace(-5, 5, 1001)
+    es_ = np.array([1])
+    ts_ = np.array([0.5])
     gamma = np.array([0.1 + 0.0j, 0.0 + 0.0j, 0.1 + 0.0j])
 
     # initializing auxiliary system and E, Gamma1 and Gamma2 for a
     # particle-hole symmetric system
-    aux = AuxiliarySystem(Nb, ws)
-    aux.set_ph_symmetric_aux(es, ts, gamma)
+    aux = AuxiliarySystem(Nb_, ws_)
+    aux.set_ph_symmetric_aux(es_, ts_, gamma)
 
     print("E: \n", np.array(aux.E))
     print("Gamma1: \n", aux.Gamma1)
@@ -225,12 +228,9 @@ if __name__ == "__main__":
     print("Gamma2-Gamma2: \n", (aux.Gamma2 - aux.Gamma1))
 
 
-# TODO: The rest should be seperated
-#       4. A costfunction should be written.
-#       5. An optimization routine has to be written.
-#
+# TODO: Should be able to set target impurity site at beginning of in the
+#       middel of the auxiliary problem, for now the impurity site is
+#       positioned in the middel by default.
 # TODO: In the non-particle-hole symmetric case Gamma1 and Gamma2 are
 #       Independent
 # TODO: Later Extend this to multiorbital case
-
-# %%

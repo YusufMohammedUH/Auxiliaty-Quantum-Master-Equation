@@ -3,3 +3,7 @@
 **/*pytest_cache
 **/*super_liovillian_py.py
 **/*.vscode
+**/*.svg
+**/*.txt
+**/*.spyproject
+newrelic_agent.log
