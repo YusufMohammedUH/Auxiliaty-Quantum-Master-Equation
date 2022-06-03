@@ -286,7 +286,7 @@ class EDSolver:
 
     def get_correlator(self, Lindbladian: lind.Lindbladian, freq: np.ndarray,
                        component: Tuple, sites: Tuple, operator_keys: Tuple,
-                       permutation_sign: Tuple, prefactor: complex = -1 + 0j
+                       permutation_sign: Tuple, prefactor: Tuple[complex, None] = -1 + 0j
                        ) -> Union[Tuple[np.ndarray, np.ndarray],
                                   np.ndarray]:
         """Calculate correlation function.
@@ -344,29 +344,18 @@ class EDSolver:
             vals_sectors = tuple([tuple([self.vals_sector[op_key[2][0]]
                                          for op_key in op_keys[1:]])[0]
                                   for op_keys in operator_keys])
+            print(tensor_shapes)
             green_component_plus = np.zeros(freq.shape, dtype=np.complex128)
             green_component_minus = np.zeros(freq.shape, dtype=np.complex128)
-            # Calculate single particle green's function component
-            if component == (1, 0):
-                corr.get_two_point_correlator_frequency_mp_pm(
-                    green_component_plus, green_component_minus, freq,
-                    precalc_correlators, vals_sectors, tensor_shapes,
-                    permutation_sign)
-            elif component == (0, 1):
-                corr.get_two_point_correlator_frequency_mp_pm(
-                    green_component_plus, green_component_minus, freq,
-                    precalc_correlators, vals_sectors, tensor_shapes,
-                    permutation_sign)
-            elif component == (0, 0):
-                corr.get_two_point_correlator_frequency_mm_pp(
-                    green_component_plus, green_component_minus, freq,
-                    precalc_correlators, vals_sectors, tensor_shapes,
-                    permutation_sign)
-            elif component == (1, 1):
-                corr.get_two_point_correlator_frequency_mm_pp(
-                    green_component_plus, green_component_minus, freq,
-                    precalc_correlators, vals_sectors, tensor_shapes,
-                    permutation_sign)
+            # Calculate single particle green's function or susceptibility
+            # component
+            corr.get_two_point_correlator_frequency(
+                green_component_plus=green_component_plus,
+                green_component_minus=green_component_minus, freq=freq,
+                precalc_correlators=precalc_correlators,
+                vals_sectors=vals_sectors, tensor_shapes=tensor_shapes,
+                permutation_sign=permutation_sign, prefactor=prefactor,
+                e_cut_off=self.e_cut_off)
 
             return green_component_plus, green_component_minus
         # calculate three point correlation function

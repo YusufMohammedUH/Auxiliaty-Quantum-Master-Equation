@@ -2,8 +2,9 @@
     will be written.
     """
 # %%
-from typing import Dict, Tuple, Union, List
+from typing import Dict, Tuple, Union, List, Iterable
 import numpy as np
+from itertools import product
 import src.greens_function.contour_util as con_util
 import src.super_fermionic_space.model_lindbladian as lind
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
@@ -14,26 +15,6 @@ import src.greens_function.correlator_components as comp
 
 # XXX: works only for a single impurity site of interest
 # XXX: works only for spin 1/2 fermions
-
-# TODO: Restructure:
-#       - Correlators should be a interface class
-#       - a Solver should be supplied to the class:
-#               i)  getting the steady state density of state
-#               ii) get correlators: i)   ED
-#                                    ii)  Lanczos/Arnoldi
-#                                    iii) Tensornetwork/MPS/DMRG
-#
-#           -> should the solvers be children of the correlator class or
-#              should the correlator have an attribute
-#               !! Best use attributes -> can be used independently of rest!!
-#
-#       - should should it do:
-#           - have subspace Lindbladian
-#           - have the subspace creator and annihilator
-#           - set everything before solving expectation values
-#               - ordering and prefactors of expectation values
-#               - sectors
-#       - The rest should be moved in a ED solver class which
 
 
 class Correlators:
@@ -68,8 +49,6 @@ class Correlators:
         self.trilex = trilex
         self.Lindbladian = Lindbladian
         self.nsite = self.Lindbladian.super_fermi_ops.fock_ops.nsite
-        self.operator_sectors = {"cdag": {"up": (1, 0), 'do': (0, 1)},
-                                 'c': {'up': (-1, 0), 'do': (0, -1)}}
 
         if correlators is None:
             correlators = [2 * i for i in range(
@@ -194,7 +173,11 @@ class Correlators:
                                 ) -> List[Tuple]:
         """Append a tuple of spin sectors to the operators in the operator list
         e.g. [('c','up'),('cdag','do')] -> [('c','up',((-1,1),(0,1))),
-        ('cdag','do',((0,1),(0,0)))]
+        ('cdag','do',((0,1),(0,0)))]. In case of more then one configuration of
+        sectors all possible sectors are added as a list of operator lists,
+        e.g. [(n_channel,'x'),(n_channel,'y')]->
+        [[(n_channel,'x',(1,-1)),(n_channel,'y',(-1,1))],
+        [(n_channel,'x',(-1,1)),(n_channel,'y',(1,-1))]]
 
         Warning: The steady state density matrix is always in the (0,0) sector,
         therefore the list right most and left most sector have to be (0,0).
@@ -218,45 +201,33 @@ class Correlators:
                     self.Lindbladian.super_fermi_ops.get_left_sector(
                         sectors[-1], op))
         else:
-            sectors = [(0, 0)]
-            for op in operator_list:
-                if "n_channel" in op[0]:
-                    sectors.append(None)
+            sectors = [[(0, 0)]]
+            for op in operator_list[::-1]:
+                if 'x' == op[1] or 'y' == op[1]:
+                    sector = self.Lindbladian.super_fermi_ops.operator_sectors[
+                        op[0]][op[1]]
                 else:
-                    sectors.append(
+                    sector = [
                         self.Lindbladian.super_fermi_ops.operator_sectors[
-                            op[0]][op[1]])
-            sectors.append((0, 0))
-            # print('sectors: ', sectors)
-            left_ = []
-            current = (0, 0)
-            right_ = [current]
-            for s in sectors[::-1][1:]:
-                if s is None:
-                    break
-                current = sf_sub.add_spin_sectors(
-                    s, current)
-                right_.append(current)
-            right_ = right_[::-1]
-            if len(right_) != len(sectors):
-                current = (0, 0)
-                left_ = [current]
-                for s in sectors[1:]:
-                    if s is None:
-                        break
-                    tmp = (-1 * s[0], -1 * s[1])
-                    current = sf_sub.add_spin_sectors(
-                        tmp, current)
-                    left_.append(current)
-                sector_channel = (left_[-1], right_[0])
-                sector_keys = [*list(zip(left_[:-1], left_[1:])),
-                               sector_channel,
-                               *list(zip(right_[:-1], right_[1:]))]
-            else:
-                sector_keys = list(zip(right_[1:-1], right_[2:]))
+                            op[0]][op[1]]]
 
-        return tuple([(*op[0], op[1]) for op in zip(operator_list,
-                                                    sector_keys)])
+                sectors.append(sector)
+            sectors_list = list(product(*sectors))
+            sector_added_list = []
+            for sectors in sectors_list:
+                tmp = (0, 0)
+                tmp_list = []
+                for sector in sectors:
+                    tmp = sf_sub.add_spin_sectors(tmp, sector)
+                    tmp_list.append(tmp)
+                if tmp == (0, 0):
+                    sector_added_list.append(tmp_list[::-1])
+            sectors_keys_list = [[x for x in zip(sectors[:-1], sectors[1:])]
+                                 for sectors in sector_added_list]
+        assert len(sectors_keys_list) >= 1, 'sectors_keys_list is empty'
+
+        return [tuple([(*op[0], op[1]) for op in zip(
+            operator_list, sector_keys)]) for sector_keys in sectors_keys_list]
 
     def get_single_particle_green(self, component: Tuple[int, int],
                                   freq: np.ndarray,
@@ -290,32 +261,92 @@ class Correlators:
             site = int(
                 (self.Lindbladian.super_fermi_ops.fock_ops.nsite - 1) / 2)
             sites = (site, site)
+        prefactor = -1j
         permutation_sign = None
         operators = None
         operator_components = comp.get_two_point_operator_list(spin=spin)
-        if component == (1, 0):
-            permutation_sign = 1 + 0j
+        if component == (0, 0):
+            permutation_sign = (1. + 0.j, -1. + 0.j)
 
         elif component == (0, 1):
-            permutation_sign = -1 + 0j
+            permutation_sign = (-1. + 0.j, -1. + 0.j)
 
-        elif component == (0, 0):
-            permutation_sign = -1 + 0j
+        elif component == (1, 0):
+            permutation_sign = (1. + 0.j, 1. + 0.j)
 
         elif component == (1, 1):
-            permutation_sign = 1 + 0j
+            permutation_sign = (-1. + 0.j, 1. + 0.j)
 
-        operators = [self.append_spin_sector_keys(op_key)
+        operators = [self.append_spin_sector_keys(op_key)[0]
                      for op_key in operator_components[component]]
 
         return self.solver.get_correlator(Lindbladian=self.Lindbladian,
                                           freq=freq, component=component,
                                           sites=sites, operator_keys=operators,
-                                          permutation_sign=permutation_sign)
+                                          permutation_sign=permutation_sign,
+                                          prefactor=prefactor)
+
+    def get_susceptibility(self, freq: np.ndarray, component: Tuple[int, int],
+                           channels: Tuple[str, str],
+                           sites: Union[None, Iterable] = None,
+                           prefactor: complex = -1 + 0j):
+        """_summary_
+
+        _extended_summary_
+
+        Parameters
+        ----------
+        freq : np.ndarray
+            Frequency grid
+
+        component : Tuple[int, int]
+            Contour component, e.g. (0,0) or (1,0). 1 for th backward and 0 for
+            the forward branch.
+
+        channels : Tuple[str, str]
+            Charge 'ch' or spin channels 'x','y' or 'z'
+
+        sites : Union[None, Iterable], optional
+            Tuple of site indices, by default None
+
+        prefactor : complex, optional
+            _description_, by default -1+0j
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        if sites is None:
+            site = int(
+                (self.Lindbladian.super_fermi_ops.fock_ops.nsite - 1) / 2)
+            sites = (site, site)
+        permutation_sign = (1. + 0.j, 1. + 0.j)
+        operator_components = comp.get_susceptibility(channels=channels)
+
+        if 'ch' in channels or 'z' in channels:
+            operators = [[self.append_spin_sector_keys(op_key)[0]
+                          for op_key in operator_components[component]]]
+        else:
+            operators = [self.append_spin_sector_keys(op_key)
+                         for op_key in operator_components[component]]
+        print(operators)
+        kai_plus = np.zeros(len(freq), dtype=np.complex128)
+        kai_minus = np.zeros(len(freq), dtype=np.complex128)
+        for ops in operators:
+            kai_tmp_plus, kai_tmp_minus = self.solver.get_correlator(
+                Lindbladian=self.Lindbladian, freq=freq, component=component,
+                sites=sites, operator_keys=ops,
+                permutation_sign=permutation_sign, prefactor=prefactor)
+
+            kai_plus += kai_tmp_plus
+            kai_minus += kai_tmp_minus
+
+        return kai_plus, kai_minus
 
     def get_three_point_vertex_components(
             self, component: Tuple[int, int, int], freq: np.ndarray,
-            sites: Union[None, np.ndarray] = None,
+            sites: Union[None, List, Tuple] = None,
             spin: Tuple[str, str, str] = ('up', 'up', 'ch'),
             permutation_sign: Tuple[int, int, int] = (-1 + 0j, 1 + 0j, 1 + 0j),
             prefactor: complex = -1 + 0j) -> np.ndarray:
@@ -358,14 +389,20 @@ class Correlators:
             sites = (site, site, site)
         operator_components = comp.get_three_point_operator_list(spin=spin)
         # precalculating the expectation value
-        operators = [self.append_spin_sector_keys(op_key)
-                     for op_key in operator_components[component]]
 
-        return self.solver.get_correlator(Lindbladian=self.Lindbladian,
-                                          freq=freq, component=component,
-                                          sites=sites, operator_keys=operators,
-                                          permutation_sign=permutation_sign,
-                                          prefactor=prefactor)
+        operators = [[self.append_spin_sector_keys(op_key)[0]
+                      for op_key in operator_components[component]]]
+        print(operators)
+        vertex = np.zeros((len(freq), len(freq)), dtype=np.complex128)
+        for ops in operators:
+            vertex_tmp = self.solver.get_correlator(
+                Lindbladian=self.Lindbladian, freq=freq, component=component,
+                sites=sites, operator_keys=ops,
+                permutation_sign=permutation_sign, prefactor=prefactor)
+
+            vertex += vertex_tmp
+
+        return vertex
 
     def get_three_point_vertex(self, freq: np.ndarray,
                                spin: Tuple = ('up', 'up', 'ch'),

@@ -21,16 +21,22 @@ def precalculate_two_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     ----------
     shape : Tuple
         shape of resulting Matrix/Tensor
+
     left_vacuum : np.ndarray
         Left Vacuum state (see SuperFermionicOperators)
+
     spin_sector_fermi_ops : List[np.ndarray]
         List of operators in spin sector
+
     vec_r_sector : List[np.ndarray]
         List of right eigenvectors in spin sector
+
     vec_l_sector : List[np.ndarray]
         List of left eigenvectors in spin sector
+
     rho_stready_state : np.ndarray
         Steady state density operator (see SuperFermionicOperators)
+
     n : int
         number of operators in expectation value/spin_sector_fermi_ops
 
@@ -70,16 +76,22 @@ def precalculate_three_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     ----------
     shape : Tuple
         shape of resulting Matrix/Tensor
+
     left_vacuum : np.ndarray
         Left Vacuum state (see SuperFermionicOperators)
+
     spin_sector_fermi_ops : List[np.ndarray]
         List of operators in spin sector
+
     vec_r_sector : List[np.ndarray]
         List of right eigenvectors in spin sector
+
     vec_l_sector : List[np.ndarray]
         List of left eigenvectors in spin sector
+
     rho_stready_state : np.ndarray
         Steady state density operator (see SuperFermionicOperators)
+
     n : int
         number of operators in expectation value/spin_sector_fermi_ops
 
@@ -125,16 +137,22 @@ def precalculate_four_point_correlator(shape: Tuple, left_vacuum: np.ndarray,
     ----------
     shape : Tuple
         shape of resulting Matrix/Tensor
+
     left_vacuum : np.ndarray
         Left Vacuum state (see SuperFermionicOperators)
+
     spin_sector_fermi_ops : List[np.ndarray]
         List of operators in spin sector
+
     vec_r_sector : List[np.ndarray]
         List of right eigenvectors in spin sector
+
     vec_l_sector : List[np.ndarray]
         List of left eigenvectors in spin sector
+
     rho_stready_state : np.ndarray
         Steady state density operator (see SuperFermionicOperators)
+
     n : int
         number of operators in expectation value/spin_sector_fermi_ops
 

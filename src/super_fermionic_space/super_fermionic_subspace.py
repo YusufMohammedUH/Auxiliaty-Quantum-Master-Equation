@@ -4,13 +4,6 @@ from scipy import sparse
 import src.super_fermionic_space.define_super_fermionic_operators as sf_op
 
 
-# TODO: SubspaceDecomposition should only contain the function containing the
-#      Function get_permutation_operator
-# TODO: A subsequent class for Lindbladians which are particle number
-#      conserving with the corresponding creation and annihilation operators
-#      could be created
-
-
 def add_spin_sectors(sector1: Tuple[int, int], sector2: Tuple[int, int]
                      ) -> Tuple[int, int]:
     """Add to tuples of lenght 2, by adding each index together.
@@ -277,10 +270,20 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                                      "cdag_tilde": -1}
         else:
             self.operator_sectors = {"cdag": {"up": (1, 0), 'do': (0, 1)},
+                                     'c_tilde': {"up": (1, 0), 'do': (0, 1)},
                                      'c': {'up': (-1, 0), 'do': (0, -1)},
-                                     "c_tilde": {"up": (1, 0), 'do': (0, 1)},
                                      'cdag_tilde': {'up': (-1, 0),
-                                                    'do': (0, -1)}}
+                                                    'do': (0, -1)},
+                                     'n_channel': {'ch': (0, 0),
+                                                   'x': [(-1, 1), (1, -1)],
+                                                   'y': [(-1, 1), (1, -1)],
+                                                   'z': (0, 0)},
+                                     'n_channel_tilde': {'ch': (0, 0),
+                                                         'x': [(-1, 1),
+                                                               (1, -1)],
+                                                         'y': [(-1, 1),
+                                                               (1, -1)],
+                                                         'z': (0, 0)}}
 
         # TODO: default self.target_sites should in general be a list of all
         #       sites only special cases need a specific value
@@ -1237,7 +1240,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         if np.any(abs_sector > self.spin_sector_max):
             raise IndexError("ERROR: Sector out of bound!")
 
-        return self.spin_sector_fermi_ops[site]['n_channel_tilde'][channel][sector]
+        return self.spin_sector_fermi_ops[site]['n_channel_tilde'][channel][
+            sector]
 
 
 SuperFermionicOperatorType = Union[sf_op.SuperFermionicOperators,
