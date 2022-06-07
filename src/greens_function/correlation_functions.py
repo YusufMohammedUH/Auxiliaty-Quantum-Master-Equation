@@ -330,7 +330,7 @@ class Correlators:
         else:
             operators = [self.append_spin_sector_keys(op_key)
                          for op_key in operator_components[component]]
-        print(operators)
+
         kai_plus = np.zeros(len(freq), dtype=np.complex128)
         kai_minus = np.zeros(len(freq), dtype=np.complex128)
         for ops in operators:
@@ -392,7 +392,7 @@ class Correlators:
 
         operators = [[self.append_spin_sector_keys(op_key)[0]
                       for op_key in operator_components[component]]]
-        print(operators)
+
         vertex = np.zeros((len(freq), len(freq)), dtype=np.complex128)
         for ops in operators:
             vertex_tmp = self.solver.get_correlator(

@@ -344,7 +344,7 @@ class EDSolver:
             vals_sectors = tuple([tuple([self.vals_sector[op_key[2][0]]
                                          for op_key in op_keys[1:]])[0]
                                   for op_keys in operator_keys])
-            print(tensor_shapes)
+
             green_component_plus = np.zeros(freq.shape, dtype=np.complex128)
             green_component_minus = np.zeros(freq.shape, dtype=np.complex128)
             # Calculate single particle green's function or susceptibility

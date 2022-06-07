@@ -1,0 +1,50 @@
+Correlator Class:
+
+    TODO: Restructure:
+        - Correlators should be a interface class
+        - a Solver should be supplied to the class:
+                i)  getting the steady state density of state
+                ii) get correlators: i)   ED
+                                    ii)  Lanczos/Arnoldi
+                                    iii) Tensornetwork/MPS/DMRG
+
+            -> should the solvers be children of the correlator class or
+                should the correlator have an attribute
+                !! Best use attributes -> can be used independently of rest!!
+
+        - what should it do?
+            - have subspace Lindbladian
+            - have the subspace creator and annihilator
+            - set everything before solving expectation values
+                - ordering and prefactors of expectation values
+                - sectors
+        - The rest should be moved in a ED solver class which
+
+
+
+
+
+
+
+
+Dual Trilex:
+    auxiliary quantities:
+        [X] get green's function
+        [X] get susceptibility
+            -> in file correlators
+            -> equivalent to green's function but with
+                <(c^{\dagger}\simga c)(c^{\dagger}\simga c)> - <(c^{\dagger}\simga c)><(c^{\dagger}\simga c)>
+        [ ] set U for different channel
+            -> find how they are defined
+        [ ] get bosonic bath
+
+    Dual quantities:
+        [ ] get bare dual green's function
+        [ ] get bare dual bosonic green's function
+        [ ] get dual bosonic hybridization
+        [ ] get full dual bosonic green's function
+        [ ] get dual self-energy
+        [ ] get full dual green's function
+
+    impurity quantities:
+        [ ] get green's function
