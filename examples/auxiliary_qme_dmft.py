@@ -19,7 +19,7 @@ beta = 100
 # U = 1.0
 v = 1.0
 D = 10
-gamma = 0.1
+gamma = 0.05
 
 # Parameters of the auxiliary system
 Nb = 1
@@ -59,7 +59,7 @@ for U in [1., 2., 3., 4., 5.]:
     args = np.array([e0, mu, beta, 1.0, 1.0], dtype=np.float64)
     G_sys = du.set_hybridization(
         freq, du.lorenzian_bath_retarded, args)
-    G_tmp = G_sys.copy()
+    G_tmp = fg.FrequencyGreen(freq=freq)
 
     optimization_options = {"disp": False, "maxiter": 500, 'ftol': 1e-5}
 
@@ -67,8 +67,6 @@ for U in [1., 2., 3., 4., 5.]:
     x_start = [0., 0.1, 0.5, -0.1, 0.2]
     # plt.figure()
     for i in range(max_iter):
-        print(f"Iteration No.: {i}")
-
         # ######### Calculate the DMFT hybridization for a Bethe lattice. #####
         dmft_hyb = fg.FrequencyGreen(
             freq, G_sys.retarded * (v**2), G_sys.keldysh * (v**2))
@@ -84,10 +82,9 @@ for U in [1., 2., 3., 4., 5.]:
 
         aux_sys = opt.get_aux(result_nb1.x, Nb, freq)
         hyb_aux = fg.get_hyb_from_aux(aux_sys)
-
         # ######## Calculate the auxiliary single particle Green's function ###
         T_mat = aux_sys.E
-        T_mat[Nb, Nb] = -U / 2.
+        T_mat[Nb, Nb] -= U / 2.
 
         two_point_corr.update(T_mat=T_mat, U_mat=Us,
                               Gamma1=aux_sys.Gamma1,
@@ -102,19 +99,20 @@ for U in [1., 2., 3., 4., 5.]:
 
         G_R = G_greater_plus - G_lesser_plus
         G_K = G_greater_plus + G_greater_minus + G_lesser_plus + G_lesser_minus
-        print(np.sum(G_R.imag) * (freq[1] - freq[0]))
         G_aux = fg.FrequencyGreen(aux_sys.ws, retarded=G_R, keldysh=G_K)
         # ##################### Extract the self-energy  ######################
         sigma = G_aux.get_self_enerqy() - hyb_aux
         # ######### Calculate the system single particle Green's function #####
-        G_sys.dyson(aux_sys.ws, hybridization + dmft_hyb + sigma)
+        G_tmp.dyson(aux_sys.ws, hybridization + sigma)
         err[U].append(opt.cost_function(G_sys, G_tmp, normalize=False))
+        print(
+            f"Iteration No.: {i}  | Spectral weight: {round((-1/np.pi)*np.sum(G_sys.retarded.imag) * (freq[1] - freq[0]),7)} ")
+        print(f"Error is: {err[U][i]}")
         if err[U][-1] < error:
             break
-        print(f"Error is: {err[U][i]}")
-        G_tmp = fg.FrequencyGreen(aux_sys.ws, retarded=(
-            (1.0 - mixing) * G_sys.retarded + mixing * G_tmp.retarded),
-            keldysh=((1.0 - mixing) * G_sys.keldysh + mixing * G_tmp.keldysh))
+        G_sys = fg.FrequencyGreen(aux_sys.ws, retarded=(
+            (1.0 - mixing) * G_tmp.retarded + mixing * G_sys.retarded),
+            keldysh=((1.0 - mixing) * G_tmp.keldysh + mixing * G_sys.keldysh))
         if i == 0:
             green = fg.FrequencyGreen(
                 aux_sys.ws, G_aux.retarded, G_aux.keldysh)
