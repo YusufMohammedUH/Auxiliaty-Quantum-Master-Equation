@@ -19,32 +19,67 @@ import src.greens_function.correlator_components as comp
 
 class Correlators:
     """Class for calculating correlators on the keldysh contour.
+    It is assumed, that the steady state density operator is unique
+    and located in the spin sector (0,0).
 
+    It has to be considered in what limits this is valid.
+    If valid the Lindbladian can be decomposed to spin sector and the time
+    evolution can be extracted through exact diagonalization of this
+    sectors.
+
+    A spin sector is given by the difference between "normal" and "tilde"
+    space particle number difference for spin up, first element of the
+    tuple and spin down, second element of the tuple.
+
+    Parameters
+    ----------
+    Lindbladian : src.model_lindbladian.Lindbladian
+        Container class for the Lindbladian. A class attribute is the
+        liouville space in which it is defined.
+
+    solver : _type_, optional
+            _description_, by default ed_sol.EDSolver
+
+    spin_components : Union[dict, None], optional
+        _description_, by default None
+
+    correlators : Union[List, None], optional
+        _description_, by default None
+
+    trilex : bool, optional
+        _description_, by default False
+
+    Attributes
+    ----------
+    trilex : bool
+        Flag to indicate if the trilex correlators are to be calculated.
+
+    Lindbladian : src.model_lindbladian.Lindbladian
+        Container class for the Lindbladian.
+
+    nsite : int
+        Number of sites in the auxiliary system.
+
+    operators_default_order : dict
+        Dictionary containing the default order of the 2, 3 and 4 point
+        correlators.
+
+    correlators : dict
+        Dictionary containing the correlators to be calculated.
+
+    solver : Object
+        Solver for calculating n-point correlators, e.g. of class EDSolver.
+
+    spin_components : dict
+        Dictionary containing the desired spin components of n-point
+        correlators. These can be reduced due to symmetry, e.g. paramagnetism.
     """
 
     def __init__(self, Lindbladian: lind.Lindbladian, solver=ed_sol.EDSolver,
                  spin_components: Union[dict, None] = None,
                  correlators: Union[List, None] = None,
                  trilex: bool = False) -> None:
-        """Container for calcutation of correlation function.
-        It is assumed, that the steady state density operator is unique
-        and located in the spin sector (0,0).
-
-        It has to be considered in what limits this is valid.
-        If valid the Lindbladian can be decomposed to spin sector and the time
-        evolution can be extracted through exact diagonalization of this
-        sectors.
-
-        A spin sector is given by the difference between "normal" and "tilde"
-        space particle number difference for spin up, first element of the
-        tuple and spin down, second element of the tuple.
-
-        Parameters
-        ----------
-        Lindbladian : src.model_lindbladian.Lindbladian
-            Container class for the Lindbladian. A class attribute is the
-            liouville space in which it is defined.
-
+        """Initialize self.  See help(type(self)) for accurate signature.
         """
         self.trilex = trilex
         self.Lindbladian = Lindbladian
@@ -118,8 +153,9 @@ class Correlators:
 
         Parameters
         ----------
-        correlators : _type_, optional
-            _description_, by default None
+        correlators : Union[dict, None], optional
+            Dictionary containing the components of the correlators, by default
+            None.
         """
         if correlators is not None:
             self.correlators = {n: {} for n in correlators}
@@ -276,7 +312,6 @@ class Correlators:
 
         elif component == (1, 1):
             permutation_sign = (-1. + 0.j, 1. + 0.j)
-
         operators = [self.append_spin_sector_keys(op_key)[0]
                      for op_key in operator_components[component]]
 
@@ -290,9 +325,9 @@ class Correlators:
                            channels: Tuple[str, str],
                            sites: Union[None, Iterable] = None,
                            prefactor: complex = -1 + 0j):
-        """_summary_
+        """Calculate and return the susceptibility for the desired component,
+        channels and sites.
 
-        _extended_summary_
 
         Parameters
         ----------
@@ -310,12 +345,13 @@ class Correlators:
             Tuple of site indices, by default None
 
         prefactor : complex, optional
-            _description_, by default -1+0j
+            prefactor of the susceptibility, by default -1+0j
 
         Returns
         -------
-        _type_
-            _description_
+        out: tuple[np.ndarray, np.ndarray]
+            Tuple of the positive and negative susceptibility components
+            (FT(Kai(t < 0))(\omega), FT(Kai(t > 0))(\omega) ).
         """
         if sites is None:
             site = int(

@@ -140,7 +140,8 @@ class FrequencyGreen:
             raise TypeError("keldysh must be of type numpy.array or None!")
 
         self.freq = freq
-        self.freq.flags.writeable = False
+        if self.freq.flags.writeable:
+            self.freq.flags.writeable = False
         if retarded is None:
             self.retarded = np.zeros(len(freq), dtype=np.complex128)
         else:

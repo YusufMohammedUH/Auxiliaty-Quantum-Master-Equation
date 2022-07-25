@@ -1,3 +1,4 @@
+# %%
 from typing import Union, Tuple, List, Dict
 import numpy as np
 import src.auxiliary_mapping.auxiliary_system_parameter as auxp
@@ -18,8 +19,8 @@ def cost_function(hybridization: fg.FrequencyGreen,
                   auxiliary_hybridization: fg.FrequencyGreen,
                   weight: Union[np.ndarray, None] = None,
                   normalize: bool = True) -> float:
-    """Cost function returns the weoght, integrated, elementwise squared difference
-    between the retarded and Keldysh component of two supplied
+    """Cost function returns the weoght, integrated, elementwise squared
+    difference between the retarded and Keldysh component of two supplied
     frequency, single particle Green's function type objects.
 
     Parameters
@@ -237,7 +238,7 @@ def get_aux(res: np.ndarray, Nb: int, freq: np.ndarray
 if __name__ == "__main__":
     # Setting target hybridization
     e0 = 0
-    mu = 0
+    mu = 0.5
     beta = 100
     N_freq = 1001
     freq_max = 10
@@ -245,14 +246,21 @@ if __name__ == "__main__":
     gamma = 1
     freq = np.linspace(-freq_max, freq_max, N_freq)
 
-    flat_hybridization_retarded = np.array(
+    flat_hybridization_retarded1 = np.array(
         [du.flat_bath_retarded(w, e0, D, gamma) for w in freq])
-    flat_hybridization_keldysh = np.array(
+    flat_hybridization_keldysh1 = np.array(
         [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, e0, mu, beta)) *
          np.imag(du.flat_bath_retarded(w, e0, D, gamma)) for w in freq])
 
+    flat_hybridization_retarded2 = np.array(
+        [du.flat_bath_retarded(w, e0, D, gamma) for w in freq])
+    flat_hybridization_keldysh2 = np.array(
+        [1.j * (1. / np.pi) * (1. - 2. * du.fermi(w, e0, -mu, beta)) *
+         np.imag(du.flat_bath_retarded(w, e0, D, gamma)) for w in freq])
+
     hybridization = fg.FrequencyGreen(
-        freq, flat_hybridization_retarded, flat_hybridization_keldysh)
+        freq, flat_hybridization_retarded1 + flat_hybridization_retarded2,
+        flat_hybridization_keldysh1 + flat_hybridization_keldysh2)
     options = {"disp": True, "maxiter": 500, 'ftol': 1e-5}
 
     # Calculating auxiliary hyridization for Nb =1
@@ -275,6 +283,16 @@ if __name__ == "__main__":
     except ValueError:
         print(f"Minimization for Nb = {Nb}, not converged.")
 
+    # # Calculating auxiliary hyridization for Nb =3
+    # try:
+    #     Nb = 3
+    #     result_nb3 = optimization_ph_symmertry(
+    #         Nb, hybridization, options=options)
+    #     aux_nb3 = get_aux(result_nb3.x, Nb, freq)
+    #     hyb_aux_nb3 = fg.get_hyb_from_aux(aux_nb3)
+    # except ValueError:
+    #     print(f"Minimization for Nb = {Nb}, not converged.")
+
     plt.figure()
     plt.plot(hybridization.freq, hybridization.retarded.imag)
     plt.plot(hybridization.freq, hyb_aux_nb1.retarded.imag)
@@ -291,3 +309,5 @@ if __name__ == "__main__":
     plt.xlabel(r"$\omega$")
     plt.ylabel(r"$Im\Delta^K(\omega)$")
     plt.legend([r"$exact$", r"$Nb=2$", r"$Nb=4$"])
+
+# %%

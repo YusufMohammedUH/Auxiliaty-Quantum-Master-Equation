@@ -85,7 +85,6 @@ def dissipator_thermal_bath(Gamma1: np.ndarray, Gamma2: np.ndarray,
         spins = ["up", "do"]
 
     if super_fermi_ops.tilde_conjugationrule_phase:
-        print("Dissipative Lindbladian is set with complex phase.")
         for ii in range(nsite):
             for jj in range(nsite):
                 for spin in spins:
