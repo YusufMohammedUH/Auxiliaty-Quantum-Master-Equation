@@ -24,9 +24,6 @@ Correlator Class:
 
 
 
-
-
-
 Dual Trilex:
     auxiliary quantities:
         [X] get green's function
@@ -48,3 +45,11 @@ Dual Trilex:
 
     impurity quantities:
         [ ] get green's function
+
+
+Testing:
+    [ ] Add tests for correlator_functions.py
+    [ ] Add tests for auxiliary_dmft.py
+    [ ] Add tests for ed_solver.py
+
+    [ ] Add tests for dos_util.py
