@@ -2,7 +2,6 @@
 from typing import Dict, Union, Callable, Tuple
 import numpy as np
 from scipy.integrate import simps
-import matplotlib.pyplot as plt
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du

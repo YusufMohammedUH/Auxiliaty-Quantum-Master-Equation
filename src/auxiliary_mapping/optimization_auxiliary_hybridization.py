@@ -164,7 +164,6 @@ def optimization_ph_symmertry(Nb: int, hybridization: fg.FrequencyGreen,
                       )
 
     nn = 1
-    print("No. of tries: ", nn, ", converged: ", result.success)
     while (N_try > nn) and (~result.success):
         result = minimize(optimize_subroutine, x_start, args=args)
         nn += 1

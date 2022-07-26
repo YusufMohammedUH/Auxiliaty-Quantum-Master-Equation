@@ -1,8 +1,9 @@
 from typing import Tuple, Union
 import numpy as np
 from numba import njit
-import src.auxiliary_mapping.auxiliary_system_parameter as auxp
 import matplotlib.pyplot as plt
+import src.auxiliary_mapping.auxiliary_system_parameter as auxp
+import src.hdf5_util as hd5
 
 
 @njit(cache=True)
@@ -298,6 +299,26 @@ class FrequencyGreen:
                 sigma[1][s] = 0
 
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
+
+    def save(self, fname: str, dir: str, dataname: str,
+             savefreq: bool = False) -> None:
+        """Save the Green's function to a file.
+
+        Parameters
+        ----------
+        fname : str
+            File name of the hdf5 file.
+        dir : str
+            Groupe name/subdirectory within the hdf5 file, e.g. '/' or '/green'.
+        dataname : str
+            Name of dataset/ of the green's function.
+        """
+        hd5.add_data(fname, f"{dir}/{dataname}", 'keldysh', self.keldysh)
+        hd5.add_data(fname, f"{dir}/{dataname}", 'retarded', self.retarded)
+        if savefreq:
+            hd5.add_attrs(fname, f"{dir}/{dataname}",
+                          {"freq_min": self.freq[0], "freq_max": self.freq[-1],
+                           'N_freq': len(self.freq)})
 
 
 def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
