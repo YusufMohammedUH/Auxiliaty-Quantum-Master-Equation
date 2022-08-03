@@ -75,11 +75,11 @@ def get_subspace_object(object: sparse.csc_matrix,
                              + " to be a vector of shape (dim, 1).")
         return (permutation_op_left[1] * object
                 )[:permutation_op_left[0], 0]
-    else:
-        return (permutation_op_left[1] * object
-                * permutation_op_right[1].transpose()
-                )[:permutation_op_left[0],
-                    :permutation_op_right[0]]
+ 
+    return (permutation_op_left[1] * object
+            * permutation_op_right[1].transpose()
+            )[:permutation_op_left[0],
+                :permutation_op_right[0]]
 
 
 class SubspaceDecomposition(sf_op.SuperFermionicOperators):
@@ -327,9 +327,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         """
         if self.fock_ops.spinless:
             return self.operator_sectors[operator] + right_sector
-        else:
 
-            return add_spin_sectors(self.operator_sectors[operator][spin],
+        return add_spin_sectors(self.operator_sectors[operator][spin],
                                     right_sector)
 
     def spin_sector_projector(self, sector: Union[Tuple[int, int], int]
@@ -369,21 +368,21 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             pnum_per_spin_projector = pnum_per_spin_projector.tocsc()
 
             return pnum_per_spin_projector
-        else:
-            pnum_index = np.where(
-                (self.N - self.N_tilde).diagonal(
-                ) == sector)[0]
 
-            pnum_per_spin_projector = sparse.lil_matrix(
-                (4**(self.fock_ops.spin_times_site),
-                    4**((self.fock_ops
-                         ).spin_times_site)), dtype=np.complex128)
+        pnum_index = np.where(
+            (self.N - self.N_tilde).diagonal(
+            ) == sector)[0]
 
-            for n in pnum_index:
-                pnum_per_spin_projector[n, n] = 1.0
-            pnum_per_spin_projector = pnum_per_spin_projector.tocsc()
+        pnum_per_spin_projector = sparse.lil_matrix(
+            (4**(self.fock_ops.spin_times_site),
+                4**((self.fock_ops
+                     ).spin_times_site)), dtype=np.complex128)
 
-            return pnum_per_spin_projector
+        for n in pnum_index:
+            pnum_per_spin_projector[n, n] = 1.0
+        pnum_per_spin_projector = pnum_per_spin_projector.tocsc()
+
+        return pnum_per_spin_projector
 
     def spin_sector_permutation_operator(self, sector: Union[
             Tuple[int, int], int], full: bool = False
@@ -799,11 +798,11 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             return get_subspace_object(
                 object=object, permutation_op_left=self.projectors[sector_left]
             )
-        else:
-            return get_subspace_object(
-                object=object,
-                permutation_op_left=self.projectors[sector_left],
-                permutation_op_right=self.projectors[sector_right])
+
+        return get_subspace_object(
+            object=object,
+            permutation_op_left=self.projectors[sector_left],
+            permutation_op_right=self.projectors[sector_right])
 
     def cdag_sector(self, sector: Union[Tuple[int, int],
                                         Tuple[Tuple[int, int]]], site: int,
@@ -857,7 +856,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
-        if (site not in self.target_sites):
+        if site not in self.target_sites:
             raise IndexError('ERROR: Index out of bound!')
 
         if self.fock_ops.spinless:
@@ -868,23 +867,23 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                       "passed")
 
             return self.spin_sector_fermi_ops[site]['cdag'][sector]
-        else:
-            abs_sector = np.array([sum(np.abs(s)) for s in sector])
-            if np.any(abs_sector > self.spin_sector_max):
-                raise IndexError("ERROR: Sector out of bound!")
-            if spin == "up":
-                if (sector[0][1] != sector[1][1]) or (
-                        sector[0][0] - 1 != sector[1][0]):
-                    raise IndexError("ERROR: Sector can't be reached!")
-                return self.spin_sector_fermi_ops[site]['cdag']['up'][sector]
-            elif spin == "do":
-                if (sector[0][0] != sector[1][0]) or (
-                        sector[0][1] - 1 != sector[1][1]):
-                    raise IndexError("ERROR: Sector can't be reached!")
 
-                return self.spin_sector_fermi_ops[site]['cdag']['do'][sector]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
+        if spin == "up":
+            if (sector[0][1] != sector[1][1]) or (
+                    sector[0][0] - 1 != sector[1][0]):
+                raise IndexError("ERROR: Sector can't be reached!")
+            return self.spin_sector_fermi_ops[site]['cdag']['up'][sector]
+        elif spin == "do":
+            if (sector[0][0] != sector[1][0]) or (
+                    sector[0][1] - 1 != sector[1][1]):
+                raise IndexError("ERROR: Sector can't be reached!")
+
+            return self.spin_sector_fermi_ops[site]['cdag']['do'][sector]
+
+        raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
     def c_sector(self, sector: Union[Tuple[int, int], Tuple[Tuple[int, int]]],
                  site: int, spin: Union[str, None] = None
@@ -938,7 +937,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
-        if (site not in self.target_sites):
+        if site not in self.target_sites:
             raise IndexError('ERROR: index out of bound!')
 
         if self.fock_ops.spinless:
@@ -948,24 +947,24 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 print("Spinless fermions don't need the argument spin to be " +
                       "passed")
             return self.spin_sector_fermi_ops[site]['c'][sector]
-        else:
-            abs_sector = np.array([sum(np.abs(s)) for s in sector])
-            if np.any(abs_sector > self.spin_sector_max):
-                raise IndexError("ERROR: Sector out of bound!")
 
-            if spin == "up":
-                if (sector[0][1] != sector[1][1]) or (
-                        sector[0][0] + 1 != sector[1][0]):
-                    raise IndexError("ERROR: Sector can't be reached!")
-                return self.spin_sector_fermi_ops[site]['c']['up'][sector]
-            elif spin == "do":
-                if (sector[0][0] != sector[1][0]) or (
-                        sector[0][1] + 1 != sector[1][1]):
-                    raise IndexError("ERROR: Sector can't be reached!")
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
 
-                return self.spin_sector_fermi_ops[site]['c']['do'][sector]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+        if spin == "up":
+            if (sector[0][1] != sector[1][1]) or (
+                    sector[0][0] + 1 != sector[1][0]):
+                raise IndexError("ERROR: Sector can't be reached!")
+            return self.spin_sector_fermi_ops[site]['c']['up'][sector]
+        elif spin == "do":
+            if (sector[0][0] != sector[1][0]) or (
+                    sector[0][1] + 1 != sector[1][1]):
+                raise IndexError("ERROR: Sector can't be reached!")
+
+            return self.spin_sector_fermi_ops[site]['c']['do'][sector]
+
+        raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
     def cdag_tilde_sector(self, sector: Union[Tuple[int, int],
                                               Tuple[Tuple[int, int]]],
@@ -1020,7 +1019,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
-        if (site not in self.target_sites):
+        if site not in self.target_sites:
             raise IndexError('ERROR: index out of bound!')
 
         if self.fock_ops.spinless:
@@ -1030,27 +1029,27 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 print("Spinless fermions don't need the argument spin to be " +
                       "passed")
             return self.spin_sector_fermi_ops[site]['cdag_tilde'][sector]
+
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
+
+        if spin == "up":
+            if (sector[0][1] != sector[1][1]) or (
+                    sector[0][0] + 1 != sector[1][0]):
+                raise IndexError("ERROR: Sector can't be reached!")
+
+            return self.spin_sector_fermi_ops[site]['cdag_tilde']['up'][
+                sector]
+        elif spin == "do":
+            if (sector[0][0] != sector[1][0]) or (
+                    sector[0][1] + 1 != sector[1][1]):
+                raise IndexError("ERROR: Sector can't be reached!")
+
+            return self.spin_sector_fermi_ops[site]['cdag_tilde']['do'][
+                sector]
         else:
-            abs_sector = np.array([sum(np.abs(s)) for s in sector])
-            if np.any(abs_sector > self.spin_sector_max):
-                raise IndexError("ERROR: Sector out of bound!")
-
-            if spin == "up":
-                if (sector[0][1] != sector[1][1]) or (
-                        sector[0][0] + 1 != sector[1][0]):
-                    raise IndexError("ERROR: Sector can't be reached!")
-
-                return self.spin_sector_fermi_ops[site]['cdag_tilde']['up'][
-                    sector]
-            elif spin == "do":
-                if (sector[0][0] != sector[1][0]) or (
-                        sector[0][1] + 1 != sector[1][1]):
-                    raise IndexError("ERROR: Sector can't be reached!")
-
-                return self.spin_sector_fermi_ops[site]['cdag_tilde']['do'][
-                    sector]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+            raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
     def c_tilde_sector(self, sector: Union[Tuple[int, int],
                                            Tuple[Tuple[int, int]]], site: int,
@@ -1104,7 +1103,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
-        if (site not in self.target_sites):
+        if site not in self.target_sites:
             raise IndexError('ERROR: index out of bound!')
 
         if self.fock_ops.spinless:
@@ -1114,27 +1113,27 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 print("Spinless fermions don't need the argument spin to be " +
                       "passed")
             return self.spin_sector_fermi_ops[site]['c_tilde'][sector]
-        else:
-            abs_sector = np.array([sum(np.abs(s)) for s in sector])
-            if np.any(abs_sector > self.spin_sector_max):
-                raise IndexError("ERROR: Sector out of bound!")
 
-            if spin == "up":
-                if (sector[0][1] != sector[1][1]) or (
-                        sector[0][0] - 1 != sector[1][0]):
-                    raise IndexError("ERROR: Sector can't be reached!")
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
 
-                return self.spin_sector_fermi_ops[site]['c_tilde']['up'][
-                    sector]
-            elif spin == "do":
-                if (sector[0][0] != sector[1][0]) or (
-                        sector[0][1] - 1 != sector[1][1]):
-                    raise IndexError("ERROR: Sector can't be reached!")
+        if spin == "up":
+            if (sector[0][1] != sector[1][1]) or (
+                    sector[0][0] - 1 != sector[1][0]):
+                raise IndexError("ERROR: Sector can't be reached!")
 
-                return self.spin_sector_fermi_ops[site]['c_tilde']['do'][
-                    sector]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+            return self.spin_sector_fermi_ops[site]['c_tilde']['up'][
+                sector]
+        elif spin == "do":
+            if (sector[0][0] != sector[1][0]) or (
+                    sector[0][1] - 1 != sector[1][1]):
+                raise IndexError("ERROR: Sector can't be reached!")
+
+            return self.spin_sector_fermi_ops[site]['c_tilde']['do'][
+                sector]
+
+        raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
     def n_channel_sector(self, sector: Tuple[Tuple[int, int]], site: int,
                          channel: str = 'ch') -> sparse.csc_matrix:
@@ -1180,7 +1179,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         """
         assert len(sector) == 2
         assert not self.fock_ops.spinless
-        if (site not in self.target_sites):
+        if site not in self.target_sites:
             raise IndexError('ERROR: index out of bound!')
 
         abs_sector = np.array([sum(np.abs(s)) for s in sector])
@@ -1233,7 +1232,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         """
         assert len(sector) == 2
         assert not self.fock_ops.spinless
-        if (site not in self.target_sites):
+        if site not in self.target_sites:
             raise IndexError('ERROR: index out of bound!')
 
         abs_sector = np.array([sum(np.abs(s)) for s in sector])

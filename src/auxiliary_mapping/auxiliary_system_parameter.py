@@ -91,26 +91,7 @@ class AuxiliarySystem:
         offset = [-1, 0, 1]
         self.E = diags([ts, es, ts], offset, dtype=np.complex128).toarray()
 
-    def get_Gamma_from_upper_tiagonal(self, G_upper: np.ndarray) -> np.ndarray:
-        """Returns full gamma matrix (see [1]) from upper triangular matrix
-
-        Parameters
-        ----------
-        G_upper : numpy.ndarray (dim,dim)
-            Upper triangular matrix
-
-        Returns
-        -------
-        out: numpy.ndarray (dim,dim)
-            Lower triangular entries are obtained by adjoint of G_upper.
-            Diagonal and upper triangular entries are equal to the diagonal of
-            G_upper.
-        """
-        G_adj = np.copy(G_upper.conj().T)
-        G_adj[np.diag_indices(G_adj.shape[0])] = 0
-        return G_upper + G_adj
-
-    def get_Gamma_general(self, gammas: np.ndarray) -> np.ndarray:
+    def get_gamma_general(self, gammas: np.ndarray) -> np.ndarray:
         """Calculate full gamma matrix from array_like gamma containing all
         independent entries of gamma matrix.
 
@@ -144,9 +125,9 @@ class AuxiliarySystem:
                     if (j != ff) and (i <= j):
                         Gamma[i, j] = gammas[n]
                         n += 1
-        return self.get_Gamma_from_upper_tiagonal(Gamma)
+        return get_gamma_from_upper_tiagonal(Gamma)
 
-    def get_Gamma2_ph_symmetric(self, Gamma1: np.ndarray) -> np.ndarray:
+    def get_gamma2_ph_symmetric(self, Gamma1: np.ndarray) -> np.ndarray:
         """Returns the Gamma2 matrix calculated from Gamma1 in the particle-hole
         symmetric case
 
@@ -181,8 +162,8 @@ class AuxiliarySystem:
             Containing all independent entries of gamma matrix
         """
         self.set_E_ph_symmetric(es, ts)
-        self.Gamma1 = self.get_Gamma_general(gammas)
-        self.Gamma2 = self.get_Gamma2_ph_symmetric(self.Gamma1)
+        self.Gamma1 = self.get_gamma_general(gammas)
+        self.Gamma2 = self.get_gamma2_ph_symmetric(self.Gamma1)
 
     def set_general_aux(self, es: np.ndarray, ts: np.ndarray,
                         gamma1: np.ndarray, gamma2: np.ndarray) -> None:
@@ -204,8 +185,28 @@ class AuxiliarySystem:
             Containing all independent entries of gamma matrix Gamma2
         """
         self.set_E_general(es, ts)
-        self.Gamma1 = self.get_Gamma_general(gamma1)
-        self.Gamma2 = self.get_Gamma_general(gamma2)
+        self.Gamma1 = self.get_gamma_general(gamma1)
+        self.Gamma2 = self.get_gamma_general(gamma2)
+
+
+def get_gamma_from_upper_tiagonal(G_upper: np.ndarray) -> np.ndarray:
+    """Returns full gamma matrix (see [1]) from upper triangular matrix
+
+    Parameters
+    ----------
+    G_upper : numpy.ndarray (dim,dim)
+        Upper triangular matrix
+
+    Returns
+    -------
+    out: numpy.ndarray (dim,dim)
+        Lower triangular entries are obtained by adjoint of G_upper.
+        Diagonal and upper triangular entries are equal to the diagonal of
+        G_upper.
+    """
+    G_adj = np.copy(G_upper.conj().T)
+    G_adj[np.diag_indices(G_adj.shape[0])] = 0
+    return G_upper + G_adj
 
 
 if __name__ == "__main__":
@@ -226,11 +227,3 @@ if __name__ == "__main__":
     print("Gamma1: \n", aux.Gamma1)
     print("Gamma2: \n", aux.Gamma2)
     print("Gamma2-Gamma2: \n", (aux.Gamma2 - aux.Gamma1))
-
-
-# TODO: Should be able to set target impurity site at beginning of in the
-#       middel of the auxiliary problem, for now the impurity site is
-#       positioned in the middel by default.
-# TODO: In the non-particle-hole symmetric case Gamma1 and Gamma2 are
-#       Independent
-# TODO: Later Extend this to multiorbital case

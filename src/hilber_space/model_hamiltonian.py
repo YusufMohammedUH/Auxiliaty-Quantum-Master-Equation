@@ -166,8 +166,7 @@ def hubbard_hamiltonian(T: np.ndarray, V: np.ndarray,
 
         return H_full, H_part
 
-    else:
-        return H_full
+    return H_full
 
 
 def general_fermionic_hamiltonian(T: np.ndarray, V: np.ndarray,
@@ -289,39 +288,38 @@ def general_fermionic_hamiltonian(T: np.ndarray, V: np.ndarray,
 
         return H_full, H_part
 
-    else:
-        return H_full
+    return H_full
 
 
 if __name__ == "__main__":
     compare_hamiltonian = np.zeros(10)
     for i in range(10):
-        e = np.random.rand()
-        mu = np.random.rand()
-        U = np.random.rand()
-        t = np.array([[e - mu]])
-        V = hubbard_U_center(1, U)
-        H = hubbard_hamiltonian(t, V)
+        e_ = np.random.rand()
+        mu_ = np.random.rand()
+        U_ = np.random.rand()
+        t_ = np.array([[e_ - mu_]])
+        V_ = hubbard_U_center(1, U_)
+        H_ = hubbard_hamiltonian(t_, V_)
 
-        compare_hamiltonian[i] = np.any(H == np.array([[0, 0, 0, 0],
-                                                       [0, e - mu, 0, 0],
-                                                       [0, 0, e - mu, 0],
+        compare_hamiltonian[i] = np.any(H_ == np.array([[0, 0, 0, 0],
+                                                       [0, e_ - mu_, 0, 0],
+                                                       [0, 0, e_ - mu_, 0],
                                                        [0, 0, 0,
-                                                       U + 2. * (e - mu)]]))
+                                                       U_ + 2. * (e_ - mu_)]]))
 
     if not np.any(compare_hamiltonian):
         raise ValueError("ERROR: Atomic Hubbard model not correct.")
     print("Atomic Hubbard model correct")
 
     # Set up spinless Hamiltonian
-    ts = np.array([1.0])
-    Us = np.zeros(2)
-    es = np.array([0, 0.5])
-    nsite = 2
-    Tmat = get_1D_chain_nearest_neighbor_hopping_matrix(nsite, es, ts)
-    fermionic_op = op.FermionicFockOperators(nsite, spinless=True)
+    ts_ = np.array([1.0])
+    Us_ = np.zeros(2)
+    es_ = np.array([0, 0.5])
+    nsite_ = 2
+    Tmat_ = get_1D_chain_nearest_neighbor_hopping_matrix(nsite_, es_, ts_)
+    fermionic_op = op.FermionicFockOperators(nsite_, spinless=True)
 
     H_spinless = hubbard_hamiltonian(
-        Tmat, Us, eop=fermionic_op, spinless=True, nelec=1)
+        Tmat_, Us_, eop=fermionic_op, spinless=True, nelec=1)
     print(H_spinless[0].toarray())
     print(H_spinless[1].toarray())
