@@ -4,3 +4,4 @@ scipy
 flake8
 pytest
 matplotlib
+h5py
