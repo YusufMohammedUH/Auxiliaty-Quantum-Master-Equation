@@ -9,7 +9,7 @@ from scipy.optimize import minimize, Bounds
 from scipy.optimize.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 # TODO: 1. enable complex optimization
-# TODO: 2. use a optimization which converges for reliably for NB>2
+# TODO: 2. use a optimization which converges reliably for NB>2
 #          -> change to more reliable minimization scheme!
 #              e.g. Stochastic minimization
 # XXX: optimization doesn't converge reliably for Nb>2
