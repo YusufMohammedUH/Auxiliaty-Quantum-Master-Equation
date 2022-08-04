@@ -70,15 +70,20 @@ class AuxiliaryMaserEquationDMFT:
         nsite = 2*Nb + 1.
     """
 
-    def __init__(self, parameters: Dict, hyb_leads:
-                 Union[fg.FrequencyGreen, None] = None) -> None:
+    def __init__(self, parameters: Dict, correlators: corr.Correlators,
+                 hyb_leads: Union[fg.FrequencyGreen, None] = None) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
         self.parameters = parameters
+        self.correlators = correlators
 
         if parameters['aux_sys']['nsite']\
                 - 2 * parameters['aux_sys']['Nb'] != 1:
             raise ValueError("Only single orbital included for now.")
+
+        if 'target_sites' not in self.parameters['aux_sys']:
+            self.parameters['aux_sys']['target_sites'] = \
+                self.correlators.Lindbladian.super_fermi_ops.target_sites
 
         if hyb_leads is None:
             freq = np.linspace(parameters['freq']['freq_min'],
@@ -177,8 +182,7 @@ class AuxiliaryMaserEquationDMFT:
         else:
             self.U_mat = U_mat
 
-    def solve(self, correlators: corr.Correlators,
-              U_mat: Union[np.ndarray, None] = None) -> None:
+    def solve(self) -> None:
         """Solve the auxiliary dynamic mean-field theory for a given set of
         parameters and a supplied object of class Correlators.
 
@@ -192,11 +196,7 @@ class AuxiliaryMaserEquationDMFT:
             Interaction matrix, by default None
         """
 
-        if 'target_sites' not in self.parameters['aux_sys']:
-            self.parameters['aux_sys']['target_sites'] = \
-                correlators.Lindbladian.super_fermi_ops.target_sites
         self.err_iterations = []
-        self.set_local_matrix(U_mat=U_mat)
         # ##################### Optimization parameters #######################
         x_start = [0., 0.1, 0.5, -0.1, 0.2]
         optimization_options = {"disp": False, "maxiter": 500, 'ftol': 1e-5}
@@ -237,15 +237,15 @@ class AuxiliaryMaserEquationDMFT:
                        self.parameters['aux_sys']['Nb']] -= \
                 self.parameters['system']['U'] / 2.
 
-            correlators.update(T_mat=self.T_mat, U_mat=self.U_mat,
-                               Gamma1=aux_sys.Gamma1,
-                               Gamma2=aux_sys.Gamma2)
+            self.correlators.update(T_mat=self.T_mat, U_mat=self.U_mat,
+                                    Gamma1=aux_sys.Gamma1,
+                                    Gamma2=aux_sys.Gamma2)
 
             G_greater_plus, G_greater_minus = \
-                correlators.get_single_particle_green(
+                self.correlators.get_single_particle_green(
                     (1, 0), self.hyb_leads.freq)
             G_lesser_plus, G_lesser_minus = \
-                correlators.get_single_particle_green(
+                self.correlators.get_single_particle_green(
                     (0, 1), self.hyb_leads.freq)
 
             green_aux_R = G_greater_plus - G_lesser_plus
