@@ -420,10 +420,9 @@ class Lindbladian:
             raise Warning("WARNING: T_mat and U_mat are not updated" +
                           " simultaneously. This should be done if the" +
                           " unitary part is to be updated.")
-
-        if (T_mat is not None) and np.all(T_mat != self.T_mat):
+        if (T_mat is not None) and (not np.all(T_mat == self.T_mat)):
             self.T_mat = T_mat
-        if (U_mat is not None) and np.all(U_mat != self.U_mat):
+        if (U_mat is not None) and (not np.all(U_mat == self.U_mat)):
             self.U_mat = U_mat
         if (T_mat is not None) or (U_mat is not None):
             self.set_unitay_part(self.T_mat, self.U_mat)
@@ -437,7 +436,8 @@ class Lindbladian:
         if Gamma2 is not None:
             self.Gamma2 = Gamma2
         if (Gamma1 is not None) or (Gamma2 is not None) or (sign is not None):
-            self.set_dissipation(self.Gamma1, self.Gamma2, sign=sign)
+            if (self.Gamma1 is not None) and (self.Gamma2 is not None):
+                self.set_dissipation(self.Gamma1, self.Gamma2, sign=sign)
 
         if ((T_mat is not None) or (U_mat is not None) or
             (Gamma1 is not None) or (Gamma2 is not None) or
