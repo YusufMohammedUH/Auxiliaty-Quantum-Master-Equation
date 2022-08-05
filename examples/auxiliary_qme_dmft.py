@@ -4,12 +4,10 @@
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
+import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.correlation_functions as corr
 import src.auxiliary_dmft as aux_dmft
-import src.super_fermionic_space.super_fermionic_subspace as sf_sub
-
-import src.greens_function.dos_util as du
 # ############################### Parameters ##################################
 #  Frequency grid
 N_freq = 400
@@ -26,7 +24,7 @@ gamma = 0.05
 leads_param = {'e0': e0, 'mu': [mu], 'beta': beta, 'D': D, 'gamma': gamma}
 
 spinless = False
-spin_sector_max = 1
+spin_sector_max = 2
 tilde_conjugationrule_phase = True
 
 U = 3.0
@@ -48,8 +46,8 @@ super_fermi_ops = sf_sub.SpinSectorDecomposition(
     tilde_conjugationrule_phase=tilde_conjugationrule_phase)
 
 L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
-corr_cls = corr.Correlators(L)
-
+corr_cls = corr.Correlators(L, trilex=True)
+# %%
 # ########################## Solve Auxiliary DMFT #############################
 plt.figure()
 err_U = {}
