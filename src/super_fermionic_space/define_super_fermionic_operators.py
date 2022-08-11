@@ -62,6 +62,9 @@ class SuperFermionicOperators:
         Matrix encoding commutation relation between "normal" and "tilde"
         space.
 
+    self.eye: scipy.sparse.csc_matrix (dim, dim)
+        Unity matrix in hilbert subspace space.
+
     tilde_operator_name: dict
         Dictionary linking the fermionic operators in the "normal" space to
         the fermionic operators of the "tilde" space.
@@ -79,6 +82,8 @@ class SuperFermionicOperators:
         self.fock_ops = fop.FermionicFockOperators(
             nsite, spinless, sorted_particle_number=False)
         self.tilde_conjugationrule_phase = tilde_conjugationrule_phase
+        self.eye = sparse.eye(2**self.fock_ops.spin_times_site,
+                              dtype=np.complex128, format="csc")
 
         # Define Spin sector operators N_{\simga}-\tilde{N}_{\simga}
         if not spinless:
@@ -91,7 +96,6 @@ class SuperFermionicOperators:
 
         self.N = self.get_super_fermionic_operator(self.fock_ops.N)
         self.N_tilde = self.get_super_fermionic_tilde_operator(self.fock_ops.N)
-
         # Set up operator encoding commutation relation between
         self.unity_tilde = sparse.csc_matrix(
             ([1.0], ([0], [0])), shape=(1, 1))
@@ -218,8 +222,7 @@ class SuperFermionicOperators:
             spin 'spin'.
         """
 
-        return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex128, format="csc"),
+        return sparse.kron(self.eye,
                            self.fock_ops.c(ii, spin),
                            format="csc")
 
@@ -246,8 +249,7 @@ class SuperFermionicOperators:
             spin 'spin'.
         """
 
-        return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex128, format="csc"),
+        return sparse.kron(self.eye,
                            self.fock_ops.cdag(ii, spin),
                            format="csc")
 
@@ -314,8 +316,7 @@ class SuperFermionicOperators:
             2**self.fock_ops.spin_times_site,
             2**self.fock_ops.spin_times_site)
         return sparse.kron(fock_operator,
-                           sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex128, format="csc"),
+                           self.eye,
                            format="csc")
 
     def get_super_fermionic_tilde_operator(self,
@@ -343,8 +344,7 @@ class SuperFermionicOperators:
             2**self.fock_ops.spin_times_site,
             2**self.fock_ops.spin_times_site)
 
-        return sparse.kron(sparse.eye(2**self.fock_ops.spin_times_site,
-                                      dtype=np.complex128, format="csc"),
+        return sparse.kron(self.eye,
                            fock_operator.transpose(), format="csc")
 
 
