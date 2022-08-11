@@ -365,8 +365,9 @@ if __name__ == "__main__":
     L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
     corr_cls = corr.Correlators(L)
 
-    auxiliaryDMFT = AuxiliaryMaserEquationDMFT(params)
+    auxiliaryDMFT = AuxiliaryMaserEquationDMFT(params, correlators=corr_cls)
     auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
-    auxiliaryDMFT.solve(corr_cls)
+    auxiliaryDMFT.set_local_matrix()
+    auxiliaryDMFT.solve()
     # auxiliaryDMFT.save('auxiliaryDMFT.hdf5')
 # %%

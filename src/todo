@@ -54,6 +54,10 @@ Auxiliary_system_parameter:
         Independent
     [ ] Later Extend this to multiorbital case
 
+Model_Lindbladian:
+    [ ] Should be able to construct Linbladian directly in subspaces if the
+        super fermionic class is a subspace class
+        -> saves memory and time
 
 Testing:
     [ ] Add tests for correlator_functions.py
