@@ -219,9 +219,27 @@ class FrequencyGreen:
         -------
         out: FrequencyGreen
         """
-        return FrequencyGreen(self.freq, self.retarded * other.retarded,
-                              self.retarded * other.keldysh +
-                              self.keldysh * other.retarded.conj())
+        if isinstance(other, FrequencyGreen):
+            return FrequencyGreen(self.freq, self.retarded * other.retarded,
+                                  self.retarded * other.keldysh +
+                                  self.keldysh * other.retarded.conj())
+        elif (isinstance(other, int) or isinstance(other, float)
+              or isinstance(other, complex)):
+            return FrequencyGreen(self.freq, self.retarded * other,
+                                  self.retarded +
+                                  self.keldysh)
+
+    def inverse(self) -> "FrequencyGreen":
+        """Return the inverse Green's function
+
+        Returns
+        -------
+        out: FrequencyGreen
+            Inverse Green's function
+        """
+        retarded = 1. / self.retarded
+        keldysh = -retarded * self.keldysh * retarded.conj()
+        return FrequencyGreen(self.freq, retarded=keldysh)
 
     def dyson(self, green_0_ret_inverse: np.ndarray,
               self_energy: "FrequencyGreen") -> None:
@@ -341,6 +359,26 @@ def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
     green = FrequencyGreen(auxsys.ws)
     green.set_green_from_auxiliary(auxsys)
     return green.get_self_enerqy()
+
+
+def keldysh_unity(freq: np.ndarray) -> FrequencyGreen:
+    """Get the unity matrix regarding the keldysh contour, 1^R  and 0^K for
+    given frequency grid.
+
+    Parameters
+    ----------
+    freq : np.ndarray (dim,)
+        1D Frequency grid
+
+    Returns
+    -------
+    out: FrequencyGreen
+        Green's function representing the unity matrix regarding the keldysh
+        contour
+    """
+    return FrequencyGreen(freq=freq,
+                          retarded=np.ones(freq.shape, dtype=np.complex128),
+                          keldysh=np.zeros(freq.shape, dtype=np.complex128))
 
 
 if __name__ == "__main__":
