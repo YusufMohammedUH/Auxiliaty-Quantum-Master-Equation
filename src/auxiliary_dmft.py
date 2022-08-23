@@ -241,19 +241,9 @@ class AuxiliaryMaserEquationDMFT:
                                     Gamma1=aux_sys.Gamma1,
                                     Gamma2=aux_sys.Gamma2)
 
-            G_greater_plus, G_greater_minus = \
-                self.correlators.get_single_particle_green(
-                    (1, 0), self.hyb_leads.freq)
-            G_lesser_plus, G_lesser_minus = \
-                self.correlators.get_single_particle_green(
-                    (0, 1), self.hyb_leads.freq)
-
-            green_aux_R = G_greater_plus - G_lesser_plus
-            green_aux_K = G_greater_plus + G_greater_minus + G_lesser_plus \
-                + G_lesser_minus
-
-            self.green_aux = fg.FrequencyGreen(
-                aux_sys.ws, retarded=green_aux_R, keldysh=green_aux_K)
+            self.green_aux = \
+                self.correlators.get_single_particle_green_physical(
+                    self.hyb_leads.freq)
             # ################### Extract the self-energy  ####################
             self.self_energy_int = self.green_aux.get_self_enerqy() \
                 - self.hyb_aux

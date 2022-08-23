@@ -49,8 +49,8 @@ def get_susceptibility(channels: Tuple[str, str]) -> Dict:
 
     Parameters
     ----------
-    spin : Tuple[str,str]
-        Contains the desired spins, e.g. ('up','up')
+    channels : Tuple[str,str]
+        Contains the desired channels, e.g. ('ch','ch')
 
     Returns
     -------

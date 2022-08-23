@@ -321,6 +321,41 @@ class Correlators:
                                           permutation_sign=permutation_sign,
                                           prefactor=prefactor)
 
+    def get_single_particle_green_physical(self, freq: np.ndarray,
+                                           sites: Union[
+                                               None, Tuple[int, int]] = None,
+                                           spin: Tuple[str, str] = ('up', 'up')
+                                           ) -> fg.FrequencyGreen:
+        """Return the single particle green's function on the physical contour
+        e.g. returns a fg.FrequencyGreen object.
+
+        Parameters
+        ----------
+        freq : np.ndarray
+            Frequency grid
+        sites : Union[ None, Tuple[int, int]], optional
+            Target sites, by default None
+        spin : Tuple[str, str], optional
+            Spin indices of the Green's function, by default ('up', 'up')
+
+        Returns
+        -------
+        out: Tuple[np.ndarray, np.ndarray]
+            Green's function on the physical contour, retarded and keldysh
+            component
+        """
+        green_greater_plus, green_greater_minus = \
+            self.get_single_particle_green((1, 0), freq, sites, spin)
+        green_lesser_plus, green_lesser_minus = \
+            self.get_single_particle_green((0, 1), freq, sites, spin)
+
+        green_aux_R = green_greater_plus - green_lesser_plus
+        green_aux_K = green_greater_plus + green_greater_minus \
+            + green_lesser_plus + green_lesser_minus
+
+        return fg.FrequencyGreen(
+            freq, retarded=green_aux_R, keldysh=green_aux_K)
+
     def get_susceptibility(self, freq: np.ndarray, component: Tuple[int, int],
                            channels: Tuple[str, str],
                            sites: Union[None, Iterable] = None,
@@ -379,6 +414,46 @@ class Correlators:
             kai_minus += kai_tmp_minus
 
         return kai_plus, kai_minus
+
+    def get_susceptibility_physical(self, freq: np.ndarray,
+                                    channels: Tuple[str, str],
+                                    sites: Union[None, Iterable] = None,
+                                    prefactor: complex = - 1j) -> fg.FrequencyGreen:
+        """Return the susceptibility on the physical contour e.g. returns a
+        fg.FrequencyGreen object.
+
+        Parameters
+        ----------
+        freq : np.ndarray
+            Frequency grid
+        channels : Tuple[str, str]
+            Charge ('ch','ch') or spin channels ('x','x'),('x','y'), etc.
+        sites : Union[None, Iterable], optional
+            target sites, by default None
+        prefactor : complex, optional
+            prefactor of the susceptibility corresponding to (-i)^2
+            for two particle green's function, by default -1+0j
+
+        Returns
+        -------
+        out: fg.FrequencyGreen
+            Susceptibility on the physical contour
+        """
+        chi_greater_plus, chi_greater_minus = \
+            self.get_susceptibility(freq=freq, component=(1, 0),
+                                    channels=channels,
+                                    sites=sites, prefactor=prefactor)
+        chi_lesser_plus, chi_lesser_minus = \
+            self.get_susceptibility(freq=freq, component=(0, 1),
+                                    channels=channels,
+                                    sites=sites, prefactor=prefactor)
+
+        chi_aux_R = chi_greater_plus - chi_lesser_plus
+        chi_aux_K = chi_greater_plus + chi_greater_minus + chi_lesser_plus \
+            + chi_lesser_minus
+
+        return fg.FrequencyGreen(
+            freq, retarded=chi_aux_R, keldysh=chi_aux_K)
 
     def get_three_point_vertex_components(
             self, component: Tuple[int, int, int], freq: np.ndarray,
