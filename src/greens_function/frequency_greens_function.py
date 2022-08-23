@@ -3,7 +3,7 @@ import numpy as np
 from numba import njit
 import matplotlib.pyplot as plt
 import src.auxiliary_mapping.auxiliary_system_parameter as auxp
-import src.hdf5_util as hd5
+import src.util.hdf5_util as hd5
 
 
 @njit(cache=True)

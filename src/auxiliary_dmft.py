@@ -8,7 +8,7 @@ import src.greens_function.dos_util as du
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
-import src.hdf5_util as h5
+import src.util.hdf5_util as h5
 
 # XXX: The method how the system greens function is calculated from the
 #   system hybridization using the auxiliary method should be a
