@@ -105,10 +105,8 @@ def optimization_ph_symmertry(Nb: int, hybridization: fg.FrequencyGreen,
                               N_try: int = 1, dtype: type = float,
                               bounds: Union[List[Tuple],
                                             Bounds, None] = None,
-                              constraints=(),
-                              options: Dict = {"disp": True, "maxiter": 200,
-                                               "return_all": True,
-                                               'gtol': 1e-5}
+                              constraints: Union[Tuple, None] = None,
+                              options: Union[Dict, None] = None
                               ) -> OptimizeResult:
     """Approximation of the supplied hybridization function by a auxiliary
     hybridization function of an auxiliary system with Nb left and right
@@ -136,6 +134,15 @@ def optimization_ph_symmertry(Nb: int, hybridization: fg.FrequencyGreen,
     dtype : (float,complex), optional
         data type of auxiliary system parameters, by default float
 
+    bounds : list of tuples, optional
+        bounds for the optimization, by default None
+
+    constraints : tuple, optional
+        constraints for the optimization, by default None
+
+    options : dict, optional
+        options for the optimization, by default None
+
     Returns
     -------
     result: scipy.optimize.optimize.OptimizeResult
@@ -148,6 +155,12 @@ def optimization_ph_symmertry(Nb: int, hybridization: fg.FrequencyGreen,
     ValueError
         If the approximation didn't converge an error is raised
     """
+    if constraints is None:
+        constraints = ()
+    if options is None:
+        options = {"disp": True, "maxiter": 200,
+                   "return_all": True,
+                   'gtol': 1e-5}
     aux_tmp = auxp.AuxiliarySystem(Nb, hybridization.freq)
     if x_start is None or N_try == 1:
         es = np.ones(Nb, dtype=dtype)
