@@ -105,7 +105,9 @@ def _get_self_enerqy(green_0_ret_inverse: np.ndarray, green_ret: np.ndarray,
 
 
 class FrequencyGreen:
-    """Simple frequency Green's function container.
+    """Simple frequency Green's function container. Contains the
+    Green's on the Keldysh contour in Keldysh rotated representation,e.g.
+    G^R and G^K. G^A is dropt do to symmetry [G^R]* = G^A.
 
     Parameters
     ----------
@@ -166,8 +168,17 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, self.retarded.copy(),
                               self.keldysh.copy())
 
-    def __add__(self, other: "FrequencyGreen") -> "FrequencyGreen":
-        """Add two FrequencyGreen objects
+    def __add__(self, other: Union["FrequencyGreen", "KeldyshIdentity",
+                                   int, float, complex]) -> "FrequencyGreen":
+        """Add FrequencyGreen or KeldyshIdentity objects or number from
+        current object and return resulting FrequencyGreen.
+
+        In case of a number 'other' and Green's function 'G' and the identity
+        matrix 'I' in the Keldysh contour
+
+        other*I+G
+
+        is returned
 
         Parameters
         ----------
@@ -177,11 +188,27 @@ class FrequencyGreen:
         -------
         out: FrequencyGreen
         """
-        return FrequencyGreen(self.freq, self.retarded + other.retarded,
-                              self.keldysh + other.keldysh)
+        if isinstance(other, FrequencyGreen):
+            return FrequencyGreen(self.freq, self.retarded + other.retarded,
+                                  self.keldysh + other.keldysh)
+        elif (isinstance(other, int) or isinstance(other, float)
+              or isinstance(other, complex)):
+            return FrequencyGreen(self.freq, self.retarded + other,
+                                  self.keldysh)
+        elif isinstance(other, KeldyshIdentity):
+            return other + self
 
-    def __sub__(self, other: "FrequencyGreen") -> "FrequencyGreen":
-        """Add two FrequencyGreen objects
+    def __sub__(self, other: Union["FrequencyGreen", "KeldyshIdentity",
+                                   int, float, complex]) -> "FrequencyGreen":
+        """Subtract FrequencyGreen or KeldyshIdentity objects or number from
+        current object and return resulting FrequencyGreen.
+
+        In case of a number 'other' and Green's function 'G' and the identity
+        matrix 'I' in the Keldysh contour
+
+        other*I-G
+
+        is returned
 
         Parameters
         ----------
@@ -191,10 +218,18 @@ class FrequencyGreen:
         -------
         out: FrequencyGreen
         """
-        return FrequencyGreen(self.freq, self.retarded - other.retarded,
-                              self.keldysh - other.keldysh)
+        if isinstance(other, FrequencyGreen):
+            return FrequencyGreen(self.freq, self.retarded - other.retarded,
+                                  self.keldysh - other.keldysh)
+        elif (isinstance(other, int) or isinstance(other, float)
+              or isinstance(other, complex)):
+            return FrequencyGreen(self.freq, self.retarded - other,
+                                  self.keldysh)
+        elif isinstance(other, KeldyshIdentity):
+            return (other - self) * (-1)
 
-    def __mul__(self, other: "FrequencyGreen") -> "FrequencyGreen":
+    def __mul__(self, other: Union["FrequencyGreen", "KeldyshIdentity",
+                                   int, float, complex]) -> "FrequencyGreen":
         """Multiply two frequency Green's functions.
 
         A multiplication in frequency domain corresponds to a convolution in
@@ -220,14 +255,16 @@ class FrequencyGreen:
         out: FrequencyGreen
         """
         if isinstance(other, FrequencyGreen):
-            return FrequencyGreen(self.freq, self.retarded * other.retarded,
-                                  self.retarded * other.keldysh +
-                                  self.keldysh * other.retarded.conj())
+            return FrequencyGreen(self.freq, retarded=(
+                self.retarded * other.retarded), keldysh=(
+                self.retarded * other.keldysh +
+                self.keldysh * other.retarded.conj()))
         elif (isinstance(other, int) or isinstance(other, float)
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded * other,
-                                  self.retarded +
-                                  self.keldysh)
+                                  self.keldysh * other)
+        elif isinstance(other, KeldyshIdentity):
+            return self
 
     def inverse(self) -> "FrequencyGreen":
         """Return the inverse Green's function
@@ -237,9 +274,10 @@ class FrequencyGreen:
         out: FrequencyGreen
             Inverse Green's function
         """
-        retarded = 1. / self.retarded
-        keldysh = -retarded * self.keldysh * retarded.conj()
-        return FrequencyGreen(self.freq, retarded=keldysh)
+        retarded_inv = 1. / self.retarded
+        keldysh_inv = -retarded_inv * self.keldysh * retarded_inv.conj()
+        return FrequencyGreen(self.freq, retarded=retarded_inv,
+                              keldysh=keldysh_inv)
 
     def dyson(self, green_0_ret_inverse: np.ndarray,
               self_energy: "FrequencyGreen") -> None:
@@ -327,7 +365,8 @@ class FrequencyGreen:
         fname : str
             File name of the hdf5 file.
         dir : str
-            Groupe name/subdirectory within the hdf5 file, e.g. '/' or '/green'.
+            Groupe name/subdirectory within the hdf5 file, e.g. '/' or
+            '/green'.
         dataname : str
             Name of dataset/ of the green's function.
         """
@@ -361,26 +400,74 @@ def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
     return green.get_self_enerqy()
 
 
-def keldysh_unity(freq: np.ndarray) -> FrequencyGreen:
-    """Get the unity matrix regarding the keldysh contour, 1^R  and 0^K for
-    given frequency grid.
-
-    Parameters
-    ----------
-    freq : np.ndarray (dim,)
-        1D Frequency grid
-
-    Returns
-    -------
-    out: FrequencyGreen
-        Green's function representing the unity matrix regarding the keldysh
-        contour
+class KeldyshIdentity:
+    """Identity operator class for the Keldysh contour in the
+    Keldysh rotated representation
     """
-    return FrequencyGreen(freq=freq,
-                          retarded=np.ones(freq.shape, dtype=np.complex128),
-                          keldysh=np.zeros(freq.shape, dtype=np.complex128))
+
+    def __init__(self) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature.
+        """
+
+    def __mul__(self, other: Union["FrequencyGreen", int, float, complex]
+                ) -> Union["FrequencyGreen", complex]:
+        """Defines multiplication of identity in Keldysh contour matrix with
+        Green's function or a number.
+
+        Returns
+        -------
+        out : FrequencyGreen, int, float or complex
+            Result of multiplication with identity
+        """
+        return other
+
+    def __add__(self, other: Union["FrequencyGreen", "KeldyshIdentity"]
+                ) -> "FrequencyGreen":
+        """Returns result of addition of identity with Green's function.
+
+        Returns
+        -------
+        FrequencyGreen
+            Result of addition of identity with Green's function
+
+        Raises
+        ------
+        ValueError
+            If 'other' is not of type FrequencyGreen.
+        """
+        if isinstance(other, FrequencyGreen):
+            return FrequencyGreen(other.freq, other.retarded + 1,
+                                  other.keldysh)
+        elif isinstance(other, KeldyshIdentity):
+            return self
+        else:
+            raise ValueError('The object that is added has to be of type ' +
+                             'FrequencyGreen.')
+
+    def __sub__(self, other: "FrequencyGreen"
+                ) -> "FrequencyGreen":
+        """Returns result of subtracting a Green's function from the
+        identity
+
+        Returns
+        -------
+        FrequencyGreen
+            Result of subtracting other from an identity matrix
+
+        Raises
+        ------
+        ValueError
+            If 'other' is not of type FrequencyGreen.
+        """
+        if isinstance(other, FrequencyGreen):
+            return FrequencyGreen(other.freq, 1 - 1 * other.retarded,
+                                  -1 * other.keldysh)
+        else:
+            raise ValueError('The object that is added has to be of type ' +
+                             'Identity or FrequencyGreen.')
 
 
+Identity = KeldyshIdentity()
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
