@@ -377,6 +377,33 @@ class FrequencyGreen:
                           {"freq_min": self.freq[0], "freq_max": self.freq[-1],
                            'N_freq': len(self.freq)})
 
+    def load(self, fname: str, dir: str, dataname: str) -> None:
+        """Load data from hdf5 file to Green's function object
+
+        Parameters
+        ----------
+        fname : str
+            File name of the hdf5 file
+
+        dir : str
+            Directory/group in which Green's is stored
+
+        dataname : str
+            Name of the Green's function
+        """
+        attrs = hd5.read_attrs(fname, f"{dir}/{dataname}")
+
+        if (attrs['freq_max'] != self.freq[-1] or
+            attrs['freq_min'] != self.freq[0]
+                or attrs['N_freq'] != self.freq.shape[0]):
+            raise ValueError("Frequency grid of loaded data doesn't match" +
+                             " object frequency grid.")
+
+        self.retarded = hd5.read_data(file=fname, dir=f"{dir}/{dataname}",
+                                      dataname='retarded')
+        self.keldysh = hd5.read_data(file=fname, dir=f"{dir}/{dataname}",
+                                     dataname='keldysh')
+
 
 def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
     """Given parameters of the auxiliary system, a single particle Green's
