@@ -1,11 +1,8 @@
 # %%
 from typing import Dict
-import numpy as np
-import matplotlib.pyplot as plt
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.frequency_greens_function as fg
 import src.auxiliary_dmft as aux_dmft
-import src.greens_function.dos_util as du
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.greens_function.correlation_functions as corr
 
@@ -14,7 +11,8 @@ import src.greens_function.correlation_functions as corr
 #  [X] 0. get g_aux, hyb_sys, hyb_aux
 #  [X] 1. calculate auxiliary susceptibility
 #  [X] 2. calculate auxiliary polarization
-#  [X] 3. calculate non-interacting dual Green's function and bosonic propagator
+#  [X] 3. calculate non-interacting dual Green's function and bosonic
+#         propagator
 #
 #  [ ] 4. calculate three vertex
 #  [ ] 5. calculate gamma/delta
