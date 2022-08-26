@@ -76,6 +76,9 @@ class AuxiliaryMaserEquationDMFT:
         """
         self.parameters = parameters
         self.correlators = correlators
+        self.err_iterations = []
+        self.T_mat = None
+        self.U_mat = None
 
         if parameters['aux_sys']['nsite']\
                 - 2 * parameters['aux_sys']['Nb'] != 1:
@@ -92,22 +95,18 @@ class AuxiliaryMaserEquationDMFT:
             freq.flags.writeable = False
             self.hyb_leads = fg.FrequencyGreen(freq)
             self.hyb_dmft = fg.FrequencyGreen(freq)
+            self.hyb_aux = fg.FrequencyGreen(freq)
+
             self.green_sys = fg.FrequencyGreen(freq)
             self.green_aux = fg.FrequencyGreen(freq)
             self.self_energy_int = fg.FrequencyGreen(freq)
         else:
             self.hyb_leads = hyb_leads
             self.hyb_dmft = fg.FrequencyGreen(self.hyb_leads.freq)
+            self.hyb_aux = fg.FrequencyGreen(self.hyb_leads.freq)
             self.green_sys = fg.FrequencyGreen(self.hyb_leads.freq)
             self.green_aux = fg.FrequencyGreen(self.hyb_leads.freq)
             self.self_energy_int = fg.FrequencyGreen(self.hyb_leads.freq)
-
-        self.err_iterations = []
-        self.T_mat = None
-        self.U_mat = None
-        self.hyb_sys = None
-        self.hyb_aux = None
-        self.self_energy_int = None
 
     def get_bath(self, param: Union[Dict, None] = None,
                  bath_hyb_function: Callable[
@@ -217,10 +216,10 @@ class AuxiliaryMaserEquationDMFT:
                 (self.parameters['system']['v']**2),
                 self.green_sys.keldysh * (self.parameters['system']['v']**2))
             # Optimization for determining the auxiliary hybridization function
-            self.hyb_sys = self.hyb_leads + self.hyb_dmft
+            hyb_sys = self.hyb_leads + self.hyb_dmft
             optimal_param = opt.optimization_ph_symmertry(
                 self.parameters['aux_sys']['Nb'], hybridization=(
-                    self.hyb_sys),
+                    hyb_sys),
                 x_start=x_start,
                 options=optimization_options
             )
@@ -249,7 +248,7 @@ class AuxiliaryMaserEquationDMFT:
                 - self.hyb_aux
 
             # ##### Calculate the system single particle Green's function #####
-            green_tmp.dyson(aux_sys.ws, self.hyb_sys + self.self_energy_int)
+            green_tmp.dyson(aux_sys.ws, hyb_sys + self.self_energy_int)
 
             self.err_iterations.append(opt.cost_function(self.green_sys,
                                                          green_tmp,
@@ -265,9 +264,6 @@ class AuxiliaryMaserEquationDMFT:
                          + self.parameters['selfconsistency']['mixing']
                          * self.green_sys.keldysh))
 
-            if self.err_iterations[-1]  \
-                    < self.parameters['selfconsistency']['err_tol']:
-                break
             spectral_weight = round((-1 / np.pi) * simps(
                 self.green_sys.retarded.imag, self.green_sys.freq), 8)
             # XXX: occupation should be also printed. Therefore I should figure
@@ -280,11 +276,16 @@ class AuxiliaryMaserEquationDMFT:
                 f"Iteration No.: {ii}   |    Error: "
                 + "{0:.7}   |   ".format(err_iter_print)
                 + f"Spectral weight: {spectral_weight}")
+
+            if self.err_iterations[-1]  \
+                    < self.parameters['selfconsistency']['err_tol']:
+                break
+
+        # update dmft hybridization to last iteration
         self.hyb_dmft = fg.FrequencyGreen(
             self.hyb_leads.freq, self.green_sys.retarded *
             (self.parameters['system']['v']**2),
             self.green_sys.keldysh * (self.parameters['system']['v']**2))
-        self.hyb_sys = self.hyb_leads + self.hyb_sys
 
     def save(self, fname: str) -> None:
         """Save data to file
@@ -299,17 +300,49 @@ class AuxiliaryMaserEquationDMFT:
         h5.add_data(fname, '/', 'convergence', self.err_iterations)
         h5.add_attrs(fname, '/convergence', self.parameters['selfconsistency'])
 
-        self.green_sys.save(fname, '/system', 'green_sys')
-        self.hyb_dmft.save(fname, '/system', 'hyb_dmft')
+        self.green_sys.save(fname, '/system', 'green_sys', savefreq=False)
+        self.hyb_dmft.save(fname, '/system', 'hyb_dmft', savefreq=False)
         h5.add_attrs(fname, '/system', self.parameters['system'])
 
-        if 'leads' in self.parameters['leads']:
-            self.hyb_leads.save(fname, '/system', 'hyb_leads')
+        if 'leads' in self.parameters:
+            self.hyb_leads.save(fname, '/system', 'hyb_leads', savefreq=False)
             h5.add_attrs(fname, '/system', self.parameters['leads'])
 
-        self.green_aux.save(fname, '/auxiliary_sys', 'green_aux')
-        self.hyb_aux.save(fname, '/auxiliary_sys', 'hyb_aux')
+        self.green_aux.save(fname, '/auxiliary_sys',
+                            'green_aux', savefreq=False)
+        self.hyb_aux.save(fname, '/auxiliary_sys', 'hyb_aux', savefreq=False)
         h5.add_attrs(fname, '/auxiliary_sys', self.parameters['aux_sys'])
+        self.correlators.Lindbladian.save(fname, '/auxiliary_sys')
+
+    def load(self, fname: str, read_parameters: bool = False) -> None:
+        """Load data from file
+
+        Parameters
+        ----------
+        fname : str
+            Name of HDF5 file.
+        """
+        self.err_iterations = h5.read_data(fname, '/', 'convergence')
+
+        self.green_sys.load(fname, '/system', 'green_sys', readfreq=False)
+        self.hyb_dmft.load(fname, '/system', 'hyb_dmft', readfreq=False)
+        if 'leads' in self.parameters:
+            self.hyb_leads.load(fname, '/system', 'hyb_leads', readfreq=False)
+
+        self.green_aux.load(fname, '/auxiliary_sys',
+                            'green_aux', readfreq=False)
+        self.hyb_aux.load(fname, '/auxiliary_sys', 'hyb_aux', readfreq=False)
+        self.correlators.Lindbladian.load(fname, '/auxiliary_sys')
+
+        if read_parameters:
+            self.parameters = {}
+            self.parameters['selfconsistency'] = h5.read_attrs(
+                fname, '/convergence')
+            self.parameters['system'] = h5.read_attrs(fname, '/system')
+            self.parameters['freq'] = h5.read_attrs(fname, '/')
+            self.parameters['aux_sys'] = h5.read_attrs(fname, '/auxiliary_sys')
+            if 'leads' in self.parameters:
+                self.parameters['leads'] = h5.read_attrs(fname, '/system')
 
 
 # %%

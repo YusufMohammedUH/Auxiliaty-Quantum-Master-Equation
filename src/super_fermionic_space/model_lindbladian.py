@@ -7,6 +7,7 @@ import numpy as np
 from scipy import sparse
 import src.hilber_space.model_hamiltonian as ham
 import src.super_fermionic_space.super_fermionic_subspace as sf_op
+import src.util.hdf5_util as hd5
 # TODO: Write tests
 #       Here it's probably best to reproduce papers
 #      [x] Spinless fermions without interaction coupled to
@@ -443,3 +444,43 @@ class Lindbladian:
             (Gamma1 is not None) or (Gamma2 is not None) or
                 (sign is not None)):
             self.set_total_linbladian()
+
+    def save(self, fname: str, dir_: str) -> None:
+        """Save the model parameters to a file.
+
+        Parameters
+        ----------
+        fname : str
+            File name in which data is stored.
+        dir : str
+            Directory in which data is stored.
+        """
+        hd5.add_data(fname, f"{dir_}/Lindbladian", "T_mat", self.T_mat)
+        hd5.add_data(fname, f"{dir_}/Lindbladian", "U_mat", self.U_mat)
+        hd5.add_data(fname, f"{dir_}/Lindbladian", "Gamma1", self.Gamma1)
+        hd5.add_data(fname, f"{dir_}/Lindbladian", "Gamma2", self.Gamma2)
+        self.super_fermi_ops.save(fname, f"{dir_}/Lindbladian")
+
+    def load(self, fname: str, dir_: str) -> None:
+        """Load the model parameters from a file.
+
+        Parameters
+        ----------
+        fname : str
+            File name from which data is loaded.
+        dir : str
+            Directory from which data is loaded.
+        """
+
+        self.T_mat = hd5.read_data(fname, f"{dir_}/Lindbladian", "T_mat")
+        self.U_mat = hd5.read_data(fname, f"{dir_}/Lindbladian", "U_mat")
+        self.Gamma1 = hd5.read_data(fname, f"{dir_}/Lindbladian", "Gamma1")
+        self.Gamma2 = hd5.read_data(fname, f"{dir_}/Lindbladian", "Gamma2")
+        self.super_fermi_ops.load(fname, f"{dir_}/Lindbladian")
+
+        if self.super_fermi_ops.tilde_conjugationrule_phase:
+            self.update(T_mat=self.T_mat, U_mat=self.U_mat,
+                        Gamma1=self.Gamma1, Gamma2=self.Gamma2, sign=1)
+        else:
+            print("WARNING: This Linbladian is not updated after loading," +
+                  " since the tilde conjugation rule is not used.")

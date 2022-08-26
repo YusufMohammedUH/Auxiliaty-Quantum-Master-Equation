@@ -2,6 +2,7 @@ from typing import List, Tuple, Union
 import numpy as np
 from scipy import sparse
 import src.super_fermionic_space.define_super_fermionic_operators as sf_op
+import src.util.hdf5_util as hd5
 
 
 def add_spin_sectors(sector1: Tuple[int, int], sector2: Tuple[int, int]
@@ -75,7 +76,7 @@ def get_subspace_object(object: sparse.csc_matrix,
                              + " to be a vector of shape (dim, 1).")
         return (permutation_op_left[1] * object
                 )[:permutation_op_left[0], 0]
- 
+
     return (permutation_op_left[1] * object
             * permutation_op_right[1].transpose()
             )[:permutation_op_left[0],
@@ -329,7 +330,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
             return self.operator_sectors[operator] + right_sector
 
         return add_spin_sectors(self.operator_sectors[operator][spin],
-                                    right_sector)
+                                right_sector)
 
     def spin_sector_projector(self, sector: Union[Tuple[int, int], int]
                               ) -> sparse.csc_matrix:
@@ -1241,6 +1242,46 @@ class SpinSectorDecomposition(SubspaceDecomposition):
 
         return self.spin_sector_fermi_ops[site]['n_channel_tilde'][channel][
             sector]
+
+    def save(self, fname: str, dir_: str) -> None:
+        """Save super fermionic operator parameters as attributes to directory
+        'dir_' in file 'fname'.
+
+        Parameters
+        ----------
+        filename : str
+            File name for saving the parameters
+        dir_ : str
+            Directory for saving the parameters
+        """
+        attrs = {'nsite': self.fock_ops.nsite,
+                 'spin_sector_max': self.spin_sector_max,
+                 'target_sites': self.target_sites,
+                 'spinless': self.fock_ops.spinless,
+                 'tilde_conjugationrule_phase':
+                 self.tilde_conjugationrule_phase}
+
+        hd5.add_attrs(fname, dir_, attrs)
+
+    def load(self, fname: str, dir_: str) -> None:
+        """Load super fermionic operator parameters as attributes from
+        directory 'dir_' in file 'fname'.
+
+        Parameters
+        ----------
+        filename : str
+            File name for loading the parameters
+        dir_ : str
+            Directory for loading the parameters
+        """
+        attrs = hd5.read_attrs(fname, dir_)
+
+        self.__init__(nsite=attrs['nsite'],
+                      spin_sector_max=attrs['spin_sector_max'],
+                      target_sites=attrs['target_sites'],
+                      spinless=attrs['spinless'],
+                      tilde_conjugationrule_phase=attrs[
+                          'tilde_conjugationrule_phase'])
 
 
 SuperFermionicOperatorType = Union[sf_op.SuperFermionicOperators,

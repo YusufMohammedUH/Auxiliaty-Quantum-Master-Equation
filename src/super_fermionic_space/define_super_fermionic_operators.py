@@ -3,6 +3,7 @@ from typing import Union
 import numpy as np
 from scipy import sparse
 import src.hilber_space.define_fock_space_operators as fop
+import src.util.hdf5_util as hd5
 
 
 class SuperFermionicOperators:
@@ -199,9 +200,10 @@ class SuperFermionicOperators:
                            self.unity_tilde,
                            format="csc")
 
-    def c_tilde(self, ii: int, spin: Union[str, None] = None) -> sparse.csc_matrix:
-        """Returns the super-fermionic space tilde annihilation operator of site 'ii'
-        and spin 'spin'.
+    def c_tilde(self, ii: int, spin: Union[str, None] = None
+                ) -> sparse.csc_matrix:
+        """Returns the super-fermionic space tilde annihilation operator of
+        site 'ii' and spin 'spin'.
 
         These operators are used, when they are placed right from the density
         matrix in the Fock space formulation of, e.g the Lindblad equation.
@@ -226,9 +228,10 @@ class SuperFermionicOperators:
                            self.fock_ops.c(ii, spin),
                            format="csc")
 
-    def cdag_tilde(self, ii: int, spin: Union[str, None] = None) -> sparse.csc_matrix:
-        """Returns the super-fermionic space tilde creation operator of site 'ii' and
-        spin 'spin'.
+    def cdag_tilde(self, ii: int, spin: Union[str, None] = None
+                   ) -> sparse.csc_matrix:
+        """Returns the super-fermionic space tilde creation operator of site
+        'ii' and spin 'spin'.
 
         These operators are used, when they are placed right from the density
         matrix in the Fock space formulation of, e.g the Lindblad equation.
@@ -273,7 +276,8 @@ class SuperFermionicOperators:
         return self.get_super_fermionic_operator(self.fock_ops.n_channel(
             ii=ii, channel=channel))
 
-    def n_channel_tilde(self, ii: int, channel: str = 'ch') -> sparse.csc_matrix:
+    def n_channel_tilde(self, ii: int, channel: str = 'ch'
+                        ) -> sparse.csc_matrix:
         """Returns the super-fermionic 'tilde' space charge or spin density
         operator at site 'ii'.
 
@@ -295,7 +299,8 @@ class SuperFermionicOperators:
 
     def get_super_fermionic_operator(self, fock_operator: sparse.csc_matrix
                                      ) -> sparse.csc_matrix:
-        """Returns the super-fermionic space representation of an Fock space operator
+        """Returns the super-fermionic space representation of an Fock space
+        operator
 
         These super-fermionic space operators are used, when they are appear
         left from the density matrix in the Fock space formulation of, e.g the
@@ -346,6 +351,40 @@ class SuperFermionicOperators:
 
         return sparse.kron(self.eye,
                            fock_operator.transpose(), format="csc")
+
+    def save(self, fname: str, dir_: str) -> None:
+        """Save super fermionic operator parameters as attributes to directory
+        'dir_' in file 'fname'.
+
+        Parameters
+        ----------
+        filename : str
+            File name for saving the parameters
+        dir_ : str
+            Directory for saving the parameters
+        """
+        attrs = {'nsite': self.fock_ops.nsite,
+                 'spinless': self.fock_ops.spinless,
+                 'tilde_conjugationrule_phase':
+                 self.tilde_conjugationrule_phase}
+        hd5.add_attrs(fname, dir_, attrs)
+
+    def load(self, fname: str, dir_: str) -> None:
+        """Load super fermionic operator parameters as attributes from
+        directory 'dir_' in file 'fname'.
+
+        Parameters
+        ----------
+        filename : str
+            File name for loading the parameters
+        dir_ : str
+            Directory for loading the parameters
+        """
+        attrs = hd5.read_attrs(fname, dir_)
+        self.__init__(nsite=attrs['nsite'],
+                      spinless=attrs['spinless'],
+                      tilde_conjugationrule_phase=attrs[
+                          'tilde_conjugationrule_phase'])
 
 
 # %%
