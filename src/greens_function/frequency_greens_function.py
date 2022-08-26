@@ -275,7 +275,7 @@ class FrequencyGreen:
             Inverse Green's function
         """
         retarded_inv = 1. / self.retarded
-        keldysh_inv = -retarded_inv * self.keldysh * retarded_inv.conj()
+        keldysh_inv = -1. * retarded_inv * self.keldysh * retarded_inv.conj()
         return FrequencyGreen(self.freq, retarded=retarded_inv,
                               keldysh=keldysh_inv)
 
