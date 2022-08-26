@@ -8,7 +8,7 @@ import src.greens_function.dos_util as du
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
-import src.util.hdf5_util as h5
+import src.util.hdf5_util as hd5
 
 # XXX: The method how the system greens function is calculated from the
 #   system hybridization using the auxiliary method should be a
@@ -295,23 +295,24 @@ class AuxiliaryMaserEquationDMFT:
         fname : str
             Name of HDF5 file.
         """
-        h5.create_hdf5(fname)
-        h5.add_attrs(fname, '/', self.parameters['freq'])
-        h5.add_data(fname, '/', 'convergence', self.err_iterations)
-        h5.add_attrs(fname, '/convergence', self.parameters['selfconsistency'])
+        hd5.create_hdf5(fname)
+        hd5.add_attrs(fname, '/', self.parameters['freq'])
+        hd5.add_data(fname, '/', 'convergence', self.err_iterations)
+        hd5.add_attrs(fname, '/convergence',
+                      self.parameters['selfconsistency'])
 
         self.green_sys.save(fname, '/system', 'green_sys', savefreq=False)
         self.hyb_dmft.save(fname, '/system', 'hyb_dmft', savefreq=False)
-        h5.add_attrs(fname, '/system', self.parameters['system'])
+        hd5.add_attrs(fname, '/system', self.parameters['system'])
 
         if 'leads' in self.parameters:
             self.hyb_leads.save(fname, '/system', 'hyb_leads', savefreq=False)
-            h5.add_attrs(fname, '/system', self.parameters['leads'])
+            hd5.add_attrs(fname, '/system', self.parameters['leads'])
 
         self.green_aux.save(fname, '/auxiliary_sys',
                             'green_aux', savefreq=False)
         self.hyb_aux.save(fname, '/auxiliary_sys', 'hyb_aux', savefreq=False)
-        h5.add_attrs(fname, '/auxiliary_sys', self.parameters['aux_sys'])
+        hd5.add_attrs(fname, '/auxiliary_sys', self.parameters['aux_sys'])
         self.correlators.Lindbladian.save(fname, '/auxiliary_sys')
 
     def load(self, fname: str, read_parameters: bool = False) -> None:
@@ -322,7 +323,7 @@ class AuxiliaryMaserEquationDMFT:
         fname : str
             Name of HDF5 file.
         """
-        self.err_iterations = h5.read_data(fname, '/', 'convergence')
+        self.err_iterations = hd5.read_data(fname, '/', 'convergence')
 
         self.green_sys.load(fname, '/system', 'green_sys', readfreq=False)
         self.hyb_dmft.load(fname, '/system', 'hyb_dmft', readfreq=False)
@@ -336,13 +337,14 @@ class AuxiliaryMaserEquationDMFT:
 
         if read_parameters:
             self.parameters = {}
-            self.parameters['selfconsistency'] = h5.read_attrs(
+            self.parameters['selfconsistency'] = hd5.read_attrs(
                 fname, '/convergence')
-            self.parameters['system'] = h5.read_attrs(fname, '/system')
-            self.parameters['freq'] = h5.read_attrs(fname, '/')
-            self.parameters['aux_sys'] = h5.read_attrs(fname, '/auxiliary_sys')
+            self.parameters['system'] = hd5.read_attrs(fname, '/system')
+            self.parameters['freq'] = hd5.read_attrs(fname, '/')
+            self.parameters['aux_sys'] = hd5.read_attrs(
+                fname, '/auxiliary_sys')
             if 'leads' in self.parameters:
-                self.parameters['leads'] = h5.read_attrs(fname, '/system')
+                self.parameters['leads'] = hd5.read_attrs(fname, '/system')
 
 
 # %%

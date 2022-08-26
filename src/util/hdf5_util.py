@@ -22,7 +22,7 @@ def create_hdf5(filename: str, data: Union[np.ndarray, List] = None) -> None:
             f.create_dataset('data', data=data)
 
 
-def add_attrs(file: Union[str, File], dir: str, attrs: Dict) -> None:
+def add_attrs(file: Union[str, File], dir_: str, attrs: Dict) -> None:
     """Given string 'dir' key, value pairs of dictionary 'attrs' are saved in
     file 'file' as attributes.
 
@@ -31,7 +31,7 @@ def add_attrs(file: Union[str, File], dir: str, attrs: Dict) -> None:
     file : Union[str, File]
         File name of the HDF5 file or h5py.File object
 
-    dir : str
+    dir_ : str
         Directory to group or dataset to attach attributes
 
     attrs : Dict
@@ -39,10 +39,10 @@ def add_attrs(file: Union[str, File], dir: str, attrs: Dict) -> None:
     """
     for i in attrs:
         if file is None:
-            file[f'{dir}'].attrs[f'{i}'] = attrs[i]
+            file[f'{dir_}'].attrs[f'{i}'] = attrs[i]
         else:
             with h5py.File(f'{file}', 'a') as f:
-                f[f'{dir}'].attrs[f'{i}'] = attrs[i]
+                f[f'{dir_}'].attrs[f'{i}'] = attrs[i]
 
 
 def add_data(file: Union[str, File], dir_: str, dataname: str, data: np.ndarray
@@ -71,7 +71,7 @@ def add_data(file: Union[str, File], dir_: str, dataname: str, data: np.ndarray
             f.create_dataset(f'{dir_}/{dataname}', data=data)
 
 
-def add_dict_data(file: Union[str, File], dir: str, dataname: str, data: Dict
+def add_dict_data(file: Union[str, File], dir_: str, dataname: str, data: Dict
                   ) -> None:
     """Given filename file and group dir and dataset name dataname,
     save the content of the dictionary data to file.
@@ -81,7 +81,7 @@ def add_dict_data(file: Union[str, File], dir: str, dataname: str, data: Dict
     file : Union[str, File]
         File name of the HDF5 file or h5py.File object
 
-    dir : str
+    dir_ : str
         Directory to group to save dataset to
 
     dataname : str
@@ -92,14 +92,14 @@ def add_dict_data(file: Union[str, File], dir: str, dataname: str, data: Dict
     """
     if type(file) != str:
         for key in data:
-            file.create_dataset(f'{dir}/{dataname}/{key}', data=data[key])
+            file.create_dataset(f'{dir_}/{dataname}/{key}', data=data[key])
     else:
         with h5py.File(f'{file}', 'a') as f:
             for key in data:
-                f.create_dataset(f'{dir}/{dataname}/{key}', data=data[key])
+                f.create_dataset(f'{dir_}/{dataname}/{key}', data=data[key])
 
 
-def read_attrs(file: Union[str, File], dir: str) -> Dict:
+def read_attrs(file: Union[str, File], dir_: str) -> Dict:
     """Given filename file and group or dataset dir, return the attributes
     of dir as dictionary
 
@@ -108,7 +108,7 @@ def read_attrs(file: Union[str, File], dir: str) -> Dict:
     file : Union[str, File]
         File name of the HDF5 file or h5py.File object
 
-    dir : str
+    dir_ : str
         Group or dataset name
 
     Returns
@@ -117,14 +117,14 @@ def read_attrs(file: Union[str, File], dir: str) -> Dict:
         Attributes of dir as dictionary
     """
     if type(file) != str:
-        return file[f'{dir}'].attrs
+        return file[f'{dir_}'].attrs
     else:
         with h5py.File(file, 'r') as f:
-            attrs = dict(f[f'{dir}'].attrs)
+            attrs = dict(f[f'{dir_}'].attrs)
         return attrs
 
 
-def read_data(file: Union[str, File], dir: str, dataname: str) -> np.ndarray:
+def read_data(file: Union[str, File], dir_: str, dataname: str) -> np.ndarray:
     """Given filename file and group dir and dataset dataname, return the
     data of dataname as numpy array
 
@@ -133,7 +133,7 @@ def read_data(file: Union[str, File], dir: str, dataname: str) -> np.ndarray:
     file : Union[str, File]
         File name of the HDF5 file or h5py.File object
 
-    dir : str
+    dir_ : str
         Group name
 
     dataname : str
@@ -145,10 +145,10 @@ def read_data(file: Union[str, File], dir: str, dataname: str) -> np.ndarray:
         Dataset dataname in groupe dir as numpy array
     """
     if type(file) != str:
-        return file[f'{dir+"/"+dataname}'][:]
+        return file[f'{dir_+"/"+dataname}'][:]
     else:
         with h5py.File(file, 'r') as f:
-            data = f[f'{dir+"/"+dataname}'][:]
+            data = f[f'{dir_+"/"+dataname}'][:]
         return data
 
 
