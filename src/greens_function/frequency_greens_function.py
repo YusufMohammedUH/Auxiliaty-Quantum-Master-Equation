@@ -356,7 +356,7 @@ class FrequencyGreen:
 
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
 
-    def save(self, fname: str, dir: str, dataname: str,
+    def save(self, fname: str, dir_: str, dataname: str,
              savefreq: bool = True) -> None:
         """Save the Green's function to a file.
 
@@ -370,14 +370,14 @@ class FrequencyGreen:
         dataname : str
             Name under which the green's function should be saved.
         """
-        hd5.add_data(fname, f"{dir}/{dataname}", 'keldysh', self.keldysh)
-        hd5.add_data(fname, f"{dir}/{dataname}", 'retarded', self.retarded)
+        hd5.add_data(fname, f"{dir_}/{dataname}", 'keldysh', self.keldysh)
+        hd5.add_data(fname, f"{dir_}/{dataname}", 'retarded', self.retarded)
         if savefreq:
             hd5.add_attrs(fname, f"{dir}/{dataname}",
                           {"freq_min": self.freq[0], "freq_max": self.freq[-1],
                            'N_freq': len(self.freq)})
 
-    def load(self, fname: str, dir: str, dataname: str,
+    def load(self, fname: str, dir_: str, dataname: str,
              readfreq: bool = True) -> None:
         """Load data from hdf5 file to Green's function object
 
@@ -392,7 +392,7 @@ class FrequencyGreen:
         dataname : str
             Name of the Green's function
         """
-        attrs = hd5.read_attrs(fname, f"{dir}/{dataname}")
+        attrs = hd5.read_attrs(fname, f"{dir_}/{dataname}")
 
         if readfreq:
             if (attrs['freq_max'] != self.freq[-1] or
@@ -401,9 +401,10 @@ class FrequencyGreen:
                 raise ValueError("Frequency grid of loaded data doesn't match" +
                                  " object frequency grid.")
 
-        self.retarded = hd5.read_data(file=fname, dir=f"{dir}/{dataname}",
+        self.retarded = hd5.read_data(file=fname,
+                                      dir_=f"{dir_}/{dataname}",
                                       dataname='retarded')
-        self.keldysh = hd5.read_data(file=fname, dir=f"{dir}/{dataname}",
+        self.keldysh = hd5.read_data(file=fname, dir_=f"{dir_}/{dataname}",
                                      dataname='keldysh')
 
 

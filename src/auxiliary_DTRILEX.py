@@ -134,7 +134,10 @@ class AuxiliaryDualTRILEX:
             key: None for key in self.green_bare_dual_boson}
 
         self.correlators = correlators
-        self.three_point_vertex = {}
+        self.three_point_vertex = {('up', 'up', 'ch'): None,
+                                   ('up', 'do', 'x'): None,
+                                   ('up', 'do', 'y'): None,
+                                   ('up', 'up', 'z'): None}
         self.four_point_vertex = {}
 
     def calc_bare_dual_fermion_propagator(self) -> None:
@@ -182,10 +185,10 @@ class AuxiliaryDualTRILEX:
     def calc_three_point_vertex(self) -> None:
         """Calculate the three-point vertex.
         """
-        for channel in self.green_bare_dual_boson:
-            self.three_point_vertex[channel] = \
+        for spins in self.three_point_vertex:
+            self.three_point_vertex[spins] = \
                 self.correlators.get_three_point_vertex(
-                    self.hyb_aux.freq, channels=channel, return_=True)
+                    self.hyb_aux.freq, spin=spins, return_=True)
 
     def save(self, fname: str, dir_: str, dataname: str, save_parameter: bool = True,
              save_aux_data: bool = False) -> None:
@@ -342,7 +345,7 @@ if __name__ == '__main__':
         tilde_conjugationrule_phase=tilde_conjugationrule_phase)
 
     L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
-    corr_cls = corr.Correlators(L)
+    corr_cls = corr.Correlators(L, trilex=True)
     auxiliaryDMFT = aux_dmft.AuxiliaryMaserEquationDMFT(
         params, correlators=corr_cls)
 # %%
