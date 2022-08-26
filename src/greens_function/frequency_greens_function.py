@@ -357,7 +357,7 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, sigma[0], sigma[1])
 
     def save(self, fname: str, dir: str, dataname: str,
-             savefreq: bool = False) -> None:
+             savefreq: bool = True) -> None:
         """Save the Green's function to a file.
 
         Parameters
@@ -377,7 +377,8 @@ class FrequencyGreen:
                           {"freq_min": self.freq[0], "freq_max": self.freq[-1],
                            'N_freq': len(self.freq)})
 
-    def load(self, fname: str, dir: str, dataname: str) -> None:
+    def load(self, fname: str, dir: str, dataname: str,
+             readfreq: bool = True) -> None:
         """Load data from hdf5 file to Green's function object
 
         Parameters
@@ -393,11 +394,12 @@ class FrequencyGreen:
         """
         attrs = hd5.read_attrs(fname, f"{dir}/{dataname}")
 
-        if (attrs['freq_max'] != self.freq[-1] or
-            attrs['freq_min'] != self.freq[0]
-                or attrs['N_freq'] != self.freq.shape[0]):
-            raise ValueError("Frequency grid of loaded data doesn't match" +
-                             " object frequency grid.")
+        if readfreq:
+            if (attrs['freq_max'] != self.freq[-1] or
+                attrs['freq_min'] != self.freq[0]
+                    or attrs['N_freq'] != self.freq.shape[0]):
+                raise ValueError("Frequency grid of loaded data doesn't match" +
+                                 " object frequency grid.")
 
         self.retarded = hd5.read_data(file=fname, dir=f"{dir}/{dataname}",
                                       dataname='retarded')
