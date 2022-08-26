@@ -366,9 +366,9 @@ class FrequencyGreen:
             File name of the hdf5 file.
         dir : str
             Groupe name/subdirectory within the hdf5 file, e.g. '/' or
-            '/green'.
+            '/system'.
         dataname : str
-            Name of dataset/ of the green's function.
+            Name under which the green's function should be saved.
         """
         hd5.add_data(fname, f"{dir}/{dataname}", 'keldysh', self.keldysh)
         hd5.add_data(fname, f"{dir}/{dataname}", 'retarded', self.retarded)

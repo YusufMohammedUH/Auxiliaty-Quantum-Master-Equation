@@ -45,7 +45,7 @@ def add_attrs(file: Union[str, File], dir: str, attrs: Dict) -> None:
                 f[f'{dir}'].attrs[f'{i}'] = attrs[i]
 
 
-def add_data(file: Union[str, File], dir: str, dataname: str, data: np.ndarray
+def add_data(file: Union[str, File], dir_: str, dataname: str, data: np.ndarray
              ) -> None:
     """Given filename file and group dir and dataset dataname, save the data
     to file.
@@ -65,10 +65,38 @@ def add_data(file: Union[str, File], dir: str, dataname: str, data: np.ndarray
         Data to be saved
     """
     if type(file) != str:
-        file.create_dataset(f'{dir}/{dataname}', data=data)
+        file.create_dataset(f'{dir_}/{dataname}', data=data)
     else:
         with h5py.File(f'{file}', 'a') as f:
-            f.create_dataset(f'{dir}/{dataname}', data=data)
+            f.create_dataset(f'{dir_}/{dataname}', data=data)
+
+
+def add_dict_data(file: Union[str, File], dir: str, dataname: str, data: Dict
+                  ) -> None:
+    """Given filename file and group dir and dataset name dataname,
+    save the content of the dictionary data to file.
+
+    Parameters
+    ----------
+    file : Union[str, File]
+        File name of the HDF5 file or h5py.File object
+
+    dir : str
+        Directory to group to save dataset to
+
+    dataname : str
+        Name of dataset
+
+    data : Dict
+        Dictionay to be saved
+    """
+    if type(file) != str:
+        for key in data:
+            file.create_dataset(f'{dir}/{dataname}/{key}', data=data[key])
+    else:
+        with h5py.File(f'{file}', 'a') as f:
+            for key in data:
+                f.create_dataset(f'{dir}/{dataname}/{key}', data=data[key])
 
 
 def read_attrs(file: Union[str, File], dir: str) -> Dict:
@@ -122,6 +150,38 @@ def read_data(file: Union[str, File], dir: str, dataname: str) -> np.ndarray:
         with h5py.File(file, 'r') as f:
             data = f[f'{dir+"/"+dataname}'][:]
         return data
+
+
+def read_dict_data(file: Union[str, File], dir_: str, dataname: str) -> None:
+    """Given filename file and group dir and dataset name dataname,
+    load the content in to a dictionary and return it.
+
+    Parameters
+    ----------
+    file : Union[str, File]
+        File name of the HDF5 file or h5py.File object
+
+    dir : str
+        Directory to group to save dataset to
+
+    dataname : str
+        Name of dataset
+
+    Returns
+    -------
+    out: Dict
+        Dictionary with loaded data
+    """
+    data = {}
+    if type(file) != str:
+        for key in file.keys():
+            data[key] = read_data(file, f'{dir_}/{dataname}/{key}', dataname)
+    else:
+        with h5py.File(f'{file}', 'r') as f:
+            for key in f.keys():
+                data[key] = read_data(
+                    file, f'{dir_}/{dataname}/{key}', dataname)
+    return data
 
 
 if __name__ == '__main__':
