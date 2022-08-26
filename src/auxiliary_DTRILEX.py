@@ -369,5 +369,6 @@ if __name__ == '__main__':
     auxTrilex.get_system_green()
     auxTrilex.calc_three_point_vertex()
     auxTrilex.calc_four_point_vertex()
-    auxTrilex.save('ForAuxTrilex.h5', 'trilex', save_aux_data=False)
+    auxTrilex.save(fname='ForAuxTrilex.h5', dir_='/', dataname='trilex',
+                   save_aux_data=False)
 # %%
