@@ -347,7 +347,6 @@ if __name__ == '__main__':
         params, correlators=corr_cls)
 # %%
 if __name__ == '__main__':
-    import src.util.hdf5_util as hd5
     auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
     auxiliaryDMFT.set_local_matrix()
     auxiliaryDMFT.solve()
