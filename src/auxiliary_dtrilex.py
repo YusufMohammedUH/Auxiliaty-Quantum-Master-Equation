@@ -189,8 +189,10 @@ class AuxiliaryDualTRILEX:
             self.three_point_vertex[spins] = \
                 self.correlators.get_three_point_vertex(
                     self.hyb_aux.freq, spin=spins, return_=True)
+            print(f"Vertex with spins {spins} calculated")
 
-    def save(self, fname: str, dir_: str, dataname: str, save_parameter: bool = True,
+    def save(self, fname: str, dir_: str, dataname: str,
+             save_parameter: bool = True,
              save_aux_data: bool = False) -> None:
         """Save the dual and auxiliary quantities to file.
         The auxilary Green's function and hybridization are passed to the
@@ -214,8 +216,6 @@ class AuxiliaryDualTRILEX:
             Save auxiliary objects calculated here like auxiliary polarization
             etc., by default False
         """
-        if save_parameter:
-            hd5.add_attrs(fname, f"{dir_}/{dataname}", self.U_trilex)
 
         self.green_bare_dual_fermion.save(fname, f"{dir_}/{dataname}",
                                           "green_bare_dual_fermion",
@@ -231,9 +231,9 @@ class AuxiliaryDualTRILEX:
                 fname, f"{dir_}/{dataname}/green_bare_dual_boson",
                 f"{channel}", savefreq=False)
 
-            self.green_dual_boson[channel].save(
-                fname, f"{dir_}/{dataname}/green_dual_boson",
-                f"{channel}", savefreq=False)
+            # self.green_dual_boson[channel].save(
+            #     fname, f"{dir_}/{dataname}/green_dual_boson",
+            #     f"{channel}", savefreq=False)
             if save_aux_data:
                 self.polarization_aux[channel].save(
                     fname, f"{dir_}/{dataname}/polarization_aux", f"{channel}",
@@ -245,8 +245,10 @@ class AuxiliaryDualTRILEX:
 
         hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'three_point_vertex',
                           self.three_point_vertex)
-        hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'four_point_vertex',
-                          self.four_point_vertex)
+        # hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'four_point_vertex',
+        #                   self.four_point_vertex)
+        if save_parameter:
+            hd5.add_attrs(fname, f"{dir_}/{dataname}", self.U_trilex)
 
     def load(self, fname: str, dir_: str, dataname: str,
              load_parameter: bool = True, load_aux_data: bool = False) -> None:
@@ -272,7 +274,7 @@ class AuxiliaryDualTRILEX:
             Load auxiliary objects calculated here like auxiliary polarization
             etc., by default False
         """
-        if load_aux_data:
+        if load_parameter:
             self.U_trilex = hd5.read_attrs(fname, f"{dir_}/{dataname}")
 
         self.green_bare_dual_fermion.load(fname, f"{dir_}/{dataname}",
@@ -292,6 +294,7 @@ class AuxiliaryDualTRILEX:
             self.green_dual_boson[channel].load(
                 fname, f"{dir_}/{dataname}/green_dual_boson",
                 f"{channel}", readfreq=False)
+
             if load_aux_data:
                 self.polarization_aux[channel].load(
                     fname, f"{dir_}/{dataname}/polarization_aux", f"{channel}",
@@ -348,15 +351,7 @@ if __name__ == '__main__':
     corr_cls = corr.Correlators(L, trilex=True)
     auxiliaryDMFT = aux_dmft.AuxiliaryMaserEquationDMFT(
         params, correlators=corr_cls)
-# %%
-if __name__ == '__main__':
-    auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
-    auxiliaryDMFT.set_local_matrix()
-    auxiliaryDMFT.solve()
-    auxiliaryDMFT.save('ForAuxTrilex.h5')
 
-# %%
-if __name__ == '__main__':
     auxiliaryDMFT.load('ForAuxTrilex.h5', read_parameters=True)
     auxTrilex = AuxiliaryDualTRILEX(U_trilex=params['U_trilex'],
                                     green_aux=auxiliaryDMFT.green_aux,
@@ -364,11 +359,9 @@ if __name__ == '__main__':
                                     + auxiliaryDMFT.hyb_dmft),
                                     hyb_aux=auxiliaryDMFT.hyb_aux,
                                     correlators=corr_cls)
-    auxTrilex.calc_bare_dual_fermion_propagator()
-    auxTrilex.calc_dual_fermion_propagator()
-    auxTrilex.get_system_green()
-    auxTrilex.calc_three_point_vertex()
-    auxTrilex.calc_four_point_vertex()
-    auxTrilex.save(fname='ForAuxTrilex.h5', dir_='/', dataname='trilex',
-                   save_aux_data=False)
+    auxTrilex.load(fname='ForAuxTrilex.h5', dir_='/', dataname='trilex',
+                   load_aux_data=False)
+# %%
+if __name__ == '__main__':
+    pass
 # %%
