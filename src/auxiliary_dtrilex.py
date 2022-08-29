@@ -121,17 +121,23 @@ class AuxiliaryDualTRILEX:
         self.sigma_dual = fg.FrequencyGreen(self.hyb_aux.freq)
 
         # For now only the following channels are implemented
-        self.green_bare_dual_boson = {('ch', 'ch'): None, ('x', 'x'): None,
-                                      ('x', 'y'): None, ('y', 'y'): None,
-                                      ('z', 'z'): None}
+        self.green_bare_dual_boson = {
+            ('ch', 'ch'): fg.FrequencyGreen(self.hyb_aux.freq),
+            ('x', 'x'): fg.FrequencyGreen(self.hyb_aux.freq),
+            ('x', 'y'): fg.FrequencyGreen(self.hyb_aux.freq),
+            ('y', 'y'): fg.FrequencyGreen(self.hyb_aux.freq),
+            ('z', 'z'): fg.FrequencyGreen(self.hyb_aux.freq)}
         # It seams as if (x,y) and -(y,x) are the same channels
         # In paramagnetic case (z,ch) = (ch,z) = 0
         self.green_dual_boson = {
-            key: None for key in self.green_bare_dual_boson}
+            key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
+            self.green_bare_dual_boson}
         self.polarization_aux = {
-            key: None for key in self.green_bare_dual_boson}
+            key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
+            self.green_bare_dual_boson}
         self.susceptibility_aux = {
-            key: None for key in self.green_bare_dual_boson}
+            key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
+            self.green_bare_dual_boson}
 
         self.correlators = correlators
         self.three_point_vertex = {('up', 'up', 'ch'): None,
@@ -291,9 +297,9 @@ class AuxiliaryDualTRILEX:
                 fname, f"{dir_}/{dataname}/green_bare_dual_boson",
                 f"{channel}", readfreq=False)
 
-            self.green_dual_boson[channel].load(
-                fname, f"{dir_}/{dataname}/green_dual_boson",
-                f"{channel}", readfreq=False)
+            # self.green_dual_boson[channel].load(
+            #     fname, f"{dir_}/{dataname}/green_dual_boson",
+            #     f"{channel}", readfreq=False)
 
             if load_aux_data:
                 self.polarization_aux[channel].load(
@@ -304,8 +310,11 @@ class AuxiliaryDualTRILEX:
                     fname, f"{dir_}/{dataname}/susceptibility_aux",
                     f"{channel}", readfreq=False)
 
-        hd5.read_dict_data(fname, f"{dir_}/{dataname}", 'three_point_vertex')
-        hd5.read_dict_data(fname, f"{dir_}/{dataname}", 'four_point_vertex')
+        self.three_point_vertex = hd5.read_dict_data(
+            fname, f"{dir_}/{dataname}", 'three_point_vertex')
+
+        # self.four_point_vertex = hd5.read_dict_data(
+        #     fname, f"{dir_}/{dataname}", 'four_point_vertex')
 
 
 if __name__ == '__main__':
@@ -359,7 +368,7 @@ if __name__ == '__main__':
                                     + auxiliaryDMFT.hyb_dmft),
                                     hyb_aux=auxiliaryDMFT.hyb_aux,
                                     correlators=corr_cls)
-    auxTrilex.load(fname='ForAuxTrilex.h5', dir_='/', dataname='trilex',
+    auxTrilex.load(fname='ForAuxTrilex.h5', dir_='', dataname='trilex',
                    load_aux_data=False)
 # %%
 if __name__ == '__main__':

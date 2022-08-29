@@ -175,12 +175,11 @@ def read_dict_data(file: Union[str, File], dir_: str, dataname: str) -> None:
     data = {}
     if type(file) != str:
         for key in file.keys():
-            data[key] = read_data(file, f'{dir_}/{dataname}/{key}', dataname)
+            data[key] = file[f'{dir_}/{dataname}/{key}'][:]
     else:
-        with h5py.File(f'{file}', 'r') as f:
-            for key in f.keys():
-                data[key] = read_data(
-                    file, f'{dir_}/{dataname}/{key}', dataname)
+        with h5py.File(f'{file}', 'r') as fs:
+            for key in fs[f'{dir_}/{dataname}'].keys():
+                data[key] = fs[f'{dir_}/{dataname}/{key}'][:]
     return data
 
 
