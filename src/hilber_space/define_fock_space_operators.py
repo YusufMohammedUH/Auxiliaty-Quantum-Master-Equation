@@ -251,12 +251,12 @@ class FermionicFockOperators:
         ----------
         ii : int
             site/orbital index
+
         spin : string, optional
             Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
             None. In case of spinless fermions the argument doesn't need to
             be supplied. If it is supplied, the annihilation operator at
             site/orbital index i is returned.
-
 
         Returns
         -------
@@ -269,6 +269,7 @@ class FermionicFockOperators:
         ------
         IndexError
             If site/orbital index is out of bound
+
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
@@ -280,13 +281,13 @@ class FermionicFockOperators:
                 print("Spinless fermions don't need the argument spin to be " +
                       "passed")
             return self.annihilators[ii]
+
+        if spin == "up":
+            return self.annihilators[2 * ii]
+        elif spin == "do":
+            return self.annihilators[2 * ii + 1]
         else:
-            if spin == "up":
-                return self.annihilators[2 * ii]
-            elif spin == "do":
-                return self.annihilators[2 * ii + 1]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+            raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
     def cdag(self, ii: int, spin: Union[str, None] = None
              ) -> sparse.csc_matrix:
@@ -297,12 +298,12 @@ class FermionicFockOperators:
         ----------
         ii : int
             site/orbital index
+
         spin : string, optional
             Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
             None. In case of spinless fermions the argument doesn't need to
             be supplied. If it is supplied, the creation operator at
             site/orbital index i is returned.
-
 
         Returns
         -------
@@ -315,6 +316,7 @@ class FermionicFockOperators:
         ------
         IndexError
             If site/orbital index is out of bound
+
         ValueError
             If spin is not 'up' or 'do' in spin 1/2 fermions
         """
@@ -325,16 +327,50 @@ class FermionicFockOperators:
                 print("Spinless fermions don't need the argument spin to be " +
                       "passed")
             return self.creators[ii]
+
+        if spin == "up":
+            return self.creators[2 * ii]
+        elif spin == "do":
+            return self.creators[2 * ii + 1]
         else:
-            if spin == "up":
-                return self.creators[2 * ii]
-            elif spin == "do":
-                return self.creators[2 * ii + 1]
-            else:
-                raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
+            raise ValueError("ERROR: Spin can be only 'up' or 'do'!")
 
     def n(self, ii: int, spin: Union[str, None] = None, nelec: int = None
           ) -> sparse.csc_matrix:
+        """Returns the particle number operator at site/orbital 'ii' and with
+        spin 'spin'
+
+        Parameters
+        ----------
+        ii : int
+            site/orbital index
+
+        spin : string, optional
+            Spin index 'up' or 'do' (down) for spin 1/2 fermions, by default
+            None. In case of spinless fermions the argument doesn't need to
+            be supplied. If it is supplied, the particle number operator at
+            site/orbital index i is returned.
+
+        nelec : int, optional
+            Particle number, by default None. If supplied, the particle
+            number operator in the sector with nelec total electrons is
+            returned is returned.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                    2**self.spin_times_site)
+            Particle number operator of site/orbital index 'ii' and spin index
+            'spin'.
+
+        Raises
+        ------
+        IndexError
+            If site/orbital index is out of bound
+
+        ValueError
+            If spin is not 'up' or 'do' in spin 1/2 fermions
+        """
         if self.sorted_particle_number:
             raise ValueError('ERROR: The Fock space is not sorted!')
         if (ii > self.nsite - 1):
@@ -385,26 +421,26 @@ class FermionicFockOperators:
             print("Calculating charge/spin density operator for spinless " +
                   "fermions")
             return self.n(ii)
-        else:
-            nchannel = sparse.csc_matrix(
-                (2**self.spin_times_site, 2**self.spin_times_site))
-            tmp = None
-            if channel == 'ch' or channel is None:
-                tmp = self.unit2
-            elif channel == 'x':
-                tmp = self.sigma_x
-            elif channel == 'y':
-                tmp = self.sigma_y
-            elif channel == 'z':
-                tmp = self.sigma_y
 
-            for i, spin1 in enumerate(['up', 'do']):
-                for j, spin2 in enumerate(['up', 'do']):
-                    if tmp[i, j] != 0:
-                        nchannel += tmp[i, j] * self.cdag(
-                            ii=ii, spin=spin1).dot(
-                            self.c(ii=ii, spin=spin2))
-            return nchannel
+        nchannel = sparse.csc_matrix(
+            (2**self.spin_times_site, 2**self.spin_times_site))
+        tmp = None
+        if channel == 'ch' or channel is None:
+            tmp = self.unit2
+        elif channel == 'x':
+            tmp = self.sigma_x
+        elif channel == 'y':
+            tmp = self.sigma_y
+        elif channel == 'z':
+            tmp = self.sigma_y
+
+        for i, spin1 in enumerate(['up', 'do']):
+            for j, spin2 in enumerate(['up', 'do']):
+                if tmp[i, j] != 0:
+                    nchannel += tmp[i, j] * self.cdag(
+                        ii=ii, spin=spin1).dot(
+                        self.c(ii=ii, spin=spin2))
+        return nchannel
 
 ###############################################################################
 
@@ -421,6 +457,7 @@ class BosonicFockOperators:
     ----------
     nmodes : int
         Number of different bosonic modes
+
     nb_max : int
         Largest number of phonon in a mode
     """
@@ -495,8 +532,7 @@ class BosonicFockOperators:
             If mode index is out of bound
         """
         if (ii > self.nmodes - 1):
-            print('ERROR: index out of bound!')
-            exit()
+            raise ValueError('ERROR: index out of bound!')
 
         return self.annihilators[ii]
 
@@ -520,7 +556,6 @@ class BosonicFockOperators:
             If mode index is out of bound
         """
         if (ii > self.nmodes - 1):
-            print('ERROR: index out of bound!')
-            exit()
+            raise ValueError('ERROR: index out of bound!')
 
         return self.creators[ii]
