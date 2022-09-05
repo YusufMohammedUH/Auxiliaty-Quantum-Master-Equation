@@ -37,12 +37,15 @@ def add_attrs(file: Union[str, File], dir_: str, attrs: Dict) -> None:
     attrs : Dict
         Dictionary of attributes
     """
-    for i in attrs:
-        if file is None:
-            file[f'{dir_}'].attrs[f'{i}'] = attrs[i]
-        else:
-            with h5py.File(f'{file}', 'a') as f:
-                f[f'{dir_}'].attrs[f'{i}'] = attrs[i]
+    try:
+        for i in attrs:
+            if file is None:
+                file[f'{dir_}'].attrs[f'{i}'] = attrs[i]
+            else:
+                with h5py.File(f'{file}', 'a') as f:
+                    f[f'{dir_}'].attrs[f'{i}'] = attrs[i]
+    except Exception as er:
+        print(er)
 
 
 def add_data(file: Union[str, File], dir_: str, dataname: str, data: np.ndarray
@@ -64,11 +67,14 @@ def add_data(file: Union[str, File], dir_: str, dataname: str, data: np.ndarray
     data : np.ndarray
         Data to be saved
     """
-    if type(file) != str:
-        file.create_dataset(f'{dir_}/{dataname}', data=data)
-    else:
-        with h5py.File(f'{file}', 'a') as f:
-            f.create_dataset(f'{dir_}/{dataname}', data=data)
+    try:
+        if type(file) != str:
+            file.create_dataset(f'{dir_}/{dataname}', data=data)
+        else:
+            with h5py.File(f'{file}', 'a') as f:
+                f.create_dataset(f'{dir_}/{dataname}', data=data)
+    except Exception as er:
+        print(er)
 
 
 def add_dict_data(file: Union[str, File], dir_: str, dataname: str, data: Dict
@@ -90,13 +96,17 @@ def add_dict_data(file: Union[str, File], dir_: str, dataname: str, data: Dict
     data : Dict
         Dictionay to be saved
     """
-    if type(file) != str:
-        for key in data:
-            file.create_dataset(f'{dir_}/{dataname}/{key}', data=data[key])
-    else:
-        with h5py.File(f'{file}', 'a') as f:
+    try:
+        if type(file) != str:
             for key in data:
-                f.create_dataset(f'{dir_}/{dataname}/{key}', data=data[key])
+                file.create_dataset(f'{dir_}/{dataname}/{key}', data=data[key])
+        else:
+            with h5py.File(f'{file}', 'a') as f:
+                for key in data:
+                    f.create_dataset(
+                        f'{dir_}/{dataname}/{key}', data=data[key])
+    except Exception as er:
+        print(er)
 
 
 def read_attrs(file: Union[str, File], dir_: str) -> Dict:
@@ -116,12 +126,15 @@ def read_attrs(file: Union[str, File], dir_: str) -> Dict:
     Dict
         Attributes of dir as dictionary
     """
-    if type(file) != str:
-        return file[f'{dir_}'].attrs
-    else:
-        with h5py.File(file, 'r') as f:
-            attrs = dict(f[f'{dir_}'].attrs)
-        return attrs
+    try:
+        if type(file) != str:
+            return file[f'{dir_}'].attrs
+        else:
+            with h5py.File(file, 'r') as f:
+                attrs = dict(f[f'{dir_}'].attrs)
+            return attrs
+    except Exception as er:
+        print(er)
 
 
 def read_data(file: Union[str, File], dir_: str, dataname: str) -> np.ndarray:
@@ -144,12 +157,40 @@ def read_data(file: Union[str, File], dir_: str, dataname: str) -> np.ndarray:
     out: np.ndarray
         Dataset dataname in groupe dir as numpy array
     """
-    if type(file) != str:
-        return file[f'{dir_+"/"+dataname}'][:]
-    else:
-        with h5py.File(file, 'r') as f:
-            data = f[f'{dir_+"/"+dataname}'][:]
-        return data
+    try:
+        if type(file) != str:
+            return file[f'{dir_+"/"+dataname}'][:]
+        else:
+            with h5py.File(file, 'r') as f:
+                data = f[f'{dir_+"/"+dataname}'][:]
+            return data
+    except Exception as er:
+        print(er)
+
+
+def get_directorys(file: Union[str, File], dir_: str = '/') -> List:
+    """Given filename file, return all groups in file
+
+    Parameters
+    ----------
+    file : Union[str, File]
+        File name of the HDF5 file or h5py.File object
+
+    dir_ : str, optional
+        Group name, by default '/'
+    Returns
+    -------
+    out: List
+        List of all groups in file
+    """
+    try:
+        if type(file) != str:
+            return list(file[dir_].keys())
+        else:
+            with h5py.File(file, 'r') as f:
+                return list(f[dir_].keys())
+    except Exception as er:
+        print(er)
 
 
 def read_dict_data(file: Union[str, File], dir_: str, dataname: str) -> None:
@@ -172,15 +213,18 @@ def read_dict_data(file: Union[str, File], dir_: str, dataname: str) -> None:
     out: Dict
         Dictionary with loaded data
     """
-    data = {}
-    if type(file) != str:
-        for key in file.keys():
-            data[key] = file[f'{dir_}/{dataname}/{key}'][:]
-    else:
-        with h5py.File(f'{file}', 'r') as fs:
-            for key in fs[f'{dir_}/{dataname}'].keys():
-                data[key] = fs[f'{dir_}/{dataname}/{key}'][:]
-    return data
+    try:
+        data = {}
+        if type(file) != str:
+            for key in file.keys():
+                data[key] = file[f'{dir_}/{dataname}/{key}'][:]
+        else:
+            with h5py.File(f'{file}', 'r') as fs:
+                for key in fs[f'{dir_}/{dataname}'].keys():
+                    data[key] = fs[f'{dir_}/{dataname}/{key}'][:]
+        return data
+    except Exception as er:
+        print(er)
 
 
 if __name__ == '__main__':
