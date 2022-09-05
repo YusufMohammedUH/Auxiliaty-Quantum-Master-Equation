@@ -1,5 +1,6 @@
 # %%
-from typing import Dict
+from typing import Dict, Optional
+import numpy as np
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.frequency_greens_function as fg
 import src.auxiliary_dmft as aux_dmft
@@ -33,6 +34,23 @@ class AuxiliaryDualTRILEX:
 
     Parameters
     ----------
+    filename : Optional[str], optional
+        File name in which data is stored, by default None
+
+    dir_ : Optional[str], optional
+        HDF5 group/ subdirectory in which data is stored, by default None
+
+    dataname : Optional[str], optional
+        Name under which data is stored, by default None
+
+    load_input_param : bool, optional
+        Load input parameters like green_aux, hyb_sys, etc. if True, by default
+        True.
+
+    load_aux_data : bool, optional
+        Load auxiliary objects calculated here like auxiliary polarization
+        etc. if True, by default False
+
     U_trilex : Dict
         Interaction strength for the trilex channels
 
@@ -98,53 +116,77 @@ class AuxiliaryDualTRILEX:
     correlators : corr.Correlators
         Correlators object used to calculate the vertices.
 
+    Raises
+    ------
+    ValueError
+        'Either all or none of the following arguments must be given: filename,
+        dir_, dataname. If nonn are given, U_trilex, green_aux, hyb_sys,
+        hyb_aux and correlators are required.'
     """
 
-    def __init__(self, U_trilex: Dict, green_aux: fg.FrequencyGreen,
-                 hyb_sys: fg.FrequencyGreen,
-                 hyb_aux: fg.FrequencyGreen,
-                 correlators: corr.Correlators) -> None:
+    def __init__(self, *, filename: Optional[str] = None,
+                 dir_: Optional[str] = None,
+                 dataname: Optional[str] = None,
+                 load_input_param: bool = True,
+                 load_aux_data: bool = False,
+                 U_trilex: Optional[Dict] = None,
+                 green_aux: Optional[fg.FrequencyGreen] = None,
+                 hyb_sys: Optional[fg.FrequencyGreen] = None,
+                 hyb_aux: Optional[fg.FrequencyGreen] = None,
+                 correlators: Optional[corr.Correlators] = None) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
-        # greens functions
-        self.U_trilex = U_trilex
-
-        self.green_aux = green_aux
-        self.hyb_sys = hyb_sys
-        self.hyb_aux = hyb_aux
-        self.delta_hyb = self.hyb_aux - self.hyb_sys
-
-        self.green_sys = fg.FrequencyGreen(self.hyb_aux.freq)
-
-        self.green_bare_dual_fermion = fg.FrequencyGreen(self.hyb_aux.freq)
-        self.green_dual_fermion = fg.FrequencyGreen(self.hyb_aux.freq)
-        self.sigma_dual = fg.FrequencyGreen(self.hyb_aux.freq)
-
-        # For now only the following channels are implemented
-        self.green_bare_dual_boson = {
-            ('ch', 'ch'): fg.FrequencyGreen(self.hyb_aux.freq),
-            ('x', 'x'): fg.FrequencyGreen(self.hyb_aux.freq),
-            ('x', 'y'): fg.FrequencyGreen(self.hyb_aux.freq),
-            ('y', 'y'): fg.FrequencyGreen(self.hyb_aux.freq),
-            ('z', 'z'): fg.FrequencyGreen(self.hyb_aux.freq)}
-        # It seams as if (x,y) and -(y,x) are the same channels
-        # In paramagnetic case (z,ch) = (ch,z) = 0
-        self.green_dual_boson = {
-            key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
-            self.green_bare_dual_boson}
-        self.polarization_aux = {
-            key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
-            self.green_bare_dual_boson}
-        self.susceptibility_aux = {
-            key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
-            self.green_bare_dual_boson}
-
         self.correlators = correlators
-        self.three_point_vertex = {('up', 'up', 'ch'): None,
-                                   ('up', 'do', 'x'): None,
-                                   ('up', 'do', 'y'): None,
-                                   ('up', 'up', 'z'): None}
-        self.four_point_vertex = {}
+        if (filename is None) and (dir_ is None) and (dataname is None):
+            # greens functions
+            self.U_trilex = U_trilex
+
+            self.green_aux = green_aux
+            self.hyb_sys = hyb_sys
+            self.hyb_aux = hyb_aux
+            self.delta_hyb = self.hyb_aux - self.hyb_sys
+
+            self.green_sys = fg.FrequencyGreen(self.hyb_aux.freq)
+
+            self.green_bare_dual_fermion = fg.FrequencyGreen(self.hyb_aux.freq)
+            self.green_dual_fermion = fg.FrequencyGreen(self.hyb_aux.freq)
+            self.sigma_dual = fg.FrequencyGreen(self.hyb_aux.freq)
+
+            # For now only the following channels are implemented
+            self.green_bare_dual_boson = {
+                ('ch', 'ch'): fg.FrequencyGreen(self.hyb_aux.freq),
+                ('x', 'x'): fg.FrequencyGreen(self.hyb_aux.freq),
+                ('x', 'y'): fg.FrequencyGreen(self.hyb_aux.freq),
+                ('y', 'y'): fg.FrequencyGreen(self.hyb_aux.freq),
+                ('z', 'z'): fg.FrequencyGreen(self.hyb_aux.freq)}
+            # It seams as if (x,y) and -(y,x) are the same channels
+            # In paramagnetic case (z,ch) = (ch,z) = 0
+            self.green_dual_boson = {
+                key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
+                self.green_bare_dual_boson}
+            self.polarization_aux = {
+                key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
+                self.green_bare_dual_boson}
+            self.susceptibility_aux = {
+                key: fg.FrequencyGreen(self.hyb_aux.freq) for key in
+                self.green_bare_dual_boson}
+
+            self.three_point_vertex = {('up', 'up', 'ch'): None,
+                                       ('up', 'do', 'x'): None,
+                                       ('up', 'do', 'y'): None,
+                                       ('up', 'up', 'z'): None}
+            self.four_point_vertex = {}
+        elif (filename is not None) and (
+                dir_ is not None) and (dataname is not None):
+            self.load(fname=filename, dir_=dir_, dataname=dataname,
+                      load_input_param=load_input_param,
+                      load_aux_data=load_aux_data)
+        else:
+            raise ValueError('Either all or none of the following arguments ' +
+                             'must be given: filename, dir_, dataname. ' +
+                             'If nonn are given, U_trilex, green_aux,' +
+                             ' hyb_sys, hyb_aux and ' +
+                             'correlators are required.')
 
     def calc_bare_dual_fermion_propagator(self) -> None:
         """Calculate the bare fermionic dual Green's function.
@@ -198,8 +240,7 @@ class AuxiliaryDualTRILEX:
             print(f"Vertex with spins {spins} calculated")
 
     def save(self, fname: str, dir_: str, dataname: str,
-             save_parameter: bool = True,
-             save_aux_data: bool = False) -> None:
+             save_input_param: bool = True, save_aux_data: bool = False) -> None:
         """Save the dual and auxiliary quantities to file.
         The auxilary Green's function and hybridization are passed to the
         class and therefore not saved.
@@ -215,13 +256,27 @@ class AuxiliaryDualTRILEX:
         dataname : str
             Name under which to save T-DTRILEX data.
 
-        save_parameter : bool, optional
-            Save U_trilex if True, by default True
+         save_input_param : str
+            Save input parameters like green_aux, hyb_sys, etc, by default True.
 
         save_aux_data : bool, optional
             Save auxiliary objects calculated here like auxiliary polarization
             etc., by default False
         """
+        hd5.add_attrs(fname, f"{dir_}/{dataname}", self.U_trilex)
+
+        if save_input_param:
+            freq = {'freq_min': self.hyb_aux.freq[0],
+                    'freq_max': self.hyb_aux.freq[-1],
+                    'N_freq': len(self.hyb_aux.freq)}
+            hd5.add_attrs(fname, "/", freq)
+            self.green_aux.save(fname, '/auxiliary_sys',
+                                'green_aux', savefreq=False)
+            self.hyb_aux.save(fname, '/auxiliary_sys', 'hyb_aux',
+                              savefreq=False)
+            if ('hyb_dmft' not in hd5.get_directorys(fname, '/system') or
+                    'hyb_leads' not in hd5.get_directorys(fname, '/system')):
+                self.hyb_sys.save(fname, '/system', 'hyb_sys', savefreq=False)
 
         self.green_bare_dual_fermion.save(fname, f"{dir_}/{dataname}",
                                           "green_bare_dual_fermion",
@@ -253,11 +308,9 @@ class AuxiliaryDualTRILEX:
                           self.three_point_vertex)
         # hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'four_point_vertex',
         #                   self.four_point_vertex)
-        if save_parameter:
-            hd5.add_attrs(fname, f"{dir_}/{dataname}", self.U_trilex)
 
     def load(self, fname: str, dir_: str, dataname: str,
-             load_parameter: bool = True, load_aux_data: bool = False) -> None:
+             load_input_param: bool = True, load_aux_data: bool = False) -> None:
         """Load the dual and auxiliary quantities from file.
         The auxilary Green's function and hybridization are passed to the
         class and therefore not saved.
@@ -273,15 +326,63 @@ class AuxiliaryDualTRILEX:
         dataname : str
             Name under which to save T-DTRILEX data.
 
-        load_parameter : bool, optional
-            Load U_trilex if True, by default True
+        load_input_param : bool, optional
+            Load input parameters like green_aux, hyb_sys, etc, by default
+            True.
 
         load_aux_data : bool, optional
             Load auxiliary objects calculated here like auxiliary polarization
             etc., by default False
         """
-        if load_parameter:
-            self.U_trilex = hd5.read_attrs(fname, f"{dir_}/{dataname}")
+        self.U_trilex = hd5.read_attrs(fname, f"{dir_}/{dataname}")
+        if self.correlators is None:
+            spin_sector_max = 2
+            aux_param = hd5.read_attrs(fname, '/auxiliary_sys')
+            sys_param = hd5.read_attrs(fname, '/system')
+            super_fermi_ops = sf_sub.SpinSectorDecomposition(
+                nsite=aux_param['nsite'], spin_sector_max=spin_sector_max,
+                spinless=sys_param['spinless'],
+                tilde_conjugationrule_phase=sys_param['tilde_conjugation'])
+
+            L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
+            self.correlators = corr.Correlators(L, trilex=True)
+
+        self.correlators.Lindbladian.load(fname, '/auxiliary_sys')
+        self.correlators.update(T_mat=self.correlators.Lindbladian.T_mat,
+                                U_mat=self.correlators.Lindbladian.U_mat,
+                                Gamma1=self.correlators.Lindbladian.Gamma1,
+                                Gamma2=self.correlators.Lindbladian.Gamma2)
+        if load_input_param:
+            freq_parm = hd5.read_attrs(fname, '/')
+
+            freq = np.linspace(freq_parm['freq_min'], freq_parm['freq_max'],
+                               freq_parm['N_freq'])
+
+            self.green_aux = fg.FrequencyGreen(freq)
+            self.green_aux.load(fname, '/auxiliary_sys',
+                                'green_aux', readfreq=False)
+
+            self.hyb_aux = fg.FrequencyGreen(freq)
+            self.hyb_aux.load(fname, '/auxiliary_sys',
+                              'hyb_aux', readfreq=False)
+
+            if ('hyb_dmft' in hd5.get_directorys(fname, '/system') and
+                    'hyb_leads' in hd5.get_directorys(fname, '/system')):
+                hyb_dmft = fg.FrequencyGreen(freq)
+                hyb_leads = fg.FrequencyGreen(freq)
+
+                hyb_dmft.load(fname, '/system', 'hyb_dmft', readfreq=False)
+                if 'hyb_leads' in hd5.get_directorys(fname, '/system'):
+                    hyb_leads.load(fname, '/system',
+                                   'hyb_leads', readfreq=False)
+
+                self.hyb_sys = hyb_dmft + hyb_leads
+            else:
+                self.hyb_sys.load(fname, '/system', 'hyb_sys', readfreq=False)
+
+            self.__init__(U_trilex=self.U_trilex, green_aux=self.green_aux,
+                          hyb_sys=self.hyb_sys, hyb_aux=self.hyb_aux,
+                          correlators=self.correlators)
 
         self.green_bare_dual_fermion.load(fname, f"{dir_}/{dataname}",
                                           "green_bare_dual_fermion",
@@ -310,67 +411,39 @@ class AuxiliaryDualTRILEX:
                     fname, f"{dir_}/{dataname}/susceptibility_aux",
                     f"{channel}", readfreq=False)
 
-        self.three_point_vertex = hd5.read_dict_data(
+        temp = hd5.read_dict_data(
             fname, f"{dir_}/{dataname}", 'three_point_vertex')
+        for key in self.three_point_vertex:
+            self.three_point_vertex[key] = temp[f"{key}"]
 
-        # self.four_point_vertex = hd5.read_dict_data(
+        # temp = hd5.read_dict_data(
         #     fname, f"{dir_}/{dataname}", 'four_point_vertex')
+        # for key in self.four_point_vertex.keys():
+        #     self.four_point_vertex[key] = temp[f"{key}"]
 
 
 if __name__ == '__main__':
-    #  Frequency grid
-    N_freq = 400
-    freq_max = 10
+    auxTrilex = AuxiliaryDualTRILEX(
+        filename='ForAuxTrilex.h5', dir_='', dataname='trilex')
 
-    selfconsist_param = {'max_iter': 50, 'err_tol': 1e-7, 'mixing': 0.2}
-
-    e0 = 0
-    mu = 0
-    beta = 100
-    D = 11
-    gamma = 0.1
-
-    leads_param = {'e0': e0, 'mu': [mu], 'beta': beta, 'D': D, 'gamma': gamma}
-
-    spinless = False
-    spin_sector_max = 2
-    tilde_conjugationrule_phase = True
-
-    U = 3.0
-    v = 1.0
-    sys_param = {'v': v, 'U': U, 'spinless': spinless,
-                 'tilde_conjugation': tilde_conjugationrule_phase}
-
-    # Parameters of the auxiliary system
-    Nb = 1
-    nsite = 2 * Nb + 1
-    aux_param = {'Nb': Nb, 'nsite': nsite}
-    trilex = {'ch': U / 2., 'x': -U / 2, 'y': -U / 2, 'z': -U / 2}
-    params = {'freq': {"freq_min": -freq_max, "freq_max": freq_max,
-                       'N_freq': N_freq},
-              'selfconsistency': selfconsist_param, 'leads': leads_param,
-              'aux_sys': aux_param, 'system': sys_param, 'U_trilex': trilex}
-
-    # ##################### Initializing Lindblad class #######################
-    super_fermi_ops = sf_sub.SpinSectorDecomposition(
-        nsite, spin_sector_max, spinless=spinless,
-        tilde_conjugationrule_phase=tilde_conjugationrule_phase)
-
-    L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
-    corr_cls = corr.Correlators(L, trilex=True)
-    auxiliaryDMFT = aux_dmft.AuxiliaryMaserEquationDMFT(
-        params, correlators=corr_cls)
-
-    auxiliaryDMFT.load('ForAuxTrilex.h5', read_parameters=True)
-    auxTrilex = AuxiliaryDualTRILEX(U_trilex=params['U_trilex'],
-                                    green_aux=auxiliaryDMFT.green_aux,
-                                    hyb_sys=(auxiliaryDMFT.hyb_leads
-                                    + auxiliaryDMFT.hyb_dmft),
-                                    hyb_aux=auxiliaryDMFT.hyb_aux,
-                                    correlators=corr_cls)
-    auxTrilex.load(fname='ForAuxTrilex.h5', dir_='', dataname='trilex',
-                   load_aux_data=False)
+    auxTrilex.calc_bare_dual_boson_propagator()
 # %%
 if __name__ == '__main__':
-    pass
+    import matplotlib.pyplot as plt
+    import src.util.figure as fu
+    import colorcet as cc
+    import numpy as np
+    plot = fu.FigureTheme(cmap=cc.cm.bgy)
+
+    plot.create_single_panel(projection_='3d',
+                             xlabel='t\'',
+                             ylabel='t',
+                             zlabel='$G^{R}$')
+    plot.ax.imshow(auxTrilex.three_point_vertex[
+        ('up', 'up', 'ch')][:, :, 0, 0, 0].imag, cmap=cc.cm.bgy)
+    # plot.surface(auxTrilex.green_aux.freq, auxTrilex.green_aux.freq,
+    #              auxTrilex.three_point_vertex[('up', 'up', 'ch')
+    #                                           ][:, :, 1, 1,
+    #                                             0].imag)
+    plt.show()
 # %%
