@@ -432,7 +432,6 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import src.util.figure as fu
     import colorcet as cc
-    import numpy as np
     plot = fu.FigureTheme(cmap=cc.cm.bgy)
 
     plot.create_single_panel(projection_='3d',
