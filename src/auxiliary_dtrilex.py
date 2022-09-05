@@ -3,7 +3,6 @@ from typing import Dict, Optional
 import numpy as np
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.frequency_greens_function as fg
-import src.auxiliary_dmft as aux_dmft
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.greens_function.correlation_functions as corr
 import src.util.hdf5_util as hd5
