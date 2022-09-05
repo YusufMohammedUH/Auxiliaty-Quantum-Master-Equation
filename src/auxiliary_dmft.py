@@ -334,6 +334,10 @@ class AuxiliaryMaserEquationDMFT:
                             'green_aux', readfreq=False)
         self.hyb_aux.load(fname, '/auxiliary_sys', 'hyb_aux', readfreq=False)
         self.correlators.Lindbladian.load(fname, '/auxiliary_sys')
+        self.correlators.update(T_mat=self.correlators.Lindbladian.T_mat,
+                                U_mat=self.correlators.Lindbladian.U_mat,
+                                Gamma1=self.correlators.Lindbladian.Gamma1,
+                                Gamma2=self.correlators.Lindbladian.Gamma2)
 
         if read_parameters:
             self.parameters = {}
