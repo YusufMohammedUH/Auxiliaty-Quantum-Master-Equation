@@ -14,7 +14,7 @@ import src.util.hdf5_util as hd5
 #  [X] 3. calculate non-interacting dual Green's function and bosonic
 #         propagator
 #
-#  [ ] 4. calculate three vertex
+#  [x] 4. calculate three vertex
 #  [ ] 5. calculate gamma/delta
 #  [ ] 5. calculate dual polarization
 #  [ ] 7. calculate the dressed dual bosonic propagator
@@ -433,8 +433,7 @@ if __name__ == '__main__':
     import colorcet as cc
     plot = fu.FigureTheme(cmap=cc.cm.bgy)
 
-    plot.create_single_panel(projection_='3d',
-                             xlabel='t\'',
+    plot.create_single_panel(xlabel='t\'',
                              ylabel='t',
                              zlabel='$G^{R}$')
     plot.ax.imshow(auxTrilex.three_point_vertex[
