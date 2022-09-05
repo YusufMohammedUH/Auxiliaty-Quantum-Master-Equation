@@ -9,3 +9,4 @@
 **/*.h5
 **/*.hdf5
 newrelic_agent.log
+.VSCodeCounter
