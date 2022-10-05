@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import src.hilber_space.model_hamiltonian as ham
 import src.super_fermionic_space.model_lindbladian as lind
 import src.super_fermionic_space.super_fermionic_subspace as sf_op
-import src.solvers.exact_decomposition as ed_lind
+import src.liouville_solvers.exact_decomposition as ed_lind
 
 # ########################### Unitary propagation #############################
 # Local Hamiltonian parameters of two site Problem

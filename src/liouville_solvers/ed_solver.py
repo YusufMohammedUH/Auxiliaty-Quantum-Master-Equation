@@ -5,9 +5,9 @@ correlation functions.
 # %%
 from typing import Tuple, Union
 import numpy as np
-import src.solvers.ed_solver_get_correlator_jit as corr
-import src.solvers.ed_solver_precalculate_jit as precalc
-import src.solvers.exact_decomposition as ed
+import src.liouville_solvers.ed_solver_get_correlator_jit as corr
+import src.liouville_solvers.ed_solver_precalculate_jit as precalc
+import src.liouville_solvers.exact_decomposition as ed
 import src.super_fermionic_space.model_lindbladian as lind
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.greens_function.frequency_greens_function as fg

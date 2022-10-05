@@ -8,7 +8,7 @@ from itertools import product
 import src.greens_function.contour_util as con_util
 import src.super_fermionic_space.model_lindbladian as lind
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
-import src.solvers.ed_solver as ed_sol
+import src.liouville_solvers.ed_solver as ed_sol
 import src.auxiliary_mapping.auxiliary_system_parameter as aux
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.correlator_components as comp
