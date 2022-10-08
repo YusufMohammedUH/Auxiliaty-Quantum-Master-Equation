@@ -128,7 +128,6 @@ class EDSolver:
                                  for e in vals_close_zero_sorted]
             mask2 = vals_close_zero == vals_close_zero_sorted[0]
             if np.abs(vals_renormalized[1]) < 100:
-                print("eigen values")
                 raise ValueError(
                     "There are more than one stready states values")
             e_cut_off_tmp = np.abs(vals_close_zero_sorted[0] * 100)

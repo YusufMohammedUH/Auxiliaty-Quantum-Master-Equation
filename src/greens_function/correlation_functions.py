@@ -418,7 +418,8 @@ class Correlators:
     def get_susceptibility_physical(self, freq: np.ndarray,
                                     channels: Tuple[str, str],
                                     sites: Union[None, Iterable] = None,
-                                    prefactor: complex = - 1j) -> fg.FrequencyGreen:
+                                    prefactor: complex = - 1j
+                                    ) -> fg.FrequencyGreen:
         """Return the susceptibility on the physical contour e.g. returns a
         fg.FrequencyGreen object.
 
@@ -633,7 +634,6 @@ class Correlators:
                 self.contour_symmetries[n] = n_correlator_symmetrie.copy()
 
 
-# %%
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     # Set parameters

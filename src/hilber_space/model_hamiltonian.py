@@ -312,14 +312,18 @@ if __name__ == "__main__":
     print("Atomic Hubbard model correct")
 
     # Set up spinless Hamiltonian
-    ts_ = np.array([1.0])
-    Us_ = np.zeros(2)
-    es_ = np.array([0, 0.5])
+    spinless = False
+    U_ = 0
+    mu_ = U_ / 2.
+    t_ = 1
     nsite_ = 2
+    epsilon = 0
+    ts_ = t_ * np.ones(nsite_ - 1)
+    Us_ = U_ * np.ones(nsite_)
+    es_ = epsilon * np.ones(nsite_) - mu_
     Tmat_ = get_1D_chain_nearest_neighbor_hopping_matrix(nsite_, es_, ts_)
-    fermionic_op = op.FermionicFockOperators(nsite_, spinless=True)
+    fermionic_op = op.FermionicFockOperators(nsite_, spinless=spinless)
 
-    H_spinless = hubbard_hamiltonian(
-        Tmat_, Us_, eop=fermionic_op, spinless=True, nelec=1)
-    print(H_spinless[0].toarray())
-    print(H_spinless[1].toarray())
+    H_spinfull = hubbard_hamiltonian(
+        Tmat_, Us_, eop=fermionic_op, spinless=spinless)
+    print(H_spinfull.toarray())

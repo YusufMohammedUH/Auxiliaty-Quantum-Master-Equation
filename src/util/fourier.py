@@ -93,7 +93,7 @@ def dft_smooth(fs, ts, ws, sigma=None, sign=-1):
         ts to domain ws
     """
 
-    if sigma == None:
+    if sigma is None:
         sigma = np.sqrt((ts[-1] / 2)**2 - np.log(2))
     print(sigma)
     gaussian = np.exp(-(ts * ts) / (sigma**2))

@@ -39,7 +39,7 @@ def test_get_self_enerqy_and_dyson():
     hybridization = fg.FrequencyGreen(
         freq, flat_hybridization_retarded, flat_hybridization_keldysh)
     green = fg.FrequencyGreen(freq)
-    green.dyson(green.freq, hybridization)
+    green.dyson(self_energy=hybridization)
     hybridization_retreaved = green.get_self_enerqy()
 
     diff_hyb_ret = np.abs(hybridization_retreaved.retarded -

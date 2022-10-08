@@ -1,9 +1,11 @@
+# %%
 from typing import Tuple, Union
 import numpy as np
 from numba import njit
 import matplotlib.pyplot as plt
 import src.auxiliary_mapping.auxiliary_system_parameter as auxp
 import src.util.hdf5_util as hd5
+import src.greens_function.keldysh_identity as kid
 
 
 @njit(cache=True)
@@ -118,7 +120,7 @@ class FrequencyGreen:
             Contains the retarded Green's
 
         keldysh : numpy.ndarry (dim,)
-            Contains the keldysh Green's
+            Contains the keldysh/lesser/greater Green's
 
     Attributes
     ----------
@@ -168,7 +170,7 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, self.retarded.copy(),
                               self.keldysh.copy())
 
-    def __add__(self, other: Union["FrequencyGreen", "KeldyshIdentity",
+    def __add__(self, other: Union["FrequencyGreen", "kid.KeldyshIdentity",
                                    int, float, complex]) -> "FrequencyGreen":
         """Add FrequencyGreen or KeldyshIdentity objects or number from
         current object and return resulting FrequencyGreen.
@@ -195,10 +197,10 @@ class FrequencyGreen:
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded + other,
                                   self.keldysh)
-        elif isinstance(other, KeldyshIdentity):
+        elif isinstance(other, kid.KeldyshIdentity):
             return other + self
 
-    def __sub__(self, other: Union["FrequencyGreen", "KeldyshIdentity",
+    def __sub__(self, other: Union["FrequencyGreen", "kid.KeldyshIdentity",
                                    int, float, complex]) -> "FrequencyGreen":
         """Subtract FrequencyGreen or KeldyshIdentity objects or number from
         current object and return resulting FrequencyGreen.
@@ -225,10 +227,10 @@ class FrequencyGreen:
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded - other,
                                   self.keldysh)
-        elif isinstance(other, KeldyshIdentity):
+        elif isinstance(other, kid.KeldyshIdentity):
             return (other - self) * (-1)
 
-    def __mul__(self, other: Union["FrequencyGreen", "KeldyshIdentity",
+    def __mul__(self, other: Union["FrequencyGreen", "kid.KeldyshIdentity",
                                    int, float, complex]) -> "FrequencyGreen":
         """Multiply two frequency Green's functions.
 
@@ -263,7 +265,7 @@ class FrequencyGreen:
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded * other,
                                   self.keldysh * other)
-        elif isinstance(other, KeldyshIdentity):
+        elif isinstance(other, kid.KeldyshIdentity):
             return self
 
     def inverse(self) -> "FrequencyGreen":
@@ -279,22 +281,21 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, retarded=retarded_inv,
                               keldysh=keldysh_inv)
 
-    def dyson(self, green_0_ret_inverse: np.ndarray,
-              self_energy: "FrequencyGreen") -> None:
+    def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0) -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma.
 
         Parameters
         ----------
-        green_0_ret_inverse : numpy.array (dim,)
-            Inverse isolated, non-interacting Green's function
-            :math:`[g^R_0(w)]^{-1}`
-
         self_energy : FrequencyGreen
             Self-energy could be only the hybridization/embeding self-energy
-            or include the interacting self-energy
+            and/or include the interacting self-energy
+
+        e_tot : float, optional
+            Onsite energie, by default 0
         """
-        self.retarded = 1.0 / (green_0_ret_inverse - self_energy.retarded)
+
+        self.retarded = 1.0 / (self.freq - e_tot - self_energy.retarded)
         self.keldysh = (self.retarded * self_energy.keldysh *
                         self.retarded.conj())
 
@@ -398,8 +399,8 @@ class FrequencyGreen:
             if (attrs['freq_max'] != self.freq[-1] or
                 attrs['freq_min'] != self.freq[0]
                     or attrs['N_freq'] != self.freq.shape[0]):
-                raise ValueError("Frequency grid of loaded data doesn't match" +
-                                 " object frequency grid.")
+                raise ValueError("Frequency grid of loaded data doesn't" +
+                                 " match object frequency grid.")
 
         self.retarded = hd5.read_data(file=fname,
                                       dir_=f"{dir_}/{dataname}",
@@ -430,74 +431,6 @@ def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
     return green.get_self_enerqy()
 
 
-class KeldyshIdentity:
-    """Identity operator class for the Keldysh contour in the
-    Keldysh rotated representation
-    """
-
-    def __init__(self) -> None:
-        """Initialize self.  See help(type(self)) for accurate signature.
-        """
-
-    def __mul__(self, other: Union["FrequencyGreen", int, float, complex]
-                ) -> Union["FrequencyGreen", complex]:
-        """Defines multiplication of identity in Keldysh contour matrix with
-        Green's function or a number.
-
-        Returns
-        -------
-        out : FrequencyGreen, int, float or complex
-            Result of multiplication with identity
-        """
-        return other
-
-    def __add__(self, other: Union["FrequencyGreen", "KeldyshIdentity"]
-                ) -> "FrequencyGreen":
-        """Returns result of addition of identity with Green's function.
-
-        Returns
-        -------
-        FrequencyGreen
-            Result of addition of identity with Green's function
-
-        Raises
-        ------
-        ValueError
-            If 'other' is not of type FrequencyGreen.
-        """
-        if isinstance(other, FrequencyGreen):
-            return FrequencyGreen(other.freq, other.retarded + 1,
-                                  other.keldysh)
-        elif isinstance(other, KeldyshIdentity):
-            return self
-        else:
-            raise ValueError('The object that is added has to be of type ' +
-                             'FrequencyGreen.')
-
-    def __sub__(self, other: "FrequencyGreen"
-                ) -> "FrequencyGreen":
-        """Returns result of subtracting a Green's function from the
-        identity
-
-        Returns
-        -------
-        FrequencyGreen
-            Result of subtracting other from an identity matrix
-
-        Raises
-        ------
-        ValueError
-            If 'other' is not of type FrequencyGreen.
-        """
-        if isinstance(other, FrequencyGreen):
-            return FrequencyGreen(other.freq, 1 - 1 * other.retarded,
-                                  -1 * other.keldysh)
-        else:
-            raise ValueError('The object that is added has to be of type ' +
-                             'Identity or FrequencyGreen.')
-
-
-Identity = KeldyshIdentity()
 if __name__ == "__main__":
 
     # Setting up Auxiliary system parameters
@@ -543,7 +476,7 @@ if __name__ == "__main__":
     plt.show()
 
     green2 = FrequencyGreen(aux.ws)
-    green2.dyson(aux.ws, sigma)
+    green2.dyson(self_energy=sigma)
 
     # checking that dyson equation from hybridization function results in
     # same Green's function
@@ -554,3 +487,5 @@ if __name__ == "__main__":
     plt.legend([r"$G^R_{aux}(\omega)$", r"$G^R_{aux}(\omega)$",
                r"$ImG^K_{aux}(\omega)$", r"$ReG^K_{aux}(\omega)$"])
     plt.show()
+
+# %%
