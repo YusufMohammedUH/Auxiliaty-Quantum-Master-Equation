@@ -43,7 +43,8 @@ class AuxiliarySystem:
     """
 
     def __init__(self, Nb: int, ws: np.ndarray) -> None:
-
+        """Initialize self.  See help(type(self)) for accurate signature.
+        """
         self.Nb = Nb
         self.N = 2 * self.Nb + 1
         self.N_gamma = int((self.N - 1) * self.N / 2)

@@ -254,13 +254,3 @@ class DMFTBase:
     def load_child_data(self, fname: str, read_parameters: bool = False
                         ) -> None:
         pass
-
-
-class DMFT_GW(DMFTBase):
-    """_summary_
-
-    _extended_summary_
-    """
-
-    def __init__(self, parameters: Dict) -> None:
-        super().__init__(parameters)

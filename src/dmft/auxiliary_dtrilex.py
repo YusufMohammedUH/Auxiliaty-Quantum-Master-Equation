@@ -238,8 +238,17 @@ class AuxiliaryDualTRILEX:
                     self.hyb_aux.freq, spin=spins, return_=True)
             print(f"Vertex with spins {spins} calculated")
 
+    def calc_lambda_feng(self) -> None:
+        """_summary_
+
+        _extended_summary_
+        """
+        for spins in self.three_point_vertex:
+            pass
+
     def save(self, fname: str, dir_: str, dataname: str,
-             save_input_param: bool = True, save_aux_data: bool = False) -> None:
+             save_input_param: bool = True, save_aux_data: bool = False
+             ) -> None:
         """Save the dual and auxiliary quantities to file.
         The auxilary Green's function and hybridization are passed to the
         class and therefore not saved.
@@ -256,7 +265,8 @@ class AuxiliaryDualTRILEX:
             Name under which to save T-DTRILEX data.
 
          save_input_param : str
-            Save input parameters like green_aux, hyb_sys, etc, by default True.
+            Save input parameters like green_aux, hyb_sys, etc, by default
+            True.
 
         save_aux_data : bool, optional
             Save auxiliary objects calculated here like auxiliary polarization
@@ -309,7 +319,8 @@ class AuxiliaryDualTRILEX:
         #                   self.four_point_vertex)
 
     def load(self, fname: str, dir_: str, dataname: str,
-             load_input_param: bool = True, load_aux_data: bool = False) -> None:
+             load_input_param: bool = True, load_aux_data: bool = False
+             ) -> None:
         """Load the dual and auxiliary quantities from file.
         The auxilary Green's function and hybridization are passed to the
         class and therefore not saved.

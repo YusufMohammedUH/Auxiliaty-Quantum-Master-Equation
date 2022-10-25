@@ -21,6 +21,8 @@ class DMFT_IPT(dmft.DMFTBase):
 
     def __init__(self, parameters: Dict,
                  hyb_leads: Union[fg.FrequencyGreen, None] = None) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature.
+        """
         super().__init__(parameters, hyb_leads)
         self.weiss_green = fg.FrequencyGreen(self.green_sys.freq)
         self.time = np.linspace(self.parameters['time']['time_min'],
