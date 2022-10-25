@@ -4,7 +4,7 @@ import ctypes
 from multiprocessing import Value, Array
 
 
-def dft_point(fs: np.ndarray, ts: np.ndarray, w: float, sign: Union[-1, 1] = -1
+def dft_point(fs: np.ndarray, ts: np.ndarray, w: float, sign: float = -1
               ) -> complex:
     """Preforms discrete Fourier transform of fs with corresponding domain ts
     at conjugated domain value w in both directions (sign=1 or sign=-1).
@@ -20,7 +20,7 @@ def dft_point(fs: np.ndarray, ts: np.ndarray, w: float, sign: Union[-1, 1] = -1
     w : float
         Conjugated domain value, e.g a frequency, if ts is in time domain
 
-    sign : Union[-1,1], optional
+    sign : 1 or -1, optional
         Direction of transformation, by default -1
 
     Returns
@@ -48,7 +48,7 @@ def dft_point(fs: np.ndarray, ts: np.ndarray, w: float, sign: Union[-1, 1] = -1
         return factor * (fs_w[1:-1].sum() + (fs_w[1] + fs_w[-1]) / 2.0)
 
 
-def dft(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray, sign: Union[-1, 1] = -1
+def dft(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray, sign: float = -1
         ) -> np.ndarray:
     """Preforms a discrete Fourier transform from given ts to ws.
     The Fourier transformed of fs for all values of ws is returned.
@@ -64,7 +64,7 @@ def dft(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray, sign: Union[-1, 1] = -1
     ws : np.ndarray
         Conjugated domain of fs where Fourier transform is wanted
 
-    sign : Union[-1,1], optional
+    sign : 1 or -1, optional
         Direction of transformation, by default -1
 
     Returns
@@ -79,7 +79,7 @@ def dft(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray, sign: Union[-1, 1] = -1
 
 
 def dft_smooth(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray,
-               sigma: float = None, sign: Union[-1, 1] = -1) -> np.ndarray:
+               sigma: float = None, sign: float = -1) -> np.ndarray:
     """Preforms a discrete Fourier transform from given ts to ws. The function
     fs is multiplied with a gaussian function in order to smoothen the Fourier
     transform. The Fourier transformed of fs for all values of ws is returned.
@@ -99,7 +99,7 @@ def dft_smooth(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray,
         Sets the with of a gaussian used to smoothen the function,
         by default None
 
-    sign : Union[-1,1], optional
+    sign : 1 or -1, optional
         Direction of transformation, by default -1
 
     Returns

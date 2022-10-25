@@ -57,9 +57,9 @@ class DMFT_IPT(dmft.DMFTBase):
             weiss_greater, self.green_sys.freq, self.time, sign=-1)
 # ---------------------------calculate self-energy -------------------------- #
         sigma_lesser_time = -1. * U * U * weiss_lesser_time *\
-            np.conj(weiss_greater_time) * weiss_lesser_time
+            weiss_greater_time.conj() * weiss_lesser_time
         sigma_greater_time = -1. * U * U * weiss_greater_time *\
-            np.conj(weiss_lesser_time) * weiss_greater_time
+            weiss_lesser_time.conj() * weiss_greater_time
         # If I directly fourier transform the retarded component, a factor of
         # 2 pi bigger then when calculated from the lesser and greater Green's
         # function. Therefore when multiplying that to the retarded component
