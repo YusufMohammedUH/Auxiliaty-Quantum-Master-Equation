@@ -1,21 +1,32 @@
+from typing import Union, Tuple
 import numpy as np
 import ctypes
 from multiprocessing import Value, Array
 
 
-def dft_point(fs, ts, w, sign=-1):
-    """Preforms discrete Fourier transform on fs in both
-       directions (sign=1 or sign=-1).
+def dft_point(fs: np.ndarray, ts: np.ndarray, w: float, sign: Union[-1, 1] = -1
+              ) -> complex:
+    """Preforms discrete Fourier transform of fs with corresponding domain ts
+    at conjugated domain value w in both directions (sign=1 or sign=-1).
 
-    Args:
-        fs (list type complex elements): values to be transformed
-        ts (list type float elements): corresponding time or frequency values
-        w (float): freqency or time of transformed
-        h (float): step size of ts
-        sign (int (-1 or 1)): direction of transformation
+    Parameters
+    ----------
+    fs : np.ndarray
+        Array to be transformed
 
-    Returns:
-        complex: value of transformed at w
+    ts : np.ndarray
+        Too fs corresponding time or frequency (domain)
+
+    w : float
+        Conjugated domain value, e.g a frequency, if ts is in time domain
+
+    sign : Union[-1,1], optional
+        Direction of transformation, by default -1
+
+    Returns
+    -------
+    out: complex
+        Fourier transformed fs from domain ts at w
     """
     if len(fs) != len(ts):
         raise ValueError("fs and ts must have same length")
@@ -37,60 +48,64 @@ def dft_point(fs, ts, w, sign=-1):
         return factor * (fs_w[1:-1].sum() + (fs_w[1] + fs_w[-1]) / 2.0)
 
 
-def get_ws(wmax, N):
-    """Given wmax and N a numpy array is returned, where is a numpy array
-       including wmax and 0.0
-
-    Args:
-        wmax (float): maximum value of list
-        N (int): number of elements in the list
-
-    Returns:
-        np.array: numpy array of "frequency"
-    """
-    return np.array([-wmax + (2.0 * wmax * i) / N for i in range(N + 1)])
-
-
-def dft(fs, ts, ws, sign=-1):
+def dft(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray, sign: Union[-1, 1] = -1
+        ) -> np.ndarray:
     """Preforms a discrete Fourier transform from given ts to ws.
     The Fourier transformed of fs for all values of ws is returned.
 
-    Args:
-        fs (list type complex elements): values to be transfromed
-        ts (list type float elements): to fs corresponting time or frequency
-                                       (domain)
-        ws (list type float elements): conjugated domain of fs where Fourier
-                                        transform is wanted
-        sign (-1 or 1): direction of transformation
+    Parameters
+    ----------
+    fs : np.ndarray
+        Array to be transformed
 
-    Returns:
-        numpy array with complex elements: Fourier transformed fs from domain
-        ts to domain ws
+    ts : np.ndarray
+        Too fs corresponding time or frequency (domain)
+
+    ws : np.ndarray
+        Conjugated domain of fs where Fourier transform is wanted
+
+    sign : Union[-1,1], optional
+        Direction of transformation, by default -1
+
+    Returns
+    -------
+    out: np.ndarray
+        Fourier transformed fs from domain ts to domain ws
     """
+
     def dft_p(w): return dft_point(fs, ts, w, sign)
     dft_pv = np.vectorize(dft_p)
     return dft_pv(ws)
 
 
-def dft_smooth(fs, ts, ws, sigma=None, sign=-1):
+def dft_smooth(fs: np.ndarray, ts: np.ndarray, ws: np.ndarray,
+               sigma: float = None, sign: Union[-1, 1] = -1) -> np.ndarray:
     """Preforms a discrete Fourier transform from given ts to ws. The function
     fs is multiplied with a gaussian function in order to smoothen the Fourier
     transform. The Fourier transformed of fs for all values of ws is returned.
 
-    Args:
-        fs (list type complex elements): values to be transfromed
-        ts (list type float elements): to fs corresponting time or frequency
-                                       (domain)
-        ws (list type float elements): conjugated domain of fs where Fourier
-                                        transform is wanted
-        h (float): step size of ts
-        sigma ( = 10, float ): sets the with of a gaussian used to smoothen the
-        function
-        sign (-1 or 1): direction of transformation
+    Parameters
+    ----------
+    fs : np.ndarray
+        Array to be transformed
 
-    Returns:
-        numpy array with complex elements: Fourier transformed fs from domain
-        ts to domain ws
+    ts : np.ndarray
+        Too fs corresponding time or frequency (domain)
+
+    ws : np.ndarray
+        Conjugated domain of fs where Fourier transform is wanted
+
+    sigma : _type_, optional
+        Sets the with of a gaussian used to smoothen the function,
+        by default None
+
+    sign : Union[-1,1], optional
+        Direction of transformation, by default -1
+
+    Returns
+    -------
+    out: np.ndarray
+        Fourier transformed fs from domain ts to domain ws
     """
 
     if sigma is None:
@@ -101,16 +116,22 @@ def dft_smooth(fs, ts, ws, sigma=None, sign=-1):
     return dft(fs * gaussian, ts, ws, sign)
 
 
-def init_shard_array_complex(shape, data=None):
+def init_shard_array_complex(shape: Tuple, data: Union[np.ndarray, None] = None
+                             ) -> Array:
     """Given shape and data a complex shared memory array is created
 
-    Args:
-        shape (tuple): shape of data
-        data (numpy array, optional): data of array to be shared. Defaults to
-        None.
+    Parameters
+    ----------
+    shape : Tuple
+        shape of data
 
-    Returns:
-        shared array: shared array type with values of data if this is given
+    data : Union[np.ndarray, None], optional
+        data of array to be shared, by default None
+
+    Returns
+    -------
+    out:  Array
+        shared array type with values of data if this is given
     """
     elements = 1
     for i in shape:
@@ -124,17 +145,24 @@ def init_shard_array_complex(shape, data=None):
     return shared_array
 
 
-def init_shard_array_real(shape, data=None):
-    """Given shape and data a complex shared memory array is created
+def init_shard_array_real(shape: Tuple, data: Union[np.ndarray, None] = None
+                          ) -> Array:
+    """Given shape and data a real shared memory array is created
 
-    Args:
-        shape (tuple): shape of data
-        data (numpy array, optional): data of array to be shared. Defaults to
-        None.
+    Parameters
+    ----------
+    shape : Tuple
+        shape of data
 
-    Returns:
-        shared array: shared array type with values of data if this is given
+    data : Union[np.ndarray, None], optional
+        data of array to be shared, by default None
+
+    Returns
+    -------
+    out:  Array
+        shared array type with values of data if this is given
     """
+
     elements = 1
     for i in shape:
         elements *= i
@@ -147,32 +175,47 @@ def init_shard_array_real(shape, data=None):
     return shared_array
 
 
-def init_shard_value(value, type_='d'):
+def init_shard_value(value: Value, type_: str = 'd') -> Value:
     """Return a shared value = "value" and type= "type"
 
-    Args:
-        value (type): value
-        type_ (string discribing type of value, optional): type of value.
-        Defaults to 'd'.
+    Parameters
+    ----------
+    value : Value
+        value to be shared
 
-    Returns:
-        shared value: shared value
+    type_ : str, optional
+        type of value, by default 'd'
+
+    Returns
+    -------
+    out: Value
+        shared value
     """
     return Value(type_, value)
 
 
-def shared_memory(gttp_, t_, tp_, ws_):
+def shared_memory(gttp_: np.ndarray, t_: np.ndarray, tp_: np.ndarray,
+                  ws_: np.ndarray) -> Tuple[Array, Array, Array, Array]:
     """Given attributes, converts these attributes to shared memory objects
        for parallel calculations
 
-    Args:
-        gttp_ (numpy array elements of complex): G(t,t')
-        t_ (numpy array elements of double): time t
-        tp_ (numpy array elements of double): time t'
-        ws_ (numpy array elements of double): frequency w
+    Parameters
+    ----------
+    gttp_ : np.ndarray (dim, dim)
+        Two time Green's function G(t,t') complex valued
 
-    Returns:
-        tuple: tuple of arguments converted to shared memory arrays
+    t_ : np.ndarray
+        times t of gttp
+
+    tp_ : np.ndarray
+        times t' of gttp
+    ws_ : np.ndarray
+        frequencies to which gttp is transfromed
+
+    Returns
+    -------
+    out: Tuple[Array, Array, Array, Array]
+        tuple of arguments converted to shared memory arrays
     """
     gttp = init_shard_array_complex(gttp_.shape, gttp_)
     gtw = init_shard_array_complex((len(t_), len(ws_)))
@@ -181,15 +224,26 @@ def shared_memory(gttp_, t_, tp_, ws_):
     return (gttp, gtw, tp, ws)
 
 
-def init_worker(gttp, gtw, tp, ws, h):
+def init_worker(gttp: np.ndarray, gtw: np.ndarray, tp: np.ndarray,
+                ws: np.ndarray, h: float) -> None:
     """initializer of multiprocess pool function
 
-    Args:
-        gttp (numpy array elements of complex): G(t,t')
-        gtw (numpy array elements of complex): G(t,w)
-        tp (numpy array elements of double): time t'
-        ws (numpy array elements of double): frequency w
-        h (float): step size of times t and t'
+    Parameters
+    ----------
+    gttp_ : np.ndarray (dim, dim)
+        Two time Green's function G(t,t') complex valued
+
+    gtw : np.ndarray (dim, dim)
+         Green's function G(t,w) complex valued
+
+    tp_ : np.ndarray
+        times t' of gttp
+
+    ws_ : np.ndarray
+        frequencies to which gttp is transfromed
+
+    h : float
+        Times step size
     """
     gttp = gttp
     gtw = gtw
