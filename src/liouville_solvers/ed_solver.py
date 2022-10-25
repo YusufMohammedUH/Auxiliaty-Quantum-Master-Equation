@@ -287,7 +287,8 @@ class EDSolver:
 
     def get_correlator(self, Lindbladian: lind.Lindbladian, freq: np.ndarray,
                        component: Tuple, sites: Tuple, operator_keys: Tuple,
-                       permutation_sign: Tuple, prefactor: Tuple[complex, None] = -1 + 0j
+                       permutation_sign: Tuple,
+                       prefactor: Tuple[complex, None] = -1 + 0j
                        ) -> Union[Tuple[np.ndarray, np.ndarray],
                                   np.ndarray]:
         """Calculate correlation function.
