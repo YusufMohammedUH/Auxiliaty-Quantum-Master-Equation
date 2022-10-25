@@ -25,6 +25,7 @@ class EDSolver:
     Lindbladian : lind.Lindbladian
         Lindbladian object, containing the Lindbladian and the corresponding
         super-fermionic supspace class.
+
     spin_sectors : Union[int, None], optional
         All reachable/desired spin sectors, by default None
 
@@ -32,7 +33,8 @@ class EDSolver:
 
     def __init__(self, Lindbladian: lind.Lindbladian,
                  spin_sectors: Union[int, None] = None) -> None:
-
+        """Initialize self.  See help(type(self)) for accurate signature.
+        """
         if spin_sectors is None:
             spin_sectors = Lindbladian.super_fermi_ops.spin_sectors
         else:
