@@ -81,7 +81,7 @@ def lorenzian_bath_retarded(w: float, e0: float, gamma: float,
 
 
 @njit(float64(float64, float64), cache=True)
-def heaviside(x: float, x0: float) -> float:
+def heaviside(x: float, x0: float = 0.0) -> float:
     """Heaviside function
 
     Parameters
@@ -99,6 +99,8 @@ def heaviside(x: float, x0: float) -> float:
     """
     if x < x0:
         return 0.
+    elif x == 0:
+        return 0.5
     else:
         return 1.
 
@@ -134,7 +136,7 @@ def fermi(e: float, e0: float, mu: float, beta: float) -> float:
         return 1.0 - 1.0 / (1.0 + np.exp(-x))
 
 
-# @njit(cache=True)
+@njit(cache=True)
 def _set_hybridization(freq: np.ndarray, retarded_function: Callable,
                        args: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Set the retarded and keldysh single particle Green's function from
