@@ -25,9 +25,9 @@ def dft_point(fs, ts, w, sign=-1):
         h = ts[1] - ts[0]
 
     if sign == 1:
-        factor = h
+        factor = h / (2 * np.pi)
     else:
-        factor = (h / (2 * np.pi))
+        factor = h
 
     fs_w = np.array(fs) * np.exp(sign * 1j * w * np.array(ts))
 
