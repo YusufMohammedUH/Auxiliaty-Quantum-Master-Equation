@@ -108,41 +108,63 @@ def _get_self_enerqy(green_0_ret_inverse: np.ndarray, green_ret: np.ndarray,
 
 class FrequencyGreen:
     """Simple frequency Green's function container. Contains the
-    Green's on the Keldysh contour in Keldysh rotated representation,e.g.
-    G^R and G^K. G^A is dropt do to symmetry [G^R]* = G^A.
+    single particle Green's on the Keldysh contour in Keldysh rotated
+    representation, e.g. G^R and G^K. G^A is dropt do to symmetry [G^R]* = G^A.
 
     Parameters
     ----------
-        freq : numpy.ndarry (dim,)
-            1-D Frequency grid
+    freq : numpy.ndarry (dim,)
+        1-D frequency grid
 
-        retarded : numpy.ndarry (dim,)
-            Contains the retarded Green's
+    retarded : numpy.ndarry (dim,), optional
+        Contains the retarded Green's
 
-        keldysh : numpy.ndarry (dim,)
-            Contains the keldysh/lesser/greater Green's
+    keldysh : numpy.ndarry (dim,), optional
+        Contains the keldysh/lesser/greater Green's
 
     Attributes
     ----------
-        freq : numpy.ndarry (dim,)
-            1-D Frequency grid
+    freq : numpy.ndarry (dim,)
+        1-D Frequency grid
 
-        retarded : numpy.ndarry (dim,)
-            Contains the retarded Green's
+    retarded : numpy.ndarry (dim,)
+        Contains the retarded Green's
 
-        keldysh : numpy.ndarry (dim,)
-            Contains the keldysh Green's
+    keldysh : numpy.ndarry (dim,)
+        Contains the keldysh Green's
+
+
+    Raises
+    ------
+    TypeError
+        "freq must be of type numpy.array!"
+
+    TypeError
+        "retarded must be of type numpy.array or None!"
+
+    TypeError
+        "keldysh must be of type numpy.array or None!"
+
+    ValueError
+        "freq and retarded must have same shape"
+
+    ValueError
+        "freq and keldysh must have same shape"
     """
 
     def __init__(self, freq: np.ndarray,
                  retarded: Union[np.ndarray, None] = None,
                  keldysh: Union[np.ndarray, None] = None) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature.
+        """
         if not isinstance(freq, np.ndarray):
-            raise TypeError("freq must be of type numpy.array!")
+            raise TypeError("ERROR: freq must be of type numpy.array!")
         if (not isinstance(retarded, np.ndarray)) and (retarded is not None):
-            raise TypeError("retarded must be of type numpy.array or None!")
+            raise TypeError(
+                "ERROR: retarded must be of type numpy.array or None!")
         if (not isinstance(keldysh, np.ndarray)) and (keldysh is not None):
-            raise TypeError("keldysh must be of type numpy.array or None!")
+            raise TypeError(
+                "ERROR: keldysh must be of type numpy.array or None!")
 
         self.freq = freq
         if self.freq.flags.writeable:
@@ -151,13 +173,15 @@ class FrequencyGreen:
             self.retarded = np.zeros(len(freq), dtype=np.complex128)
         else:
             if freq.shape != retarded.shape:
-                raise ValueError("freq and retarded must have same shape")
+                raise ValueError(
+                    "ERROR: freq and retarded must have same shape")
             self.retarded = np.copy(retarded)
         if keldysh is None:
             self.keldysh = np.zeros(len(freq), dtype=np.complex128)
         else:
             if freq.shape != keldysh.shape:
-                raise ValueError("freq and keldysh must have same shape")
+                raise ValueError(
+                    "ERROR: freq and keldysh must have same shape")
             self.keldysh = np.copy(keldysh)
 
     def copy(self) -> "FrequencyGreen":
