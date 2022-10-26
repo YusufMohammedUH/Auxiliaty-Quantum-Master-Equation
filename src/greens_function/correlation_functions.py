@@ -321,11 +321,9 @@ class Correlators:
                                           permutation_sign=permutation_sign,
                                           prefactor=prefactor)
 
-    def get_single_particle_green_physical(self, freq: np.ndarray,
-                                           sites: Union[
-                                               None, Tuple[int, int]] = None,
-                                           spin: Tuple[str, str] = ('up', 'up')
-                                           ) -> fg.FrequencyGreen:
+    def get_single_particle_green_physical(
+            self, freq: np.ndarray, sites: Union[None, Tuple[int, int]] = None,
+            spin: Tuple[str, str] = ('up', 'up')) -> fg.FrequencyGreen:
         """Return the single particle green's function on the physical contour
         e.g. returns a fg.FrequencyGreen object.
 

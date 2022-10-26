@@ -6,6 +6,7 @@ import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du
 import src.greens_function.convert_keldysh_components as conv
 import src.util.fourier as dft
+import matplotlib.pyplot as plt
 
 
 class DMFT_IPT(dmft.DMFTBase):
@@ -20,10 +21,11 @@ class DMFT_IPT(dmft.DMFTBase):
     """
 
     def __init__(self, parameters: Dict,
-                 hyb_leads: Union[fg.FrequencyGreen, None] = None) -> None:
+                 hyb_leads: Union[fg.FrequencyGreen, None] = None,
+                 keldysh_comp: str = "lesser") -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
-        super().__init__(parameters, hyb_leads)
+        super().__init__(parameters, hyb_leads, keldysh_comp)
         self.weiss_green = fg.FrequencyGreen(self.green_sys.freq)
         self.time = np.linspace(self.parameters['time']['time_min'],
                                 self.parameters['time']['time_max'],
@@ -34,7 +36,6 @@ class DMFT_IPT(dmft.DMFTBase):
         The self-energy is calculated using the weiss Green's function for the
         second order diagram and the full Green's function for the hartree
         part.
-
         """
         try:
             if self.first_iter is True:
@@ -48,8 +49,12 @@ class DMFT_IPT(dmft.DMFTBase):
         self.weiss_green.dyson(self_energy=(
             self.hyb_dmft + self.hyb_leads), e_tot=epsilon)
 # -------------------- get greater and lesser from keldysh ------------------ #
-        weiss_lesser = conv.get_lesser_from_keldysh(self.weiss_green)
-        weiss_greater = conv.get_greater_from_keldysh(self.weiss_green)
+        if self.keldysh_comp == "keldysh":
+            weiss_lesser = conv.get_lesser_from_keldysh(self.weiss_green)
+            weiss_greater = conv.get_greater_from_keldysh(self.weiss_green)
+        elif self.keldysh_comp == "lesser":
+            weiss_lesser = self.weiss_green.keldysh
+            weiss_greater = conv.get_greater_from_lesser(self.weiss_green)
 # -------------------------------- time domain ------------------------------ #
         weiss_lesser_time = dft.dft(
             weiss_lesser, self.green_sys.freq, self.time, sign=-1)
@@ -76,9 +81,12 @@ class DMFT_IPT(dmft.DMFTBase):
         sigma = fg.FrequencyGreen(
             self.green_sys.freq, retarded=sigma_retarded_freq,
             keldysh=sigma_lesser_freq)
-        self.self_energy_int = fg.FrequencyGreen(
-            sigma.freq, retarded=sigma.retarded,
-            keldysh=conv.get_keldysh_from_lesser(sigma))
+        if self.keldysh_comp == "keldysh":
+            self.self_energy_int = fg.FrequencyGreen(
+                sigma.freq, retarded=sigma.retarded,
+                keldysh=conv.get_keldysh_from_lesser(sigma))
+        elif self.keldysh_comp == "lesser":
+            self.self_energy_int = sigma
 # ------------------------- update Green's function ------------------------- #
 
         self.green_sys.dyson(
@@ -94,43 +102,57 @@ class DMFT_IPT(dmft.DMFTBase):
 if __name__ == "__main__":
     #  Frequency grid
     N_grid = 2001
-    freq_max = 30
+    freq_max = 10
     time_max = 20
-    selfconsist_param = {'max_iter': 10, 'err_tol': 1e-7, 'mixing': 0.3}
+    selfconsist_param = {'max_iter': 100, 'err_tol': 1e-6, 'mixing': 0.3}
 
     e0 = 0
     mu = 0
     beta = 10
     D = 30.1
-    gamma = 0.1
+    gamma = 0.02
 
     leads_param = {'e0': e0, 'mu': [mu], 'beta': beta, 'D': D, 'gamma': gamma}
 
     spinless = False
     spin_sector_max = 1
     tilde_conjugationrule_phase = True
+    errors = []
+    Us = [0, 3, 5, 7, 9]
+    for U in Us:
+        v = 1.0
+        sys_param = {"e0": 0, 'v': v, 'U': U, 'spinless': spinless,
+                     'tilde_conjugation': tilde_conjugationrule_phase}
 
-    U = 15.0
-    v = 1.0
-    sys_param = {"e0": 0, 'v': v, 'U': U, 'spinless': spinless,
-                 'tilde_conjugation': tilde_conjugationrule_phase}
+        # Parameters of the auxiliary system
+        Nb = 1
+        nsite = 2 * Nb + 1
+        aux_param = {'Nb': Nb, 'nsite': nsite}
 
-    # Parameters of the auxiliary system
-    Nb = 1
-    nsite = 2 * Nb + 1
-    aux_param = {'Nb': Nb, 'nsite': nsite}
+        params = {'freq': {"freq_min": -freq_max, "freq_max": freq_max,
+                           'N_freq': N_grid},
+                  'time': {"time_min": -time_max, "time_max": time_max,
+                           "N_time": N_grid},
+                  'selfconsistency': selfconsist_param, 'leads': leads_param,
+                  'aux_sys': aux_param, 'system': sys_param}
 
-    params = {'freq': {"freq_min": -freq_max, "freq_max": freq_max,
-                       'N_freq': N_grid},
-              'time': {"time_min": -time_max, "time_max": time_max,
-                       "N_time": N_grid},
-              'selfconsistency': selfconsist_param, 'leads': leads_param,
-              'aux_sys': aux_param, 'system': sys_param}
+        # ################### Initializing Lindblad class ####################
 
-    # ##################### Initializing Lindblad class #######################
-
-    dmft_ipt = DMFT_IPT(params, hyb_leads=None)
-    dmft_ipt.hyb_leads = dmft_ipt.get_bath()
-    dmft_ipt.solve()
-    # auxiliaryDMFT.save('auxiliaryDMFT.hdf5')
+        dmft_ipt = DMFT_IPT(params, hyb_leads=None, keldysh_comp="lesser")
+        dmft_ipt.hyb_leads = dmft_ipt.get_bath()
+        dmft_ipt.solve()
+        plt.plot(dmft_ipt.green_sys.freq, -(1 / np.pi)
+                 * dmft_ipt.green_sys.retarded.imag, label=U)
+        plt.xlabel(r"$\omega$")
+        plt.ylabel(r"$A(\omega)$")
+        plt.legend()
+        errors.append(dmft_ipt.err_iterations)
+    plt.show()
+    for i, U in enumerate(Us):
+        plt.plot(errors[i], label=U)
+        plt.yscale("log")
+        plt.xlabel(r"Iteration")
+        plt.ylabel(r"$||G_{new}(\omega)-G_{old}(\omega)||$")
+        plt.legend()
+    plt.show()
 # %%

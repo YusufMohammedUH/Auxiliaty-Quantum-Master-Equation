@@ -59,3 +59,22 @@ def get_greater_from_keldysh(green: Union["fg.FrequencyGreen", 'tg.TimeGreen']
     """
     greater = green.keldysh - get_lesser_from_keldysh(green)
     return greater
+
+
+def get_greater_from_lesser(green: Union["fg.FrequencyGreen", 'tg.TimeGreen']
+                            ) -> np.ndarray:
+    """Return the greater component from the keldysh and retarded component
+    supplied by the Green's function green
+
+    Parameters
+    ----------
+    green : Union[fg.FrequencyGreen, tg.TimeGreen]
+        Green's function in time or frequency domain
+
+    Returns
+    -------
+    np.ndarray
+        Greater component
+    """
+    greater = (1j / np.pi) * green.retarded.imag + green.keldysh
+    return greater

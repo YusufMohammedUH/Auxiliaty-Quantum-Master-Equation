@@ -129,6 +129,10 @@ def fermi(e: float, e0: float, mu: float, beta: float) -> float:
     out: float
         Fermi-Dirac distribution for given parameters.
     """
+    if beta == np.inf:
+        x0 = e0 - mu
+        return (1. - heaviside(e, x0))
+
     x = (e + e0 - mu) * beta
     if x < 0.0:
         return 1.0 / (1.0 + np.exp(x))
@@ -138,7 +142,8 @@ def fermi(e: float, e0: float, mu: float, beta: float) -> float:
 
 @njit(cache=True)
 def _set_hybridization(freq: np.ndarray, retarded_function: Callable,
-                       args: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+                       args: np.ndarray, keldysh_comp: str = "keldysh"
+                       ) -> Tuple[np.ndarray, np.ndarray]:
     """Set the retarded and keldysh single particle Green's function from
     a supplied function determening the retarded function on a given frequency
     grid.
@@ -154,24 +159,45 @@ def _set_hybridization(freq: np.ndarray, retarded_function: Callable,
     args: numpy.ndarray
         list of arguments necessary for calculating the Fermi function and
         the retarded Green's function.
+
+    keldysh_comp: str
+        Specify, which component out of keldysh, lesser or greater to be
+        calculated additionally to the retarded component.
+
     Returns
     -------
     out: tuple (numpy.ndarray,numpy.ndarray)
-        Tuple containing the retarded and keldysh Green's functions.
+        Tuple containing the retarded and keldysh/lesser/greater Green's
+        functions.
     """
     e0 = args[0]
     mu = args[1]
     beta = args[2]
     retarded = np.array(
         [retarded_function(f, e0, args[3], args[4]) for f in freq])
-    keldysh = np.array([1.j * (1. / np.pi) * (1. - 2. * fermi(f, e0, mu, beta))
-                        * np.imag(retarded_function(f, e0, args[3], args[4]))
-                        for f in freq])
+    if keldysh_comp == "keldysh":
+        keldysh = np.array([1.j * (1. / np.pi) * (
+            1. - 2. * fermi(f, e0, mu, beta))
+            * np.imag(retarded_function(f, e0, args[3], args[4]))
+            for f in freq])
+
+    elif keldysh_comp == "lesser":
+        keldysh = np.array([-1.j * (1. / np.pi) * fermi(f, e0, mu, beta)
+                            * np.imag(
+                                retarded_function(f, e0, args[3], args[4]))
+                            for f in freq])
+
+    elif keldysh_comp == "greater":
+        keldysh = np.array([1.j * (1. / np.pi) * (1. - fermi(f, e0, mu, beta))
+                            * np.imag(
+                                retarded_function(f, e0, args[3], args[4]))
+                            for f in freq])
     return retarded, keldysh
 
 
 def set_hybridization(freq: np.ndarray, retarded_function: Callable,
-                      args: np.ndarray) -> fg.FrequencyGreen:
+                      args: np.ndarray, keldysh_comp: str = "keldysh"
+                      ) -> fg.FrequencyGreen:
     """Set the retarded and keldysh single particle Green's function from
     a supplied function determening the retarded function on a given frequency
     grid.
@@ -187,10 +213,16 @@ def set_hybridization(freq: np.ndarray, retarded_function: Callable,
     args: numpy.ndarray
         list of arguments necessary for calculating the Fermi function and
         the retarded Green's function.
+
+    keldysh_comp: str
+        Specify, which component out of keldysh, lesser or greater to be
+        calculated additionally to the retarded component.
+
     Returns
     -------
     out: src.frequency_greens_function.FrequencyGreen
         Objectcontaining the calculated retarded and keldysh Green's functions.
     """
-    retarded, keldysh = _set_hybridization(freq, retarded_function, args)
+    retarded, keldysh = _set_hybridization(
+        freq, retarded_function, args, keldysh_comp)
     return fg.FrequencyGreen(freq=freq, retarded=retarded, keldysh=keldysh)

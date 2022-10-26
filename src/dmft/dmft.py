@@ -21,10 +21,18 @@ class DMFTBase:
     hyb_leads : Union[fg.FrequencyGreen, None], optional
         Lead hybridization function, by default None
 
+    keldysh_comp: str, optional
+        Specify, which component out of keldysh, lesser or greater to be
+        calculated additionally to the retarded component.
+
     Attributes
     ----------
     parameters : Dict
         Contains all the parameters needed for the calculation.
+
+    keldysh_comp: str
+        Specify, which component out of keldysh, lesser or greater to be
+        calculated additionally to the retarded component.
 
     hyb_leads : Union[fg.FrequencyGreen, None]
         Lead hybridization function.
@@ -61,12 +69,14 @@ class DMFTBase:
     """
 
     def __init__(self, parameters: Dict,
-                 hyb_leads: Union[fg.FrequencyGreen, None] = None) -> None:
+                 hyb_leads: Union[fg.FrequencyGreen, None] = None,
+                 keldysh_comp: str = "keldysh") -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
         self.parameters = parameters
         self.err_iterations = []
         self.n = None
+        self.keldysh_comp = keldysh_comp
         if hyb_leads is None:
             freq = np.linspace(parameters['freq']['freq_min'],
                                parameters['freq']['freq_max'],
@@ -118,7 +128,7 @@ class DMFTBase:
                             param['leads']['gamma']],
                             dtype=np.float64)
             tmp += du.set_hybridization(self.hyb_leads.freq, bath_hyb_function,
-                                        args)
+                                        args, self.keldysh_comp)
         return tmp
 
     def __solve__(self, solver_parameters=()) -> None:
@@ -142,7 +152,8 @@ class DMFTBase:
                          self.parameters['leads']['beta'], 1.0, 1.0],
                         dtype=np.float64)
         green_tmp = du.set_hybridization(
-            self.green_sys.freq, du.lorenzian_bath_retarded, args)
+            self.green_sys.freq, du.lorenzian_bath_retarded, args,
+            self.keldysh_comp)
         self.green_sys.dyson(self_energy=green_tmp)
         for ii in range(self.parameters['selfconsistency']['max_iter']):
 
@@ -152,8 +163,12 @@ class DMFTBase:
                 (self.parameters['system']['v']**2),
                 green_tmp.keldysh * (self.parameters['system']['v']**2))
 # -------------------------- Calculate occupation --------------------------- #
-            green_lesser = conv.get_lesser_from_keldysh(self.green_sys)
-            self.n = simps(green_lesser.imag, self.green_sys.freq)
+            if self.keldysh_comp == "keldysh":
+                green_lesser = conv.get_lesser_from_keldysh(self.green_sys)
+                self.n = simps(green_lesser.imag, self.green_sys.freq)
+            elif self.keldysh_comp == "lesser":
+                self.n = simps(self.green_sys.keldysh.imag,
+                               self.green_sys.freq)
 # -------------------- New Green's function from solver --------------------- #
             solver_parameters = self.impurity_solver(*solver_parameters)
 
@@ -177,10 +192,10 @@ class DMFTBase:
             err_iter_print = round(self.err_iterations[-1], int(
                 5 - np.log10(self.parameters['selfconsistency']['err_tol'])))
             print(
-                f"Iteration No.: {ii}   |    Error: "
-                + "{:.7}   |   ".format(err_iter_print)
-                + f"Spectral weight: {spectral_weight}  |   "
-                + f"occupation:  {self.n}")
+                f"Iteration No.: {ii}\t|\tError: "
+                + "{:.7}\t|\t".format(err_iter_print)
+                + "Spectral weight: {:.7}\t|\t".format(spectral_weight)
+                + "occupation:  {:.7}".format(self.n))
 # ----------------------- check convergency condition ----------------------- #
             if self.err_iterations[-1]  \
                     < self.parameters['selfconsistency']['err_tol']:
