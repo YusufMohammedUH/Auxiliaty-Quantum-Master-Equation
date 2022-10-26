@@ -305,7 +305,8 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, retarded=retarded_inv,
                               keldysh=keldysh_inv)
 
-    def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0) -> None:
+    def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
+              g0_inv: Union[np.ndarray, None] = None) -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma.
 
@@ -317,9 +318,13 @@ class FrequencyGreen:
 
         e_tot : float, optional
             Onsite energie, by default 0
-        """
 
-        self.retarded = 1.0 / (self.freq - e_tot - self_energy.retarded)
+        g0_inv: np.array, optional
+            Inverse non-interacting Green's function, by default None
+        """
+        if g0_inv is None:
+            g0_inv = self.freq - e_tot
+        self.retarded = 1.0 / (g0_inv - self_energy.retarded)
         self.keldysh = (self.retarded * self_energy.keldysh *
                         self.retarded.conj())
 
