@@ -306,7 +306,8 @@ class FrequencyGreen:
                               keldysh=keldysh_inv)
 
     def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
-              g0_inv: Union[np.ndarray, None] = None) -> None:
+              g0_inv: Union[np.ndarray, None] = None, advanced_adj_sym=True
+              ) -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma.
 
@@ -324,9 +325,14 @@ class FrequencyGreen:
         """
         if g0_inv is None:
             g0_inv = self.freq - e_tot
+
         self.retarded = 1.0 / (g0_inv - self_energy.retarded)
+        if advanced_adj_sym:
+            advanced = np.conj(self.retarded)
+        else:
+            advanced = self.retarded[::-1]
         self.keldysh = (self.retarded * self_energy.keldysh *
-                        self.retarded.conj())
+                        advanced)
 
     def set_green_from_auxiliary(self, auxsys: auxp.AuxiliarySystem) -> None:
         """Set the retarded and Keldysh impurity site Green's function
