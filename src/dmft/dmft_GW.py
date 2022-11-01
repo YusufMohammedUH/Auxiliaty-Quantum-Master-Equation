@@ -1,7 +1,7 @@
 # %%
 from typing import Dict, Union
 import numpy as np
-import src.dmft.dmft as dmft
+import src.dmft.dmft_base as dmft_base
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du
 import src.util.fourier as dft
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 #                   G(1;2) = [G_0^{-1}(1;2) -[S_Hartree + S_GW(1;2)]]^{-1}
 
 
-class DMFT_GW(dmft.DMFTBase):
+class DMFT_GW(dmft_base.DMFTBase):
     """Implementation of DMFT with the iterated perturbation theory (IPT)
     solver.
 

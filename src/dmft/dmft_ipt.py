@@ -1,7 +1,7 @@
 # %%
 from typing import Dict, Union
 import numpy as np
-import src.dmft.dmft as dmft
+import src.dmft.dmft_base as dmft
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du
 import src.util.fourier as dft

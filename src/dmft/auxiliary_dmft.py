@@ -6,11 +6,11 @@ import src.greens_function.frequency_greens_function as fg
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
-import src.dmft.dmft as dmft
+import src.dmft.dmft_base as dmft_base
 import src.util.hdf5_util as hd5
 
 
-class AuxiliaryMaserEquationDMFT(dmft.DMFTBase):
+class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
     def __init__(self, parameters: Dict, correlators: corr.Correlators,
                  hyb_leads: Union[fg.FrequencyGreen, None] = None,
                  keldysh_comp: str = "keldysh") -> None:
