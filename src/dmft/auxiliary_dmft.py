@@ -6,7 +6,6 @@ import src.greens_function.frequency_greens_function as fg
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
-import src.greens_function.convert_keldysh_components as conv
 import src.dmft.dmft as dmft
 import src.util.hdf5_util as hd5
 
@@ -30,7 +29,7 @@ class AuxiliaryMaserEquationDMFT(dmft.DMFTBase):
             self.parameters['aux_sys']['target_sites'] = \
                 self.correlators.Lindbladian.super_fermi_ops.target_sites
 
-        self.green_aux = fg.FrequencyGreen(self.green_sys.freq)
+        self.green_aux = None
 
     def set_local_matrix(self, T_mat: Tuple[np.ndarray, None] = None,
                          U_mat: Tuple[np.ndarray, None] = None,
@@ -72,9 +71,11 @@ class AuxiliaryMaserEquationDMFT(dmft.DMFTBase):
             "disp": False, "maxiter": 500, 'ftol': 1e-5},
             x_start: List = [0., 0.1, 0.5, -0.1, 0.2]) -> None:
         # Optimization for determining the auxiliary hybridization function
+        hyb_tot = None
         if self.keldysh_comp == "lesser":
             hyb_tot = self.hyb_leads + self.hyb_dmft
-            hyb_keldysh = conv.get_keldysh_from_lesser(hyb_tot)
+            hyb_tot.keldysh_comp = "keldysh"
+            hyb_keldysh = hyb_tot.get_keldysh()
             hyb_tot.keldysh = hyb_keldysh
         elif self.keldysh_comp == "keldysh":
             hyb_tot = self.hyb_leads + self.hyb_dmft
@@ -103,12 +104,13 @@ class AuxiliaryMaserEquationDMFT(dmft.DMFTBase):
         self.green_aux = self.correlators.get_single_particle_green_physical(
             self.green_sys.freq)
         if self.keldysh_comp == "lesser":
-            self.green_aux.keldysh = conv.get_lesser_from_keldysh(
-                self.green_aux)
+            self.green_aux.keldysh = self.green_aux.get_lesser()
+            self.green_aux.keldysh_comp = "lesser"
         # ################### Extract the self-energy  ####################
         self.self_energy_int = self.green_aux.get_self_enerqy() \
             - self.hyb_aux
-        self.green_sys = fg.FrequencyGreen(freq=self.green_sys.freq)
+        self.green_sys = fg.FrequencyGreen(freq=self.green_sys.freq,
+                                           keldysh_comp=self.keldysh_comp)
         self.green_sys.dyson(self_energy=(
             self.hyb_dmft + self.hyb_leads + self.self_energy_int))
 

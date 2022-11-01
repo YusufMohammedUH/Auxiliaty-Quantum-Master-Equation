@@ -42,7 +42,9 @@ class KeldyshIdentity:
         """
         if isinstance(other, fg.FrequencyGreen):
             return fg.FrequencyGreen(other.freq, other.retarded + 1,
-                                     other.keldysh)
+                                     other.keldysh,
+                                     fermionic=other.fermionic,
+                                     keldysh_comp=other.keldysh_comp)
         elif isinstance(other, tg.TimeGreen):
             return tg.TimeGreen(other.time, other.retarded + 1,
                                 other.keldysh)
@@ -69,7 +71,9 @@ class KeldyshIdentity:
         """
         if isinstance(other, fg.FrequencyGreen):
             return fg.FrequencyGreen(other.freq, 1 - 1 * other.retarded,
-                                     -1 * other.keldysh)
+                                     -1 * other.keldysh,
+                                     fermionic=other.fermionic,
+                                     keldysh_comp=other.keldysh_comp)
         elif isinstance(other, tg.TimeGreen):
             return tg.TimeGreen(other.freq, 1 - 1 * other.retarded,
                                 -1 * other.keldysh)

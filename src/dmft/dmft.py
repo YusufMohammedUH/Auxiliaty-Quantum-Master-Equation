@@ -6,7 +6,6 @@ import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du
 import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.util.hdf5_util as hd5
-import src.greens_function.convert_keldysh_components as conv
 
 
 class DMFTBase:
@@ -73,6 +72,7 @@ class DMFTBase:
                  keldysh_comp: str = "keldysh") -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
+
         self.parameters = parameters
         self.err_iterations = []
         self.n = None
@@ -82,17 +82,21 @@ class DMFTBase:
                                parameters['freq']['freq_max'],
                                parameters['freq']['N_freq'])
             freq.flags.writeable = False
-            self.hyb_leads = fg.FrequencyGreen(freq)
-            self.hyb_dmft = fg.FrequencyGreen(freq)
+            self.hyb_leads = fg.FrequencyGreen(freq, keldysh_comp=keldysh_comp)
+            self.hyb_dmft = fg.FrequencyGreen(freq, keldysh_comp=keldysh_comp)
 
-            self.green_sys = fg.FrequencyGreen(freq)
-            self.self_energy_int = fg.FrequencyGreen(freq)
+            self.green_sys = fg.FrequencyGreen(freq, keldysh_comp=keldysh_comp)
+            self.self_energy_int = fg.FrequencyGreen(
+                freq, keldysh_comp=keldysh_comp)
         else:
             self.hyb_leads = hyb_leads
-            self.hyb_dmft = fg.FrequencyGreen(self.hyb_leads.freq)
+            self.hyb_dmft = fg.FrequencyGreen(
+                self.hyb_leads.freq, keldysh_comp=keldysh_comp)
 
-            self.green_sys = fg.FrequencyGreen(self.hyb_leads.freq)
-            self.self_energy_int = fg.FrequencyGreen(self.hyb_leads.freq)
+            self.green_sys = fg.FrequencyGreen(
+                self.hyb_leads.freq, keldysh_comp=keldysh_comp)
+            self.self_energy_int = fg.FrequencyGreen(
+                self.hyb_leads.freq, keldysh_comp=keldysh_comp)
 
     def get_bath(self, param: Union[Dict, None] = None,
                  bath_hyb_function: Callable[
@@ -121,7 +125,8 @@ class DMFTBase:
         """
         if param is None:
             param = self.parameters
-        tmp = fg.FrequencyGreen(self.green_sys.freq)
+        tmp = fg.FrequencyGreen(self.green_sys.freq,
+                                keldysh_comp=self.keldysh_comp)
         for mu in param['leads']['mu']:
             args = np.array([param['leads']['e0'], mu,
                             param['leads']['beta'], param['leads']['D'],
@@ -161,14 +166,12 @@ class DMFTBase:
             self.hyb_dmft = fg.FrequencyGreen(
                 self.hyb_leads.freq, green_tmp.retarded *
                 (self.parameters['system']['v']**2),
-                green_tmp.keldysh * (self.parameters['system']['v']**2))
+                green_tmp.keldysh * (self.parameters['system']['v']**2),
+                keldysh_comp=self.keldysh_comp)
 # -------------------------- Calculate occupation --------------------------- #
-            if self.keldysh_comp == "keldysh":
-                green_lesser = conv.get_lesser_from_keldysh(self.green_sys)
-                self.n = simps(green_lesser.imag, self.green_sys.freq)
-            elif self.keldysh_comp == "lesser":
-                self.n = simps(self.green_sys.keldysh.imag,
-                               self.green_sys.freq)
+            self.n = simps(self.green_sys.get_lesser().imag,
+                           self.green_sys.freq)
+
 # -------------------- New Green's function from solver --------------------- #
             solver_parameters = self.impurity_solver(*solver_parameters)
 
@@ -181,7 +184,8 @@ class DMFTBase:
                 keldysh=((1.0 - self.parameters['selfconsistency']['mixing'])
                          * self.green_sys.keldysh
                          + self.parameters['selfconsistency']['mixing']
-                         * green_tmp.keldysh))
+                         * green_tmp.keldysh),
+                keldysh_comp=self.keldysh_comp)
 # ------------------------- print values of interest ------------------------ #
             spectral_weight = round((-1 / np.pi) * simps(
                 self.green_sys.retarded.imag, self.green_sys.freq), 8)
@@ -206,7 +210,8 @@ class DMFTBase:
         self.hyb_dmft = fg.FrequencyGreen(
             self.hyb_leads.freq, self.green_sys.retarded *
             (self.parameters['system']['v']**2),
-            self.green_sys.keldysh * (self.parameters['system']['v']**2))
+            self.green_sys.keldysh * (self.parameters['system']['v']**2),
+            keldysh_comp=self.keldysh_comp)
 
     @abstractmethod
     def impurity_solver(self, args: Tuple) -> None:

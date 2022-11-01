@@ -154,7 +154,9 @@ class FrequencyGreen:
 
     def __init__(self, freq: np.ndarray,
                  retarded: Union[np.ndarray, None] = None,
-                 keldysh: Union[np.ndarray, None] = None) -> None:
+                 keldysh: Union[np.ndarray, None] = None,
+                 fermionic: bool = True,
+                 keldysh_comp: str = 'lesser') -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
         if not isinstance(freq, np.ndarray):
@@ -165,7 +167,11 @@ class FrequencyGreen:
         if (not isinstance(keldysh, np.ndarray)) and (keldysh is not None):
             raise TypeError(
                 "ERROR: keldysh must be of type numpy.array or None!")
-
+        if keldysh_comp != 'lesser' and keldysh_comp != 'keldysh':
+            raise ValueError("Error: keldysh_comp has to be either 'lesse'" +
+                             " of 'keldysh'")
+        self.keldysh_comp = keldysh_comp
+        self.fermionic = fermionic
         self.freq = freq
         if self.freq.flags.writeable:
             self.freq.flags.writeable = False
@@ -192,7 +198,9 @@ class FrequencyGreen:
         out: FrequencyGreen
         """
         return FrequencyGreen(self.freq, self.retarded.copy(),
-                              self.keldysh.copy())
+                              self.keldysh.copy(),
+                              fermionic=self.fermionic,
+                              keldysh_comp=self.keldysh_comp)
 
     def __add__(self, other: Union["FrequencyGreen", "kid.KeldyshIdentity",
                                    int, float, complex]) -> "FrequencyGreen":
@@ -216,11 +224,15 @@ class FrequencyGreen:
         """
         if isinstance(other, FrequencyGreen):
             return FrequencyGreen(self.freq, self.retarded + other.retarded,
-                                  self.keldysh + other.keldysh)
+                                  self.keldysh + other.keldysh,
+                                  fermionic=self.fermionic,
+                                  keldysh_comp=self.keldysh_comp)
         elif (isinstance(other, int) or isinstance(other, float)
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded + other,
-                                  self.keldysh)
+                                  self.keldysh,
+                                  fermionic=self.fermionic,
+                                  keldysh_comp=self.keldysh_comp)
         elif isinstance(other, kid.KeldyshIdentity):
             return other + self
 
@@ -246,11 +258,15 @@ class FrequencyGreen:
         """
         if isinstance(other, FrequencyGreen):
             return FrequencyGreen(self.freq, self.retarded - other.retarded,
-                                  self.keldysh - other.keldysh)
+                                  self.keldysh - other.keldysh,
+                                  fermionic=self.fermionic,
+                                  keldysh_comp=self.keldysh_comp)
         elif (isinstance(other, int) or isinstance(other, float)
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded - other,
-                                  self.keldysh)
+                                  self.keldysh,
+                                  fermionic=self.fermionic,
+                                  keldysh_comp=self.keldysh_comp)
         elif isinstance(other, kid.KeldyshIdentity):
             return (other - self) * (-1)
 
@@ -284,13 +300,65 @@ class FrequencyGreen:
             return FrequencyGreen(self.freq, retarded=(
                 self.retarded * other.retarded), keldysh=(
                 self.retarded * other.keldysh +
-                self.keldysh * other.retarded.conj()))
+                self.keldysh * other.retarded.conj()),
+                fermionic=self.fermionic,
+                keldysh_comp=self.keldysh_comp)
         elif (isinstance(other, int) or isinstance(other, float)
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded * other,
-                                  self.keldysh * other)
+                                  self.keldysh * other,
+                                  fermionic=self.fermionic,
+                                  keldysh_comp=self.keldysh_comp)
         elif isinstance(other, kid.KeldyshIdentity):
             return self
+
+    def get_spectral_func(self) -> np.ndarray:
+        """Return the spectral function.
+        """
+        if self.fermionic:
+            tmp = (-1 / (2 * np.pi)) * \
+                (self.retarded - self.retarded.conj()).imag
+            return tmp
+        elif not self.fermionic:
+            tmp = (-1 / (2 * np.pi)) * \
+                (self.retarded - self.get_advanced()).imag
+            return tmp
+        raise AttributeError("ERROR: self.fermionic is not boolian")
+
+    def get_lesser(self) -> np.ndarray:
+        """Return the lesser component
+        """
+        if self.keldysh_comp == "lesser":
+            return self.keldysh
+
+        elif self.keldysh_comp == "keldysh":
+            return 0.5 * (self.keldysh + 1j * self.get_spectral_func())
+
+    def get_greater(self) -> np.ndarray:
+        """Return greater component
+        """
+        return -1j * self.get_spectral_func() + self.keldysh
+
+    def get_keldysh(self) -> np.ndarray:
+        """Return the keldysh component
+        """
+        if self.keldysh_comp == "keldysh":
+            return self.keldysh
+        elif self.keldysh_comp == "lesser":
+            return -1j * self.get_spectral_func() + 2. * self.keldysh
+
+    def get_advanced(self) -> np.ndarray:
+        """Return the advanced component.
+
+        Returns
+        -------
+        out: np.ndarray
+            advanced component
+        """
+        if self.fermionic:
+            return self.retarded.conj()
+        else:
+            return self.retarded[::-1]
 
     def inverse(self) -> "FrequencyGreen":
         """Return the inverse Green's function
@@ -303,11 +371,12 @@ class FrequencyGreen:
         retarded_inv = 1. / self.retarded
         keldysh_inv = -1. * retarded_inv * self.keldysh * retarded_inv.conj()
         return FrequencyGreen(self.freq, retarded=retarded_inv,
-                              keldysh=keldysh_inv)
+                              keldysh=keldysh_inv,
+                              fermionic=self.fermionic,
+                              keldysh_comp=self.keldysh_comp)
 
     def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
-              g0_inv: Union[np.ndarray, None] = None, advanced_adj_sym=True
-              ) -> None:
+              g0_inv: Union[np.ndarray, None] = None) -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma.
 
@@ -327,12 +396,9 @@ class FrequencyGreen:
             g0_inv = self.freq - e_tot
 
         self.retarded = 1.0 / (g0_inv - self_energy.retarded)
-        if advanced_adj_sym:
-            advanced = np.conj(self.retarded)
-        else:
-            advanced = self.retarded[::-1]
+
         self.keldysh = (self.retarded * self_energy.keldysh *
-                        advanced)
+                        self.get_advanced())
 
     def set_green_from_auxiliary(self, auxsys: auxp.AuxiliarySystem) -> None:
         """Set the retarded and Keldysh impurity site Green's function
@@ -390,7 +456,9 @@ class FrequencyGreen:
                     np.imag(sigma[0][s]))
                 sigma[1][s] = 0
 
-        return FrequencyGreen(self.freq, sigma[0], sigma[1])
+        return FrequencyGreen(self.freq, sigma[0], sigma[1],
+                              fermionic=self.fermionic,
+                              keldysh_comp=self.keldysh_comp)
 
     def save(self, fname: str, dir_: str, dataname: str,
              savefreq: bool = True) -> None:

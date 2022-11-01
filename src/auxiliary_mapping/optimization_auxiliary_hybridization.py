@@ -91,7 +91,7 @@ def optimize_subroutine(x0: np.ndarray, *args) -> float:
     aux = auxp.AuxiliarySystem(Nb, hybridization.freq)
     aux.set_ph_symmetric_aux(es, ts, gammas)
 
-    green = fg.FrequencyGreen(hybridization.freq)
+    green = fg.FrequencyGreen(hybridization.freq, keldysh_comp="keldysh")
     green.set_green_from_auxiliary(aux)
 
     hyb_aux = green.get_self_enerqy()
@@ -170,7 +170,6 @@ def optimization_ph_symmertry(Nb: int, hybridization: fg.FrequencyGreen,
     if weight is None:
         weight = np.ones(hybridization.freq.shape)
     args = (Nb, hybridization, weight)
-
     result = minimize(optimize_subroutine, x_start, bounds=bounds,
                       constraints=constraints, method='SLSQP', args=args,
                       options=options,
@@ -213,7 +212,7 @@ def get_aux_hyb(res: np.ndarray, Nb: int, freq: np.ndarray
     aux = auxp.AuxiliarySystem(Nb, freq)
     aux.set_ph_symmetric_aux(es, ts, gammas)
 
-    green = fg.FrequencyGreen(freq)
+    green = fg.FrequencyGreen(freq, keldysh_comp="keldysh")
     green.set_green_from_auxiliary(aux)
 
     return green.get_self_enerqy()

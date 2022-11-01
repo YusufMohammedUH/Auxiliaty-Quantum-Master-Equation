@@ -352,7 +352,8 @@ class Correlators:
             + green_lesser_plus + green_lesser_minus
 
         return fg.FrequencyGreen(
-            freq, retarded=green_aux_R, keldysh=green_aux_K)
+            freq, retarded=green_aux_R, keldysh=green_aux_K,
+            keldysh_comp="keldysh")
 
     def get_susceptibility(self, freq: np.ndarray, component: Tuple[int, int],
                            channels: Tuple[str, str],
@@ -452,7 +453,8 @@ class Correlators:
             + chi_lesser_minus
 
         return fg.FrequencyGreen(
-            freq, retarded=chi_aux_R, keldysh=chi_aux_K)
+            freq, retarded=chi_aux_R, keldysh=chi_aux_K,
+            keldysh_comp='keldysh')
 
     def get_three_point_vertex_components(
             self, component: Tuple[int, int, int], freq: np.ndarray,
@@ -659,7 +661,7 @@ if __name__ == "__main__":
     sys = aux.AuxiliarySystem(Nb, ws)
     sys.set_ph_symmetric_aux(es, ts, gamma)
 
-    G_aux_U0 = fg.FrequencyGreen(sys.ws)
+    G_aux_U0 = fg.FrequencyGreen(sys.ws, keldysh_comp='keldysh')
     G_aux_U0.set_green_from_auxiliary(sys)
     hyb_aux = G_aux_U0.get_self_enerqy()
 
@@ -681,7 +683,8 @@ if __name__ == "__main__":
     G_R = G_greater_plus - G_lesser_plus
     G_K = G_greater_plus + G_greater_minus + G_lesser_plus + G_lesser_minus
 
-    G_aux_full = fg.FrequencyGreen(sys.ws, retarded=G_R, keldysh=G_K)
+    G_aux_full = fg.FrequencyGreen(sys.ws, retarded=G_R, keldysh=G_K,
+                                   keldysh_comp='keldysh')
     sigma = G_aux_full.get_self_enerqy() - hyb_aux
 
     # Visualize results

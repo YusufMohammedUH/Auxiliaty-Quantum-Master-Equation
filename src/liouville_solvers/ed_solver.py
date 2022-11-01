@@ -440,7 +440,7 @@ if __name__ == "__main__":
     sys = aux.AuxiliarySystem(Nb, ws)
     sys.set_ph_symmetric_aux(es, ts, gamma)
 
-    green = fg.FrequencyGreen(sys.ws)
+    green = fg.FrequencyGreen(sys.ws, keldysh_comp="keldysh")
     green.set_green_from_auxiliary(sys)
     hyb_aux = green.get_self_enerqy()
 
