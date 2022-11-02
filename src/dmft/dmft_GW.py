@@ -1,17 +1,9 @@
-# %%
 from typing import Dict, Union
 import numpy as np
 import src.dmft.dmft_base as dmft_base
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.dos_util as du
 import src.util.fourier as dft
-import matplotlib.pyplot as plt
-# TODO: 0. calculate the Hartree part of the self-energy
-#       1. calculate P(1;2)= -iG(1;2)G(2;1) (Fourier transform time)
-#       2. calculate W(w) = U/[1-U*P(w)]    (Fourier transform frequency)
-#       3. calculate Self-energy S_GW=iG(1;2)W(1;2) (Fourier transform time)
-#       3. calculate green's function   (Fourier transform frequency)
-#                   G(1;2) = [G_0^{-1}(1;2) -[S_Hartree + S_GW(1;2)]]^{-1}
 
 
 class DMFT_GW(dmft_base.DMFTBase):
@@ -109,7 +101,8 @@ class DMFT_GW(dmft_base.DMFTBase):
 
             # screened_int_retarded_time = 2 * np.pi * np.array(
             #     [du.heaviside(t, 0) * (
-            #         screened_int_greater_time[i] - screened_int_lesser_time[i])
+            #         screened_int_greater_time[i]
+            # - screened_int_lesser_time[i])
             #         for i, t in enumerate(self.time)])
 
             # calculate self-ernergy in time
@@ -149,64 +142,3 @@ class DMFT_GW(dmft_base.DMFTBase):
 
     def solve(self):
         self.__solve__()
-
-
-if __name__ == "__main__":
-    #  Frequency grid
-    N_grid = 2001
-    freq_max = 30
-    time_max = 20
-    selfconsist_param = {'max_iter': 50, 'err_tol': 1e-6, 'mixing': 0.3}
-
-    e0 = 0
-    mu = 0
-    beta = 10
-    D = 30.1
-    gamma = 0.1
-
-    leads_param = {'e0': e0, 'mu': [mu], 'beta': beta, 'D': D, 'gamma': gamma}
-
-    spinless = False
-    spin_sector_max = 1
-    tilde_conjugationrule_phase = True
-    errors = []
-    Us = [4]  # [0, 1, 2, 3, 4]
-    for U in Us:
-        print("U: ", U)
-        v = 1.0
-        sys_param = {"e0": 0, 'v': v, 'U': U, 'spinless': spinless,
-                     'tilde_conjugation': tilde_conjugationrule_phase}
-
-        # Parameters of the auxiliary system
-        Nb = 1
-        nsite = 2 * Nb + 1
-        aux_param = {'Nb': Nb, 'nsite': nsite}
-
-        params = {'freq': {"freq_min": -freq_max, "freq_max": freq_max,
-                           'N_freq': N_grid},
-                  'time': {"time_min": -time_max, "time_max": time_max,
-                           "N_time": N_grid},
-                  'selfconsistency': selfconsist_param, 'leads': leads_param,
-                  'aux_sys': aux_param, 'system': sys_param}
-
-        # ##################### Initializing Lindblad class #######################
-
-        dmft_gw = DMFT_GW(params, hyb_leads=None, keldysh_comp="lesser")
-        dmft_gw.hyb_leads = dmft_gw.get_bath()
-        dmft_gw.solve()
-        plt.plot(dmft_gw.green_sys.freq, -(1 / np.pi)
-                 * dmft_gw.green_sys.retarded.imag, label=U)
-        plt.xlabel(r"$\omega$")
-        plt.ylabel(r"$A(\omega)$")
-        plt.legend()
-        errors.append(dmft_gw.err_iterations)
-    plt.show()
-    for i, U in enumerate(Us):
-        plt.plot(errors[i], label=U)
-        plt.yscale("log")
-        plt.xlabel(r"Iteration")
-        plt.ylabel(r"$||G_{new}(\omega)-G_{old}(\omega)||$")
-        plt.legend()
-    plt.show()
-
-# %%
