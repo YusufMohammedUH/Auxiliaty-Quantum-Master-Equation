@@ -191,6 +191,5 @@ if __name__ == "__main__":
     auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
     auxiliaryDMFT.set_local_matrix()
     auxiliaryDMFT.solve()
-    # auxiliaryDMFT.save('auxiliaryDMFT.h5')
 
 # %%

@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.correlation_functions as corr
-import src.auxiliary_dmft as aux_dmft
+import src.dmft.auxiliary_dmft as aux_dmft
 # ############################### Parameters ##################################
 #  Frequency grid
 N_freq = 400
 freq_max = 10
 
-selfconsist_param = {'max_iter': 50, 'err_tol': 1e-10, 'mixing': 0.2}
+selfconsist_param = {'max_iter': 50, 'err_tol': 1e-7, 'mixing': 0.2}
 
 e0 = 0
 mu = 0
@@ -85,7 +85,7 @@ plt.legend([r"$A_{sys}(\omega)$",
 
 plt.figure()
 plt.plot(auxiliaryDMFT.green_sys.freq, auxiliaryDMFT.green_sys.keldysh.imag)
-plt.plot(auxiliaryDMFT.green_sys.freq, auxiliaryDMFT.hyb_sys.keldysh.imag)
+plt.plot(auxiliaryDMFT.green_sys.freq, auxiliaryDMFT.hyb_leads.keldysh.imag)
 plt.plot(auxiliaryDMFT.green_sys.freq,
          auxiliaryDMFT.self_energy_int.keldysh.imag)
 plt.xlabel(r"$\omega$")
