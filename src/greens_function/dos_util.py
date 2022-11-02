@@ -140,7 +140,7 @@ def fermi(e: float, e0: float, mu: float, beta: float) -> float:
         return 1.0 - 1.0 / (1.0 + np.exp(-x))
 
 
-@njit(cache=True)
+# @njit(cache=True)
 def _set_hybridization(freq: np.ndarray, retarded_function: Callable,
                        args: np.ndarray, keldysh_comp: str = "keldysh"
                        ) -> Tuple[np.ndarray, np.ndarray]:
