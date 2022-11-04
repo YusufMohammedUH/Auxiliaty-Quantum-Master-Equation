@@ -27,9 +27,8 @@ spinless = False
 spin_sector_max = 2
 tilde_conjugationrule_phase = True
 
-U = 3.0
 v = 1.0
-sys_param = {'v': v, 'U': U, 'spinless': spinless,
+sys_param = {'v': v, 'spinless': spinless,
              'tilde_conjugation': tilde_conjugationrule_phase}
 
 # Parameters of the auxiliary system
@@ -47,7 +46,7 @@ super_fermi_ops = sf_sub.SpinSectorDecomposition(
 
 L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
 corr_cls = corr.Correlators(L, trilex=True)
-# %%
+
 # ########################## Solve Auxiliary DMFT #############################
 plt.figure()
 err_U = {}
@@ -60,13 +59,13 @@ for U in [0., 1., 2., 3., 4.]:
     auxiliaryDMFT.solve()
     err_U[U] = auxiliaryDMFT.err_iterations
     plt.plot(auxiliaryDMFT.green_sys.freq,
-             (-1 / np.pi) * auxiliaryDMFT.green_sys.retarded.imag)
+             auxiliaryDMFT.green_sys.get_spectral_func())
 plt.legend([r"$U = 0$", r"$U = 1$", r"$U = 2$", r"$U = 3$", r"$U = 4$"])
 plt.ylabel(r"$A(\omega)$")
 plt.xlabel(r"$\omega$")
 plt.show()
 # ################################## Plots ####################################
-# %%
+
 plt.figure()
 for U in [0., 1., 2., 3., 4.]:
     plt.plot(err_U[U])

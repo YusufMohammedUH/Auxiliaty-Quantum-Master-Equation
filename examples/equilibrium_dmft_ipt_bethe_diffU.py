@@ -44,14 +44,14 @@ for U in Us:
     i_min = np.where(dmft_ipt.green_sys.freq > -10)[0][0]
     i_max = np.where(dmft_ipt.green_sys.freq > 10)[0][0]
     plt.plot(dmft_ipt.green_sys.freq[i_min: i_max], -(1 / np.pi)
-             * dmft_ipt.green_sys.retarded.imag[i_min: i_max], label=U)
+             * dmft_ipt.green_sys.retarded.imag[i_min: i_max], label=f"U = {U}")
     plt.xlabel(r"$\omega$")
     plt.ylabel(r"$A(\omega)$")
     plt.legend()
     errors.append(dmft_ipt.err_iterations)
 plt.show()
 for i, U in enumerate(Us):
-    plt.plot(errors[i], label=U)
+    plt.plot(errors[i], label=f"U = {U}")
     plt.yscale("log")
     plt.xlabel(r"Iteration")
     plt.ylabel(r"$||G_{new}(\omega)-G_{old}(\omega)||$")
