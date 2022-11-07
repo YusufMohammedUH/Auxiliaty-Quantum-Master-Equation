@@ -305,11 +305,11 @@ if __name__ == "__main__":
     #     print(f"Minimization for Nb = {Nb}, not converged.")
 
     plt.figure()
-    plt.plot(hybridization.freq, hybridization.retarded.imag)
-    plt.plot(hybridization.freq, hyb_aux_nb1.retarded.imag)
-    plt.plot(hybridization.freq, hyb_aux_nb2.retarded.imag)
+    plt.plot(hybridization.freq, hybridization.get_spectral_func())
+    plt.plot(hybridization.freq, hyb_aux_nb1.get_spectral_func())
+    plt.plot(hybridization.freq, hyb_aux_nb2.get_spectral_func())
     plt.xlabel(r"$\omega$")
-    plt.ylabel(r"$Im\Delta^R(\omega)$")
+    plt.ylabel(r"$-\frac{1}{\pi}Im\Delta^R(\omega)$")
     plt.legend([r"$exact$", r"$Nb=2$", r"$Nb=4$"])
     plt.show()
 
