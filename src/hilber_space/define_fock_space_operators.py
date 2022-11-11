@@ -442,6 +442,31 @@ class FermionicFockOperators:
                         self.c(ii=ii, spin=spin2))
         return nchannel
 
+    def n_dag_channel(self, ii: int, channel: str = 'ch'
+                      ) -> sparse.csc_matrix:
+        """Returns the adjoint charge or spin density operator at site/orbital
+        'ii'. Channel is one of 'ch','x', 'y' or 'z', where 'ch' is the charge
+        channel and 'x','y','z' the spin channels. In case of spinless fermions
+        the density operator is returned.
+
+        Parameters
+        ----------
+        ii : int
+            site/orbital index
+
+        channel : string, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                    2**self.spin_times_site)
+            Charge or spin density operator at site/orbital 'ii'.
+        """
+
+        if channel == 'z':
+            return -1 * self.n_channel(ii=ii, channel=channel)
+        return self.n_channel(ii=ii, channel=channel)
 ###############################################################################
 
 

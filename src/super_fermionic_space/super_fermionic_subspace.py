@@ -284,7 +284,17 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                                                                (1, -1)],
                                                          'y': [(-1, 1),
                                                                (1, -1)],
-                                                         'z': (0, 0)}}
+                                                         'z': (0, 0)},
+                                     'n_dag_channel': {'ch': (0, 0),
+                                                       'x': [(-1, 1), (1, -1)],
+                                                       'y': [(-1, 1), (1, -1)],
+                                                       'z': (0, 0)},
+                                     'n_dag_channel_tilde': {'ch': (0, 0),
+                                                             'x': [(-1, 1),
+                                                                   (1, -1)],
+                                                             'y': [(-1, 1),
+                                                                   (1, -1)],
+                                                             'z': (0, 0)}}
 
         # TODO: default self.target_sites should in general be a list of all
         #       sites only special cases need a specific value
@@ -480,6 +490,8 @@ class SpinSectorDecomposition(SubspaceDecomposition):
         if not self.fock_ops.spinless:
             n_channel = {'ch': {}, 'x': {}, 'y': {}, 'z': {}}
             n_channel_tilde = {'ch': {}, 'x': {}, 'y': {}, 'z': {}}
+            n_dag_channel = {'ch': {}, 'x': {}, 'y': {}, 'z': {}}
+            n_dag_channel_tilde = {'ch': {}, 'x': {}, 'y': {}, 'z': {}}
             cdag_up_sector = {}
             cdag_up_tilde_sector = {}
             c_up_sector = {}
@@ -550,6 +562,24 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                                 n_channel_up_up[0]], self.projectors[
                                     n_channel_up_up[1]])
 
+                        n_dag_channel['ch'][n_channel_up_up] = \
+                            n_channel['ch'][n_channel_up_up]
+                        n_dag_channel['x'][n_channel_up_up] = \
+                            n_channel['x'][n_channel_up_up]
+                        n_dag_channel['y'][n_channel_up_up] = \
+                            n_channel['y'][n_channel_up_up]
+                        n_dag_channel['z'][n_channel_up_up] = \
+                            -1. * n_channel['z'][n_channel_up_up]
+
+                        n_dag_channel_tilde['ch'][n_channel_up_up] = \
+                            n_channel_tilde['ch'][n_channel_up_up]
+                        n_dag_channel_tilde['x'][n_channel_up_up] = \
+                            n_channel_tilde['x'][n_channel_up_up]
+                        n_dag_channel_tilde['y'][n_channel_up_up] = \
+                            n_channel_tilde['y'][n_channel_up_up]
+                        n_dag_channel_tilde['z'][n_channel_up_up] = \
+                            -1. * n_channel_tilde['z'][n_channel_up_up]
+
                     if n_channel_up_do[0] in self.spin_sectors:
                         n_channel['ch'][n_channel_up_do] = get_subspace_object(
                             self.n_channel(site, 'ch'), self.projectors[
@@ -588,6 +618,24 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                                 site, 'z'), self.projectors[
                                 n_channel_up_do[0]], self.projectors[
                                     n_channel_up_do[1]])
+
+                        n_dag_channel['ch'][n_channel_up_do] = \
+                            n_channel['ch'][n_channel_up_do]
+                        n_dag_channel['x'][n_channel_up_do] = \
+                            n_channel['x'][n_channel_up_do]
+                        n_dag_channel['y'][n_channel_up_do] = \
+                            n_channel['y'][n_channel_up_do]
+                        n_dag_channel['z'][n_channel_up_do] = \
+                            -1. * n_channel['z'][n_channel_up_do]
+
+                        n_dag_channel_tilde['ch'][n_channel_up_do] = \
+                            n_channel_tilde['ch'][n_channel_up_do]
+                        n_dag_channel_tilde['x'][n_channel_up_do] = \
+                            n_channel_tilde['x'][n_channel_up_do]
+                        n_dag_channel_tilde['y'][n_channel_up_do] = \
+                            n_channel_tilde['y'][n_channel_up_do]
+                        n_dag_channel_tilde['z'][n_channel_up_do] = \
+                            -1. * n_channel_tilde['z'][n_channel_up_do]
 
                     if n_channel_do_up[0] in self.spin_sectors:
                         n_channel['ch'][n_channel_do_up] = get_subspace_object(
@@ -628,6 +676,24 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                                 n_channel_do_up[0]], self.projectors[
                                     n_channel_do_up[1]])
 
+                        n_dag_channel['ch'][n_channel_do_up] = \
+                            n_channel['ch'][n_channel_do_up]
+                        n_dag_channel['x'][n_channel_do_up] = \
+                            n_channel['x'][n_channel_do_up]
+                        n_dag_channel['y'][n_channel_do_up] = \
+                            n_channel['y'][n_channel_do_up]
+                        n_dag_channel['z'][n_channel_do_up] = \
+                            -1. * n_channel['z'][n_channel_do_up]
+
+                        n_dag_channel_tilde['ch'][n_channel_do_up] = \
+                            n_channel_tilde['ch'][n_channel_do_up]
+                        n_dag_channel_tilde['x'][n_channel_do_up] = \
+                            n_channel_tilde['x'][n_channel_do_up]
+                        n_dag_channel_tilde['y'][n_channel_do_up] = \
+                            n_channel_tilde['y'][n_channel_do_up]
+                        n_dag_channel_tilde['z'][n_channel_do_up] = \
+                            -1. * n_channel_tilde['z'][n_channel_do_up]
+
                     if n_channel_do_do[0] in self.spin_sectors:
                         n_channel['ch'][n_channel_do_do] = get_subspace_object(
                             self.n_channel(site, 'ch'), self.projectors[
@@ -666,6 +732,24 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                                 site, 'z'), self.projectors[
                                 n_channel_do_do[0]], self.projectors[
                                     n_channel_do_do[1]])
+
+                        n_dag_channel['ch'][n_channel_do_do] = \
+                            n_channel['ch'][n_channel_do_do]
+                        n_dag_channel['x'][n_channel_do_do] = \
+                            n_channel['x'][n_channel_do_do]
+                        n_dag_channel['y'][n_channel_do_do] = \
+                            n_channel['y'][n_channel_do_do]
+                        n_dag_channel['z'][n_channel_do_do] = \
+                            -1. * n_channel['z'][n_channel_do_do]
+
+                        n_dag_channel_tilde['ch'][n_channel_do_do] = \
+                            n_channel_tilde['ch'][n_channel_do_do]
+                        n_dag_channel_tilde['x'][n_channel_do_do] = \
+                            n_channel_tilde['x'][n_channel_do_do]
+                        n_dag_channel_tilde['y'][n_channel_do_do] = \
+                            n_channel_tilde['y'][n_channel_do_do]
+                        n_dag_channel_tilde['z'][n_channel_do_do] = \
+                            -1. * n_channel_tilde['z'][n_channel_do_do]
 
                     if up_plus in self.spin_sectors:
                         cdag_up_sector[(up_plus, sector)] = \
@@ -725,6 +809,10 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                 self.spin_sector_fermi_ops[site]['n_channel'] = n_channel
                 self.spin_sector_fermi_ops[site]['n_channel_tilde'] = \
                     n_channel_tilde
+                self.spin_sector_fermi_ops[site]['n_dag_channel'] = \
+                    n_dag_channel
+                self.spin_sector_fermi_ops[site]['n_dag_channel_tilde'] = \
+                    n_dag_channel_tilde
             else:
                 for sector in self.spin_sectors:
                     plus = sector + 1
@@ -1189,6 +1277,62 @@ class SpinSectorDecomposition(SubspaceDecomposition):
 
         return self.spin_sector_fermi_ops[site]['n_channel'][channel][sector]
 
+    def n_dag_channel_sector(self, sector: Tuple[Tuple[int, int]], site: int,
+                             channel: str = 'ch') -> sparse.csc_matrix:
+        r"""Returns the adjoint 'normal' space charge or spin density operator in
+        sector 'sector' at site/orbital 'site'.
+
+        The charge or spin density operator are given by:
+            $(\rho^{\xi}_i)^{\dagger}
+             = (\sum_{s s'} c^{\dagger}_{i\,s}
+            \sigma^{\xi}_{s s'} c_{i\,s'})^{\dagger}$
+
+        with
+            $\displaystyle \sigma^{\xi}_{s s'} \in  \{\mathds{1}, \sigma^{x},
+            \sigma^{y},\sigma^{z} \}$
+
+        Parameters
+        ----------
+        sector : Tuple[Tuple[int, int]]
+            Spin sector of interest. The sector is than given by a
+            tuple of tuple of two integers:
+             ((\Delta N_{up},\Delta N_{do})_left,
+             (\Delta N_{up},\Delta N_{do})_right), e.g. ((0,1),(0,0)).
+
+        site : int
+            site/orbital index
+
+        channel : str, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                    2**self.spin_times_site)
+            Adjoint charge or spin density operator at site/orbital of
+            site/orbital index 'site' and in channel 'channel' in sector
+            'sector'.
+
+        Raises
+        ------
+        IndexError
+            If site/orbital index is out of bound
+
+        IndexError
+            If sector out of bound
+        """
+        assert len(sector) == 2
+        assert not self.fock_ops.spinless
+        if site not in self.target_sites:
+            raise IndexError('ERROR: index out of bound!')
+
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
+
+        return self.spin_sector_fermi_ops[site]['n_dag_channel'
+                                                ][channel][sector]
+
     def n_channel_tilde_sector(self, sector: Tuple[Tuple[int, int]], site: int,
                                channel: str = 'ch') -> sparse.csc_matrix:
         r"""Returns the 'normal' space charge or spin density operator in
@@ -1242,6 +1386,63 @@ class SpinSectorDecomposition(SubspaceDecomposition):
 
         return self.spin_sector_fermi_ops[site]['n_channel_tilde'][channel][
             sector]
+
+    def n_dag_channel_tilde_sector(self, sector: Tuple[Tuple[int, int]],
+                                   site: int, channel: str = 'ch'
+                                   ) -> sparse.csc_matrix:
+        r"""Returns the adjoint 'normal' space charge or spin density operator in
+        sector 'sector' at site/orbital 'site'.
+
+        The charge or spin density operator are given by:
+            $(\rho^{\xi}_i)^{\dagger}
+             = (\sum_{s s'} c^{\dagger}_{i\,s}
+            \sigma^{\xi}_{s s'} c_{i\,s'})^{\dagger}$
+
+        with
+            $\displaystyle \sigma^{\xi}_{s s'} \in  \{\mathds{1}, \sigma^{x},
+            \sigma^{y},\sigma^{z} \}$
+
+        Parameters
+        ----------
+        sector : Tuple[Tuple[int, int]]
+            Spin sector of interest. The sector is than given by a
+            tuple of tuple of two integers:
+             ((\Delta N_{up},\Delta N_{do})_left,
+             (\Delta N_{up},\Delta N_{do})_right), e.g. ((0,1),(0,0)).
+
+        site : int
+            site/orbital index
+
+        channel : str, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (2**self.spin_times_site,
+                                    2**self.spin_times_site)
+            Adjoint charge or spin density operator at site/orbital of
+            site/orbital index 'site' and in channel 'channel' in sector
+            'sector'.
+
+        Raises
+        ------
+        IndexError
+            If site/orbital index is out of bound
+
+        IndexError
+            If sector out of bound
+        """
+        assert len(sector) == 2
+        assert not self.fock_ops.spinless
+        if site not in self.target_sites:
+            raise IndexError('ERROR: index out of bound!')
+
+        abs_sector = np.array([sum(np.abs(s)) for s in sector])
+        if np.any(abs_sector > self.spin_sector_max):
+            raise IndexError("ERROR: Sector out of bound!")
+
+        return self.spin_sector_fermi_ops[site][
+            'n_dag_channel_tilde'][channel][sector]
 
     def save(self, fname: str, dir_: str) -> None:
         """Save super fermionic operator parameters as attributes to directory

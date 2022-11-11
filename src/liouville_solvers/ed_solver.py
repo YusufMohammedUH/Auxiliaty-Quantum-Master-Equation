@@ -247,6 +247,14 @@ class EDSolver:
                     tmp = (Lindbladian.super_fermi_ops
                            ).n_channel_tilde_sector(sector, site,
                                                     spin_or_channel).todense()
+                elif operator == 'n_dag_channel':
+                    tmp = (Lindbladian.super_fermi_ops
+                           ).n_channel_sector(sector, site, spin_or_channel
+                                              ).todense()
+                elif operator == 'n_dag_channel_tilde':
+                    tmp = (Lindbladian.super_fermi_ops
+                           ).n_dag_channel_tilde_sector(
+                        sector, site, spin_or_channel).todense()
 
                 spin_sector_fermi_ops.append(tmp)
 

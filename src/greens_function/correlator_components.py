@@ -62,23 +62,23 @@ def get_susceptibility(channels: Tuple[str, str]) -> Dict:
     correlator_components = {}
 
     correlator_components[(0, 0)] = [(('n_channel', channels[0]),
-                                      ('n_channel', channels[1])),
-                                     (('n_channel', channels[1]),
+                                      ('n_dag_channel', channels[1])),
+                                     (('n_dag_channel', channels[1]),
                                       ('n_channel', channels[0]))]
 
     correlator_components[(0, 1)] = [(('n_channel', channels[0]),
-                                      ('n_channel_tilde', channels[1])),
-                                     (('n_channel', channels[1]),
+                                      ('n_dag_channel_tilde', channels[1])),
+                                     (('n_dag_channel', channels[1]),
                                       ('n_channel', channels[0]))]
 
     correlator_components[(1, 0)] = [(('n_channel', channels[0]),
-                                      ('n_channel', channels[1])),
-                                     (('n_channel', channels[1]),
+                                      ('n_dag_channel', channels[1])),
+                                     (('n_dag_channel', channels[1]),
                                       ('n_channel_tilde', channels[0]))]
 
     correlator_components[(1, 1)] = [(('n_channel', channels[0]),
-                                      ('n_channel_tilde', channels[1])),
-                                     (('n_channel', channels[1]),
+                                      ('n_dag_channel_tilde', channels[1])),
+                                     (('n_dag_channel', channels[1]),
                                       ('n_channel_tilde', channels[0]))]
     return correlator_components
 

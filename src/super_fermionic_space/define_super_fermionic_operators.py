@@ -297,6 +297,50 @@ class SuperFermionicOperators:
         return self.get_super_fermionic_tilde_operator(self.fock_ops.n_channel(
             ii=ii, channel=channel))
 
+    def n_dag_channel(self, ii: int, channel: str = 'ch') -> sparse.csc_matrix:
+        """Returns the adjoint super-fermionic 'normal' space charge or spin
+        density operator at site 'ii'.
+
+        Parameters
+        ----------
+        ii : int
+            Site or orbital index
+
+        channel : string, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (dim, dim)
+            adjoint super-fermionic space charge or spin density operator at
+            site 'ii'.
+        """
+        return self.get_super_fermionic_operator(self.fock_ops.n_dag_channel(
+            ii=ii, channel=channel))
+
+    def n_dag_channel_tilde(self, ii: int, channel: str = 'ch'
+                            ) -> sparse.csc_matrix:
+        """Returns the adjoint super-fermionic 'tilde' space charge or spin
+        density operator at site 'ii'.
+
+        Parameters
+        ----------
+        ii : int
+            Site or orbital index
+
+        channel : string, optional
+            Channel index 'ch','x', 'y' or 'z', by default 'ch'.
+
+        Returns
+        -------
+        out: scipy.sparse.csc_matrix (dim, dim)
+            adjoint super-fermionic space charge or spin density operator at
+            site 'ii'.
+        """
+        return self.get_super_fermionic_tilde_operator(
+            self.fock_ops.n_dag_channel(
+                ii=ii, channel=channel))
+
     def get_super_fermionic_operator(self, fock_operator: sparse.csc_matrix
                                      ) -> sparse.csc_matrix:
         """Returns the super-fermionic space representation of an Fock space
