@@ -1,5 +1,5 @@
 # %%
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 import numpy as np
 from numba import njit
 import matplotlib.pyplot as plt
@@ -156,7 +156,7 @@ class FrequencyGreen:
                  retarded: Union[np.ndarray, None] = None,
                  keldysh: Union[np.ndarray, None] = None,
                  fermionic: bool = True,
-                 keldysh_comp: str = 'lesser') -> None:
+                 keldysh_comp: str = 'lesser', orbitals=1) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
         if not isinstance(freq, np.ndarray):
@@ -170,6 +170,7 @@ class FrequencyGreen:
         if keldysh_comp != 'lesser' and keldysh_comp != 'keldysh':
             raise ValueError("Error: keldysh_comp has to be either 'lesse'" +
                              " of 'keldysh'")
+        self.orbitals = orbitals
         self.keldysh_comp = keldysh_comp
         self.fermionic = fermionic
         self.freq = freq
@@ -223,6 +224,15 @@ class FrequencyGreen:
         out: FrequencyGreen
         """
         if isinstance(other, FrequencyGreen):
+            if self.keldysh_comp != other.keldysh_comp:
+                raise ValueError("Error: keldysh_comp has to be the same " +
+                                 "for both objects")
+            if self.fermionic != other.fermionic:
+                raise ValueError("Error: fermionic has to be the same for " +
+                                 "both objects")
+            if self.orbitals != other.orbitals:
+                raise ValueError("Error: orbitals has to be the same for " +
+                                 "both objects")
             return FrequencyGreen(self.freq, self.retarded + other.retarded,
                                   self.keldysh + other.keldysh,
                                   fermionic=self.fermionic,
@@ -257,6 +267,15 @@ class FrequencyGreen:
         out: FrequencyGreen
         """
         if isinstance(other, FrequencyGreen):
+            if self.keldysh_comp != other.keldysh_comp:
+                raise ValueError("Error: keldysh_comp has to be the same " +
+                                 "for both objects")
+            if self.fermionic != other.fermionic:
+                raise ValueError("Error: fermionic has to be the same for " +
+                                 "both objects")
+            if self.orbitals != other.orbitals:
+                raise ValueError("Error: orbitals has to be the same for " +
+                                 "both objects")
             return FrequencyGreen(self.freq, self.retarded - other.retarded,
                                   self.keldysh - other.keldysh,
                                   fermionic=self.fermionic,
@@ -297,6 +316,12 @@ class FrequencyGreen:
         out: FrequencyGreen
         """
         if isinstance(other, FrequencyGreen):
+            if self.keldysh_comp != other.keldysh_comp:
+                raise ValueError("Error: keldysh_comp has to be the same " +
+                                 "for both objects")
+            if self.orbitals != other.orbitals:
+                raise ValueError("Error: orbitals has to be the same for " +
+                                 "both objects")
             return FrequencyGreen(self.freq, retarded=(
                 self.retarded * other.retarded), keldysh=(
                 self.retarded * other.keldysh +
@@ -356,8 +381,12 @@ class FrequencyGreen:
             advanced component
         """
         if self.fermionic:
-            return self.retarded.conj()
+            if self.orbitals > 1:
+                np.array(list(map(lambda x: x.H, self.retarded)))
+            else:
+                return self.retarded.conj()
         else:
+            # XXX: Advanced for multi orbital systems have to be included
             return self.retarded[::-1]
 
     def inverse(self) -> "FrequencyGreen":
@@ -368,15 +397,27 @@ class FrequencyGreen:
         out: FrequencyGreen
             Inverse Green's function
         """
-        retarded_inv = 1. / self.retarded
-        keldysh_inv = -1. * retarded_inv * self.keldysh * retarded_inv.conj()
+        if self.orbitals > 1:
+            retarded_inv = np.array(list(map(np.linalg.inv, self.retarded)))
+            advanced_inv = np.array(list(map(lambda x: x.H, retarded_inv)))
+        else:
+            retarded_inv = np.array([1. / ret if np.abs(ret) != np.inf
+                                     else 0 for ret in self.retarded],
+                                    dtype=np.complex128)
+            advanced_inv = retarded_inv.conj()
+
+        keldysh_inv = np.array([-1. * ret * kel * adv if np.abs(ret) != 0
+                                else 0 for ret, kel, adv in zip(
+            retarded_inv, self.keldysh, advanced_inv)],
+            dtype=np.complex128)
         return FrequencyGreen(self.freq, retarded=retarded_inv,
                               keldysh=keldysh_inv,
                               fermionic=self.fermionic,
                               keldysh_comp=self.keldysh_comp)
 
     def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
-              g0_inv: Union[np.ndarray, None] = None) -> None:
+              g0_inv: Union[np.ndarray, None] = None,
+              g0: Optional[np.ndarray] = None) -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma.
 
@@ -392,10 +433,25 @@ class FrequencyGreen:
         g0_inv: np.array, optional
             Inverse non-interacting Green's function, by default None
         """
-        if g0_inv is None:
-            g0_inv = self.freq - e_tot
+        if g0 is not None:
+            if self.orbitals > 1:
+                retarded_inv = np.array(
+                    list(map(np.linalg.inv, (1. - (g0 * self_energy).retarded))
+                         ))
+            else:
+                retarded_inv = np.array([1. / ret if np.abs(ret) != np.inf
+                                         else 0 for ret
+                                         in (1. - (g0 * self_energy).retarded)
+                                         ], dtype=np.complex128)
+            self.retarded = retarded_inv * g0.retarded
+        else:
+            if g0_inv is None:
+                g0_inv = self.freq - e_tot
 
-        self.retarded = 1.0 / (g0_inv - self_energy.retarded)
+            self.retarded = np.array([1. / ret if np.abs(ret) != np.inf
+                                      else 0 for ret
+                                      in (g0_inv - self_energy.retarded)],
+                                     dtype=np.complex128)
 
         self.keldysh = (self.retarded * self_energy.keldysh *
                         self.get_advanced())
@@ -414,6 +470,10 @@ class FrequencyGreen:
         self.retarded, self.keldysh = _z_aux(auxsys.ws, auxsys.N, auxsys.Nb,
                                              auxsys.E, auxsys.Gamma1,
                                              auxsys.Gamma2)
+        if self.keldysh_comp == 'lesser':
+            self.keldysh_comp = 'keldysh'
+            self.keldysh = self.get_lesser()
+            self.keldysh_comp = 'lesser'
 
     def get_self_enerqy(self,
                         green_0_ret_inverse: Union[np.ndarray, None] = None
@@ -512,7 +572,8 @@ class FrequencyGreen:
                                      dataname='keldysh')
 
 
-def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
+def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem, keldysh_comp: str
+                     ) -> "FrequencyGreen":
     """Given parameters of the auxiliary system, a single particle Green's
     function is constructed and its self-engergy/hybridization function
     returned
@@ -529,7 +590,7 @@ def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem) -> "FrequencyGreen":
     out : FrequencyGreen
         self-energy of given Green's functions
     """
-    green = FrequencyGreen(auxsys.ws)
+    green = FrequencyGreen(auxsys.ws, keldysh_comp=keldysh_comp)
     green.set_green_from_auxiliary(auxsys)
     return green.get_self_enerqy()
 

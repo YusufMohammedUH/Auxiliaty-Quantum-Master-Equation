@@ -323,7 +323,8 @@ class Correlators:
 
     def get_single_particle_green_physical(
             self, freq: np.ndarray, sites: Union[None, Tuple[int, int]] = None,
-            spin: Tuple[str, str] = ('up', 'up')) -> fg.FrequencyGreen:
+            spin: Tuple[str, str] = ('up', 'up'),
+            keldysh_comp="keldysh") -> fg.FrequencyGreen:
         """Return the single particle green's function on the physical contour
         e.g. returns a fg.FrequencyGreen object.
 
@@ -346,14 +347,29 @@ class Correlators:
             self.get_single_particle_green((1, 0), freq, sites, spin)
         green_lesser_plus, green_lesser_minus = \
             self.get_single_particle_green((0, 1), freq, sites, spin)
-
         green_aux_R = green_greater_plus - green_lesser_plus
         green_aux_K = green_greater_plus + green_greater_minus \
             + green_lesser_plus + green_lesser_minus
-
-        return fg.FrequencyGreen(
-            freq, retarded=green_aux_R, keldysh=green_aux_K,
-            keldysh_comp="keldysh")
+        if keldysh_comp == 'keldysh':
+            return fg.FrequencyGreen(
+                freq, retarded=green_aux_R, keldysh=green_aux_K,
+                keldysh_comp=keldysh_comp)
+        elif keldysh_comp == 'lesser':
+            g_tmp = fg.FrequencyGreen(
+                freq, retarded=green_aux_R, keldysh=green_aux_K,
+                keldysh_comp='keldysh')
+            g_tmp.keldysh = g_tmp.get_lesser()
+            g_tmp.keldysh_comp = 'lesser'
+            return g_tmp
+        # green_aux_R = green_greater_plus + green_greater_minus - (
+        #     green_lesser_plus + green_lesser_minus)
+        # green_aux_R *= 0.5
+        # if keldysh_comp == "keldysh":
+        #     green_aux_K = green_greater_plus + green_greater_minus \
+        #         + green_lesser_plus + green_lesser_minus
+        # elif keldysh_comp == 'lesser':
+        #     green_aux_K = green_lesser_plus + green_lesser_minus
+        #     # green_aux_K *= (1. / (2))
 
     def get_susceptibility(self, freq: np.ndarray, component: Tuple[int, int],
                            channels: Tuple[str, str],
@@ -454,7 +470,7 @@ class Correlators:
 
         return fg.FrequencyGreen(
             freq, retarded=chi_aux_R, keldysh=chi_aux_K,
-            keldysh_comp='keldysh')
+            keldysh_comp='keldysh', fermionic=False)
 
     def get_three_point_vertex_components(
             self, component: Tuple[int, int, int], freq: np.ndarray,
