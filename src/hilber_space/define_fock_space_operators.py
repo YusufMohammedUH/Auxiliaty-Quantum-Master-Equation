@@ -464,8 +464,6 @@ class FermionicFockOperators:
             Charge or spin density operator at site/orbital 'ii'.
         """
 
-        if channel == 'z':
-            return -1 * self.n_channel(ii=ii, channel=channel)
         return self.n_channel(ii=ii, channel=channel)
 ###############################################################################
 

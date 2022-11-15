@@ -569,7 +569,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel['y'][n_channel_up_up] = \
                             n_channel['y'][n_channel_up_up]
                         n_dag_channel['z'][n_channel_up_up] = \
-                            -1. * n_channel['z'][n_channel_up_up]
+                            n_channel['z'][n_channel_up_up]
 
                         n_dag_channel_tilde['ch'][n_channel_up_up] = \
                             n_channel_tilde['ch'][n_channel_up_up]
@@ -578,7 +578,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel_tilde['y'][n_channel_up_up] = \
                             n_channel_tilde['y'][n_channel_up_up]
                         n_dag_channel_tilde['z'][n_channel_up_up] = \
-                            -1. * n_channel_tilde['z'][n_channel_up_up]
+                            n_channel_tilde['z'][n_channel_up_up]
 
                     if n_channel_up_do[0] in self.spin_sectors:
                         n_channel['ch'][n_channel_up_do] = get_subspace_object(
@@ -626,7 +626,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel['y'][n_channel_up_do] = \
                             n_channel['y'][n_channel_up_do]
                         n_dag_channel['z'][n_channel_up_do] = \
-                            -1. * n_channel['z'][n_channel_up_do]
+                            n_channel['z'][n_channel_up_do]
 
                         n_dag_channel_tilde['ch'][n_channel_up_do] = \
                             n_channel_tilde['ch'][n_channel_up_do]
@@ -635,7 +635,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel_tilde['y'][n_channel_up_do] = \
                             n_channel_tilde['y'][n_channel_up_do]
                         n_dag_channel_tilde['z'][n_channel_up_do] = \
-                            -1. * n_channel_tilde['z'][n_channel_up_do]
+                            n_channel_tilde['z'][n_channel_up_do]
 
                     if n_channel_do_up[0] in self.spin_sectors:
                         n_channel['ch'][n_channel_do_up] = get_subspace_object(
@@ -683,7 +683,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel['y'][n_channel_do_up] = \
                             n_channel['y'][n_channel_do_up]
                         n_dag_channel['z'][n_channel_do_up] = \
-                            -1. * n_channel['z'][n_channel_do_up]
+                            n_channel['z'][n_channel_do_up]
 
                         n_dag_channel_tilde['ch'][n_channel_do_up] = \
                             n_channel_tilde['ch'][n_channel_do_up]
@@ -692,7 +692,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel_tilde['y'][n_channel_do_up] = \
                             n_channel_tilde['y'][n_channel_do_up]
                         n_dag_channel_tilde['z'][n_channel_do_up] = \
-                            -1. * n_channel_tilde['z'][n_channel_do_up]
+                            n_channel_tilde['z'][n_channel_do_up]
 
                     if n_channel_do_do[0] in self.spin_sectors:
                         n_channel['ch'][n_channel_do_do] = get_subspace_object(
@@ -740,7 +740,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel['y'][n_channel_do_do] = \
                             n_channel['y'][n_channel_do_do]
                         n_dag_channel['z'][n_channel_do_do] = \
-                            -1. * n_channel['z'][n_channel_do_do]
+                            n_channel['z'][n_channel_do_do]
 
                         n_dag_channel_tilde['ch'][n_channel_do_do] = \
                             n_channel_tilde['ch'][n_channel_do_do]
@@ -749,7 +749,7 @@ class SpinSectorDecomposition(SubspaceDecomposition):
                         n_dag_channel_tilde['y'][n_channel_do_do] = \
                             n_channel_tilde['y'][n_channel_do_do]
                         n_dag_channel_tilde['z'][n_channel_do_do] = \
-                            -1. * n_channel_tilde['z'][n_channel_do_do]
+                            n_channel_tilde['z'][n_channel_do_do]
 
                     if up_plus in self.spin_sectors:
                         cdag_up_sector[(up_plus, sector)] = \
