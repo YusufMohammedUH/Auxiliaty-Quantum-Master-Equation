@@ -2,7 +2,6 @@
     self-consistency.
 """
 # %%
-import numpy as np
 import matplotlib.pyplot as plt
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.super_fermionic_space.model_lindbladian as lind
@@ -28,7 +27,7 @@ spin_sector_max = 2
 tilde_conjugationrule_phase = True
 
 v = 1.0
-sys_param = {'v': v, 'spinless': spinless,
+sys_param = {'e0': 0, 'v': v, 'spinless': spinless,
              'tilde_conjugation': tilde_conjugationrule_phase}
 
 # Parameters of the auxiliary system
@@ -53,7 +52,8 @@ err_U = {}
 for U in [0., 1., 2., 3., 4.]:
     print(f"Runnig auxiliary DMFT with U = {U}")
     params['system']['U'] = U
-    auxiliaryDMFT = aux_dmft.AuxiliaryMaserEquationDMFT(params, corr_cls)
+    auxiliaryDMFT = aux_dmft.AuxiliaryMaserEquationDMFT(params, corr_cls,
+                                                        keldysh_comp='lesser')
     auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
     auxiliaryDMFT.set_local_matrix()
     auxiliaryDMFT.solve()
@@ -73,10 +73,10 @@ plt.legend([r"$U = 0$", r"$U = 1$", r"$U = 2$", r"$U = 3$", r"$U = 4$"])
 plt.yscale('log')
 plt.show()
 
-plt.plot(auxiliaryDMFT.green_sys.freq, (-1 / np.pi) *
-         auxiliaryDMFT.green_sys.retarded.imag)
-plt.plot(auxiliaryDMFT.green_sys.freq, (-1 / np.pi) *
-         auxiliaryDMFT.green_aux.retarded.imag)
+plt.plot(auxiliaryDMFT.green_sys.freq,
+         auxiliaryDMFT.green_sys.get_spectral_func())
+plt.plot(auxiliaryDMFT.green_sys.freq,
+         auxiliaryDMFT.green_aux.get_spectral_func())
 plt.xlabel(r"$\omega$")
 plt.legend([r"$A_{sys}(\omega)$",
             r"$A_{aux}(\omega)$"

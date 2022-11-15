@@ -11,25 +11,80 @@ import src.util.hdf5_util as hd5
 
 
 class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
-    def __init__(self, parameters: Dict, correlators: corr.Correlators,
+    """Auxiliary master equation dynamical mean field theory solver class.
+    The clase is derived from the DMFTBase class and implements the
+    auxiliary master equation DMFT imputiy_solver.
+
+    Parameters
+    ----------
+    dmft_base : dmft_base.DMFTBase
+        DMFT base class object.
+
+    parameters : Dict
+        Dictionary containing the parameters of the DMFT solver.
+
+    correlators : corr.Correlators
+        Correlators object containing the Lindbladian and subroutines to
+        calculate correlation (Green's) functions.
+
+    hyb_leads : Union[fg.FrequencyGreen, None], optional
+        Hybridization function of the leads, by default None.
+
+    keldysh_comp : str, optional
+        Keldysh component to be used, by default "keldysh".
+
+    Attributes
+    ----------
+    correlators : corr.Correlators
+        Correlators object, with which correlation functions can be calculated.
+
+    T_mat : np.ndarray (dim, dim)
+        Hopping matrix of the auxiliary system.
+
+    U_mat : np.ndarray (dim)
+        Onsite interaction matrix of the auxiliary system.
+
+    green_aux : fg.FrequencyGreen
+        Green's function of the auxiliary system.
+
+    hyb_aux : fg.FrequencyGreen
+        Hybridization function of the auxiliary system.
+
+    keldysh_comp : str, optional
+        Keldysh component to be used, by default "keldysh".
+    """
+
+    def __init__(self, parameters: Union[Dict, None] = None,
+                 correlators: Union[corr.Correlators, None] = None,
                  hyb_leads: Union[fg.FrequencyGreen, None] = None,
-                 keldysh_comp: str = "keldysh") -> None:
+                 keldysh_comp: str = "keldysh", fname: Union[str, None] = None
+                 ) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
-        super().__init__(parameters, hyb_leads, keldysh_comp)
-        self.correlators = correlators
         self.T_mat = None
         self.U_mat = None
+        self.green_aux = None
+        self.hyb_aux = None
 
-        if parameters['aux_sys']['nsite']\
-                - 2 * parameters['aux_sys']['Nb'] != 1:
+        super().__init__(parameters=parameters, hyb_leads=hyb_leads,
+                         keldysh_comp=keldysh_comp, fname=fname)
+# -------------------------- setup correletor class ------------------------- #
+        if fname is None:
+            self.correlators = correlators
+        else:
+            self.load(fname, read_parameters=True, load_parent=False)
+
+        if self.parameters['aux_sys']['nsite']\
+                - 2 * self.parameters['aux_sys']['Nb'] != 1:
             raise ValueError("Only single orbital included for now.")
+
+        if self.correlators is None:
+            raise ValueError("Correlators object is None.")
 
         if 'target_sites' not in self.parameters['aux_sys']:
             self.parameters['aux_sys']['target_sites'] = \
                 self.correlators.Lindbladian.super_fermi_ops.target_sites
-
-        self.green_aux = None
+        self.set_local_matrix()
 
     def set_local_matrix(self, T_mat: Tuple[np.ndarray, None] = None,
                          U_mat: Tuple[np.ndarray, None] = None,
@@ -72,11 +127,16 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
             x_start: List = [0., 0.1, 0.5, -0.1, 0.2]) -> None:
         # Optimization for determining the auxiliary hybridization function
         hyb_tot = None
+        if not ((self.hyb_leads.keldysh_comp == self.hyb_dmft.keldysh_comp)
+                and (self.hyb_leads.keldysh_comp == self.keldysh_comp)):
+            raise ValueError("ERROR: keldysh_comp of the leads and DMFT"
+                             + " have to be the same as the"
+                             + f" self.keldysh_comp: {self.keldysh_comp}")
         if self.keldysh_comp == "lesser":
             hyb_tot = self.hyb_leads + self.hyb_dmft
-            hyb_tot.keldysh_comp = "keldysh"
             hyb_keldysh = hyb_tot.get_keldysh()
             hyb_tot.keldysh = hyb_keldysh
+            hyb_tot.keldysh_comp = "keldysh"
         elif self.keldysh_comp == "keldysh":
             hyb_tot = self.hyb_leads + self.hyb_dmft
 
@@ -90,7 +150,9 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
         aux_sys = opt.get_aux(
             optimal_param.x, self.parameters['aux_sys']['Nb'],
             self.green_sys.freq)
-        self.hyb_aux = fg.get_hyb_from_aux(aux_sys)
+
+        self.hyb_aux = fg.get_hyb_from_aux(
+            aux_sys, keldysh_comp=self.keldysh_comp)
         # #### Calculate the auxiliary single particle Green's function ###
         self.T_mat = aux_sys.E
         self.T_mat[self.parameters['aux_sys']['Nb'],
@@ -100,19 +162,20 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
         self.correlators.update(T_mat=self.T_mat, U_mat=self.U_mat,
                                 Gamma1=aux_sys.Gamma1,
                                 Gamma2=aux_sys.Gamma2)
-
         self.green_aux = self.correlators.get_single_particle_green_physical(
-            self.green_sys.freq)
-        if self.keldysh_comp == "lesser":
-            self.green_aux.keldysh = self.green_aux.get_lesser()
-            self.green_aux.keldysh_comp = "lesser"
+            self.green_sys.freq, keldysh_comp=self.keldysh_comp)
         # ################### Extract the self-energy  ####################
         self.self_energy_int = self.green_aux.get_self_enerqy() \
             - self.hyb_aux
+
         self.green_sys = fg.FrequencyGreen(freq=self.green_sys.freq,
                                            keldysh_comp=self.keldysh_comp)
+        U = self.parameters['system']['U']
+        epsilon = self.parameters['system']["e0"]
+
         self.green_sys.dyson(self_energy=(
-            self.hyb_dmft + self.hyb_leads + self.self_energy_int))
+            self.hyb_dmft + self.hyb_leads + self.self_energy_int),
+            e_tot=epsilon + U * (self.n - 0.5))
 
         return optimization_options, x_start
 
@@ -121,27 +184,52 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
             x_start: List = [0., 0.1, 0.5, -0.1, 0.2]):
         self.__solve__((optimization_options, x_start))
 
-    def save_child_data(self, fname: str) -> None:
+    def save(self, fname: str) -> None:
+        super().save(fname)
         self.green_aux.save(fname, '/auxiliary_sys',
                             'green_aux', savefreq=False)
         self.hyb_aux.save(fname, '/auxiliary_sys', 'hyb_aux', savefreq=False)
         hd5.add_attrs(fname, '/auxiliary_sys', self.parameters['aux_sys'])
         self.correlators.Lindbladian.save(fname, '/auxiliary_sys')
 
-    def load_child_data(self, fname: str, read_parameters: bool = False
-                        ) -> None:
+    def load(self, fname: str, read_parameters: bool = True,
+             load_parent: bool = True) -> None:
+        if load_parent:
+            super().load(fname=fname, read_parameters=read_parameters)
+        if read_parameters:
+            self.parameters['aux_sys'] = hd5.read_attrs(
+                fname, '/auxiliary_sys')
+
+        freq = np.linspace(self.parameters['freq']['freq_min'],
+                           self.parameters['freq']['freq_max'],
+                           self.parameters['freq']['N_freq'])
+
+        if self.green_aux is None:
+            self.green_aux = fg.FrequencyGreen(
+                freq, keldysh_comp=self.keldysh_comp)
+
+        if self.hyb_aux is None:
+            self.hyb_aux = fg.FrequencyGreen(
+                freq, keldysh_comp=self.keldysh_comp)
+
         self.green_aux.load(fname, '/auxiliary_sys',
                             'green_aux', readfreq=False)
         self.hyb_aux.load(fname, '/auxiliary_sys', 'hyb_aux', readfreq=False)
+
+        tilde = self.parameters['aux_sys']['tilde_conjugationrule_phase']
+        super_fermi_ops = sf_sub.SpinSectorDecomposition(
+            self.parameters['aux_sys']['nsite'],
+            self.parameters['aux_sys']['spin_sector_max'],
+            spinless=self.parameters['aux_sys']['spinless'],
+            tilde_conjugationrule_phase=tilde)
+        L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
+        self.correlators = corr.Correlators(L, trilex=True)
+
         self.correlators.Lindbladian.load(fname, '/auxiliary_sys')
         self.correlators.update(T_mat=self.correlators.Lindbladian.T_mat,
                                 U_mat=self.correlators.Lindbladian.U_mat,
                                 Gamma1=self.correlators.Lindbladian.Gamma1,
                                 Gamma2=self.correlators.Lindbladian.Gamma2)
-
-        if read_parameters:
-            self.parameters['aux_sys'] = hd5.read_attrs(
-                fname, '/auxiliary_sys')
 
 
 if __name__ == "__main__":
@@ -149,7 +237,7 @@ if __name__ == "__main__":
     N_freq = 400
     freq_max = 10
 
-    selfconsist_param = {'max_iter': 50, 'err_tol': 1e-6, 'mixing': 0.2}
+    selfconsist_param = {'max_iter': 10, 'err_tol': 1e-6, 'mixing': 0.2}
 
     e0 = 0
     mu = 0
@@ -163,9 +251,9 @@ if __name__ == "__main__":
     spin_sector_max = 1
     tilde_conjugationrule_phase = True
 
-    U = 3.0
+    U = 5.0
     v = 1.0
-    sys_param = {'v': v, 'U': U, 'spinless': spinless,
+    sys_param = {'e0': 0, 'v': v, 'U': U, 'spinless': spinless,
                  'tilde_conjugation': tilde_conjugationrule_phase}
 
     # Parameters of the auxiliary system
@@ -187,9 +275,11 @@ if __name__ == "__main__":
     corr_cls = corr.Correlators(L)
 
     auxiliaryDMFT = AuxiliaryMaserEquationDMFT(params, correlators=corr_cls,
-                                               keldysh_comp='lesser')
+                                               keldysh_comp='keldysh')
     auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
-    auxiliaryDMFT.set_local_matrix()
     auxiliaryDMFT.solve()
-
+    import matplotlib.pyplot as plt
+    dw = auxiliaryDMFT.green_sys.freq[1] - auxiliaryDMFT.green_sys.freq[0]
+    plt.plot(auxiliaryDMFT.green_sys.retarded.imag)
+    plt.plot(auxiliaryDMFT.green_sys.retarded.imag[::-1])
 # %%
