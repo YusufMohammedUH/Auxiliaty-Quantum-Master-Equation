@@ -64,17 +64,19 @@ def get_two_point_correlator_frequency(green_component_plus: np.ndarray,
             L_n = vals_sectors[0][n]
             if np.abs(L_n) > e_cut_off:
 
-                G_plus -= (precalc_correlators[0][n] /
+                G_plus += (precalc_correlators[0][n] /
                            ((1j * freq[i] + L_n)))
 
         for n in prange(tensor_shapes[1][0]):
             L_n = vals_sectors[1][n]
             if np.abs(L_n) > e_cut_off:
-                G_minus += (precalc_correlators[1][n] /
+                G_minus -= (precalc_correlators[1][n] /
                             ((1j * freq[i] - L_n)))
 
-        green_component_plus[i] = prefactor * permutation_sign[0] * G_plus
-        green_component_minus[i] = prefactor * permutation_sign[1] * G_minus
+        green_component_plus[i] = (-1.0 + 0.0j) * \
+            prefactor * permutation_sign[0] * G_plus
+        green_component_minus[i] = np.conj(
+            prefactor * permutation_sign[1] * G_minus)
 
 
 @njit(parallel=True, cache=True)
