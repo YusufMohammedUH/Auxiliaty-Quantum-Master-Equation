@@ -73,7 +73,7 @@ def test_get_aux_hyb():
     aux = auxp.AuxiliarySystem(Nb, freq)
     aux.set_ph_symmetric_aux(es, ts, gamma)
 
-    green = fg.FrequencyGreen(aux.ws)
+    green = fg.FrequencyGreen(aux.ws, keldysh_comp='keldysh')
     green.set_green_from_auxiliary(aux)
     hyb_explicit = green.get_self_enerqy()
     hyb = opt_aux.get_aux_hyb([*es, *ts, *gamma], Nb, freq)
