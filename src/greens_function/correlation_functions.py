@@ -353,16 +353,28 @@ class Correlators:
             self.get_single_particle_green((0, 1), freq, sites, spin)
 
         green_aux_R = green_greater_plus - green_lesser_plus
+        green_aux_K = green_greater_plus + green_greater_minus \
+            + green_lesser_plus + green_lesser_minus
+        green_tmp = fg.FrequencyGreen(freq, retarded=green_aux_R,
+                                      keldysh=green_aux_K,
+                                      keldysh_comp='keldysh')
+        if keldysh_comp == 'lesser':
+            green_tmp.keldysh = green_tmp.get_lesser()
+            green_tmp.keldysh_comp = 'lesser'
+        return green_tmp
+        # XXX: upper code converges better than lower one in the absence of a
+        #      screened interaction
+        #        - the retarded and lesser greens function are the same tough
 
-        if keldysh_comp == "keldysh":
-            green_aux_K = green_greater_plus + green_greater_minus \
-                + green_lesser_plus + green_lesser_minus
-        elif keldysh_comp == 'lesser':
-            green_aux_K = green_lesser_plus + green_lesser_minus
-            green_aux_K *= (1. / (2 * np.pi))
-        return fg.FrequencyGreen(
-            freq, retarded=green_aux_R, keldysh=green_aux_K,
-            keldysh_comp=keldysh_comp)
+        # if keldysh_comp == "keldysh":
+        #     green_aux_K = green_greater_plus + green_greater_minus \
+        #         + green_lesser_plus + green_lesser_minus
+        # elif keldysh_comp == 'lesser':
+        #     green_aux_K = green_lesser_plus + green_lesser_minus
+        #     green_aux_K *= (1. / (2. * np.pi))
+        # return fg.FrequencyGreen(
+        #     freq, retarded=green_aux_R, keldysh=green_aux_K,
+        #     keldysh_comp=keldysh_comp)
 
     def get_susceptibility(self, freq: np.ndarray, component: Tuple[int, int],
                            channels: Tuple[str, str],
@@ -448,12 +460,14 @@ class Correlators:
         out: fg.FrequencyGreen
             Susceptibility on the physical contour
         """
-        chi_greater_plus, chi_greater_minus = self.get_susceptibility(freq=freq, component=(1, 0),
-                                                                      channels=channels,
-                                                                      sites=sites, prefactor=prefactor)
-        chi_lesser_plus, chi_lesser_minus = self.get_susceptibility(freq=freq, component=(0, 1),
-                                                                    channels=channels,
-                                                                    sites=sites, prefactor=prefactor)
+        chi_greater_plus, chi_greater_minus = self.get_susceptibility(
+            freq=freq, component=(1, 0),
+            channels=channels,
+            sites=sites, prefactor=prefactor)
+        chi_lesser_plus, chi_lesser_minus = self.get_susceptibility(
+            freq=freq, component=(0, 1),
+            channels=channels,
+            sites=sites, prefactor=prefactor)
 
         chi_aux_R = chi_greater_plus - chi_lesser_plus
         chi_aux_K = chi_greater_plus + chi_greater_minus + chi_lesser_plus \
@@ -570,7 +584,8 @@ class Correlators:
 
         if not return_:
             for component in self.correlators[3][spin]:
-                self.correlators[3][spin][component] = self.get_three_point_vertex_components(
+                self.correlators[3][spin][component] = \
+                    self.get_three_point_vertex_components(
                     component=component, freq=freq, sites=sites, spin=spin,
                     permutation_sign=permutation_sign,
                     prefactor=prefactor)
@@ -580,7 +595,8 @@ class Correlators:
                 dtype=np.complex128)
             for i, j, k in self.correlators[3][
                     ("up", "up", 'ch')]:
-                three_point_vertex[:, :, i, j, k] = self.get_three_point_vertex_components(
+                three_point_vertex[:, :, i, j, k] = \
+                    self.get_three_point_vertex_components(
                     component=(i, j, k), freq=freq, sites=sites, spin=spin,
                     permutation_sign=permutation_sign, prefactor=prefactor)
 
