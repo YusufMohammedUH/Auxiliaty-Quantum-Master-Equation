@@ -328,6 +328,10 @@ class Correlators:
         """Return the single particle green's function on the physical contour
         e.g. returns a fg.FrequencyGreen object.
 
+        G^{R}(\omega) = G^{>}_{+}(\omega) -G^{<}_{+}(\omega)
+        G^{K}(\omega) = G^{>}(\omega) +G^{<}(\omega)
+        G^{>/<}(\omega) = G^{>/<}_{+}(\omega) +G^{>/<}_{-}(\omega)
+
         Parameters
         ----------
         freq : np.ndarray
@@ -348,8 +352,7 @@ class Correlators:
         green_lesser_plus, green_lesser_minus = \
             self.get_single_particle_green((0, 1), freq, sites, spin)
 
-        green_aux_R = 0.5 * (green_greater_plus + green_greater_minus - (
-            green_lesser_plus + green_lesser_minus))
+        green_aux_R = green_greater_plus - green_lesser_plus
 
         if keldysh_comp == "keldysh":
             green_aux_K = green_greater_plus + green_greater_minus \
@@ -689,6 +692,31 @@ if __name__ == "__main__":
     sigma = G_aux_full.get_self_enerqy() - hyb_aux
 
     # Visualize results
+    plt.figure()
+    plt.plot(sys.ws, (G_lesser_plus + G_lesser_minus).imag)
+    plt.ylabel(r"$A(\omega)$")
+    plt.xlabel(r"$\omega$")
+    plt.legend([r"$Im G^<(\omega)$"])
+    plt.show()
+
+    plt.plot(sys.ws, (G_lesser_plus + G_lesser_minus).real)
+    plt.ylabel(r"$A(\omega)$")
+    plt.xlabel(r"$\omega$")
+    plt.legend([r"$Re G^<(\omega)$"])
+    plt.show()
+
+    plt.figure()
+    plt.plot(sys.ws, (G_greater_plus + G_greater_minus).imag)
+    plt.ylabel(r"$A(\omega)$")
+    plt.xlabel(r"$\omega$")
+    plt.legend([r"$Im G^<(\omega)$"])
+    plt.show()
+
+    plt.plot(sys.ws, (G_greater_plus + G_greater_minus).real)
+    plt.ylabel(r"$A(\omega)$")
+    plt.xlabel(r"$\omega$")
+    plt.legend([r"$Re G^<(\omega)$"])
+    plt.show()
 
     plt.figure()
     plt.plot(sys.ws, G_aux_U0.retarded.imag)
