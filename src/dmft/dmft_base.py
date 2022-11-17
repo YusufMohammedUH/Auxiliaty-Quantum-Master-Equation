@@ -69,14 +69,14 @@ class DMFTBase:
 
     def __init__(self, parameters: Union[Dict, None] = None,
                  hyb_leads: Union[fg.FrequencyGreen, None] = None,
-                 keldysh_comp: str = "keldysh", fname: Union[str, None] = None
+                 fname: Union[str, None] = None
                  ) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
-        self.keldysh_comp = keldysh_comp
         if (fname is None):
             if parameters is None:
                 raise ValueError("No parameters passed.")
+            self.keldysh_comp = parameters['system']['keldysh_comp']
             self.parameters = parameters
             self.err_iterations = []
             self.n = None
@@ -86,23 +86,23 @@ class DMFTBase:
                                    parameters['freq']['N_freq'])
                 freq.flags.writeable = False
                 self.hyb_leads = fg.FrequencyGreen(
-                    freq, keldysh_comp=keldysh_comp)
+                    freq, keldysh_comp=self.keldysh_comp)
                 self.hyb_dmft = fg.FrequencyGreen(
-                    freq, keldysh_comp=keldysh_comp)
+                    freq, keldysh_comp=self.keldysh_comp)
 
                 self.green_sys = fg.FrequencyGreen(
-                    freq, keldysh_comp=keldysh_comp)
+                    freq, keldysh_comp=self.keldysh_comp)
                 self.self_energy_int = fg.FrequencyGreen(
-                    freq, keldysh_comp=keldysh_comp)
+                    freq, keldysh_comp=self.keldysh_comp)
             else:
                 self.hyb_leads = hyb_leads
                 self.hyb_dmft = fg.FrequencyGreen(
-                    self.hyb_leads.freq, keldysh_comp=keldysh_comp)
+                    self.hyb_leads.freq, keldysh_comp=self.keldysh_comp)
 
                 self.green_sys = fg.FrequencyGreen(
-                    self.hyb_leads.freq, keldysh_comp=keldysh_comp)
+                    self.hyb_leads.freq, keldysh_comp=self.keldysh_comp)
                 self.self_energy_int = fg.FrequencyGreen(
-                    self.hyb_leads.freq, keldysh_comp=keldysh_comp)
+                    self.hyb_leads.freq, keldysh_comp=self.keldysh_comp)
         else:
             self.hyb_leads = None
             self.hyb_dmft = None
@@ -250,8 +250,8 @@ class DMFTBase:
         hd5.add_attrs(fname, '/system', self.parameters['system'])
 
         if 'leads' in self.parameters:
-            self.hyb_leads.save(fname, '/system', 'hyb_leads', savefreq=False)
-            hd5.add_attrs(fname, '/system', self.parameters['leads'])
+            self.hyb_leads.save(fname, '/leads', 'hyb_leads', savefreq=False)
+            hd5.add_attrs(fname, '/leads', self.parameters['leads'])
 
     def load(self, fname: str, read_parameters: bool = False) -> None:
         """Load data from file
@@ -268,9 +268,10 @@ class DMFTBase:
                 fname, '/convergence')
             self.parameters['system'] = hd5.read_attrs(fname, '/system')
             self.parameters['freq'] = hd5.read_attrs(fname, '/')
-
+            self.keldysh_comp = self.parameters['system']['keldysh_comp']
             try:
-                self.parameters['leads'] = hd5.read_attrs(fname, '/system')
+                self.parameters['leads'] = hd5.read_attrs(
+                    fname, '/leads')
             except Exception as err:
                 print(err)
 
@@ -300,4 +301,4 @@ class DMFTBase:
         self.self_energy_int.load(fname, '/system', 'self_energy_int',
                                   readfreq=False)
         if 'leads' in self.parameters:
-            self.hyb_leads.load(fname, '/system', 'hyb_leads', readfreq=False)
+            self.hyb_leads.load(fname, '/leads', 'hyb_leads', readfreq=False)

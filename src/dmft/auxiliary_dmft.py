@@ -8,6 +8,7 @@ import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
 import src.dmft.dmft_base as dmft_base
 import src.util.hdf5_util as hd5
+import matplotlib.pyplot as plt
 
 
 class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
@@ -57,7 +58,7 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
     def __init__(self, parameters: Union[Dict, None] = None,
                  correlators: Union[corr.Correlators, None] = None,
                  hyb_leads: Union[fg.FrequencyGreen, None] = None,
-                 keldysh_comp: str = "keldysh", fname: Union[str, None] = None
+                 fname: Union[str, None] = None
                  ) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
@@ -67,7 +68,7 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
         self.hyb_aux = None
 
         super().__init__(parameters=parameters, hyb_leads=hyb_leads,
-                         keldysh_comp=keldysh_comp, fname=fname)
+                         fname=fname)
 # -------------------------- setup correletor class ------------------------- #
         if fname is None:
             self.correlators = correlators
@@ -176,7 +177,7 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
         self.green_sys.dyson(self_energy=(
             self.hyb_dmft + self.hyb_leads + self.self_energy_int),
             e_tot=epsilon + U * (self.n - 0.5))
-
+        plt.plot(self.green_sys.freq, self.green_sys.retarded.real)
         return optimization_options, x_start
 
     def solve(self, optimization_options: Dict = {
@@ -234,10 +235,10 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
 
 if __name__ == "__main__":
     #  Frequency grid
-    N_freq = 400
-    freq_max = 10
+    N_freq = 1000
+    freq_max = 20
 
-    selfconsist_param = {'max_iter': 10, 'err_tol': 1e-6, 'mixing': 0.2}
+    selfconsist_param = {'max_iter': 50, 'err_tol': 1e-6, 'mixing': 0.2}
 
     e0 = 0
     mu = 0
@@ -248,12 +249,13 @@ if __name__ == "__main__":
     leads_param = {'e0': e0, 'mu': [mu], 'beta': beta, 'D': D, 'gamma': gamma}
 
     spinless = False
-    spin_sector_max = 1
+    spin_sector_max = 2
     tilde_conjugationrule_phase = True
 
-    U = 3.0
+    U = 0.0
     v = 1.0
-    sys_param = {'e0': 0, 'v': v, 'U': U}
+    keldysh_comp = 'lesser'
+    sys_param = {'keldysh_comp': keldysh_comp, 'e0': 0, 'v': v, 'U': U}
 
     # Parameters of the auxiliary system
     Nb = 1
@@ -261,11 +263,12 @@ if __name__ == "__main__":
     aux_param = {'Nb': Nb, 'nsite': nsite, 'spinless': spinless,
                  'tilde_conjugationrule_phase': tilde_conjugationrule_phase,
                  'spin_sector_max': spin_sector_max}
-    keldysh_comp = 'lesser'
-    params = {'keldysh_comp': keldysh_comp, 'freq': {"freq_min": -freq_max, "freq_max": freq_max,
-                                                     'N_freq': N_freq},
-              'selfconsistency': selfconsist_param, 'leads': leads_param,
-              'aux_sys': aux_param, 'system': sys_param}
+    params = {'freq': {
+        "freq_min": -freq_max,
+        "freq_max": freq_max,
+        'N_freq': N_freq},
+        'selfconsistency': selfconsist_param, 'leads': leads_param,
+        'aux_sys': aux_param, 'system': sys_param}
 
     # ##################### Initializing Lindblad class #######################
     super_fermi_ops = sf_sub.SpinSectorDecomposition(
@@ -275,8 +278,8 @@ if __name__ == "__main__":
     L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
     corr_cls = corr.Correlators(L)
 
-    aux_dmft = AuxiliaryMaserEquationDMFT(params, correlators=corr_cls,
-                                          keldysh_comp=keldysh_comp)
+    aux_dmft = AuxiliaryMaserEquationDMFT(params, correlators=corr_cls)
     aux_dmft.hyb_leads = aux_dmft.get_bath()
     aux_dmft.solve()
+    # aux_dmft.save('auxiliaryDMFT.h5')
 # %%
