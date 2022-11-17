@@ -251,18 +251,19 @@ if __name__ == "__main__":
     spin_sector_max = 1
     tilde_conjugationrule_phase = True
 
-    U = 5.0
+    U = 3.0
     v = 1.0
-    sys_param = {'e0': 0, 'v': v, 'U': U, 'spinless': spinless,
-                 'tilde_conjugation': tilde_conjugationrule_phase}
+    sys_param = {'e0': 0, 'v': v, 'U': U}
 
     # Parameters of the auxiliary system
     Nb = 1
     nsite = 2 * Nb + 1
-    aux_param = {'Nb': Nb, 'nsite': nsite}
-
-    params = {'freq': {"freq_min": -freq_max, "freq_max": freq_max,
-                       'N_freq': N_freq},
+    aux_param = {'Nb': Nb, 'nsite': nsite, 'spinless': spinless,
+                 'tilde_conjugationrule_phase': tilde_conjugationrule_phase,
+                 'spin_sector_max': spin_sector_max}
+    keldysh_comp = 'lesser'
+    params = {'keldysh_comp': keldysh_comp, 'freq': {"freq_min": -freq_max, "freq_max": freq_max,
+                                                     'N_freq': N_freq},
               'selfconsistency': selfconsist_param, 'leads': leads_param,
               'aux_sys': aux_param, 'system': sys_param}
 
@@ -274,12 +275,8 @@ if __name__ == "__main__":
     L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
     corr_cls = corr.Correlators(L)
 
-    auxiliaryDMFT = AuxiliaryMaserEquationDMFT(params, correlators=corr_cls,
-                                               keldysh_comp='keldysh')
-    auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
-    auxiliaryDMFT.solve()
-    import matplotlib.pyplot as plt
-    dw = auxiliaryDMFT.green_sys.freq[1] - auxiliaryDMFT.green_sys.freq[0]
-    plt.plot(auxiliaryDMFT.green_sys.retarded.imag)
-    plt.plot(auxiliaryDMFT.green_sys.retarded.imag[::-1])
+    aux_dmft = AuxiliaryMaserEquationDMFT(params, correlators=corr_cls,
+                                          keldysh_comp=keldysh_comp)
+    aux_dmft.hyb_leads = aux_dmft.get_bath()
+    aux_dmft.solve()
 # %%
