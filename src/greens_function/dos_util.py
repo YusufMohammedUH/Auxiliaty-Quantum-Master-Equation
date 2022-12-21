@@ -4,7 +4,7 @@ from numba import njit, complex128, float64
 import src.greens_function.frequency_greens_function as fg
 
 
-@njit(complex128(float64, float64, float64, float64), cache=True)
+# @njit(complex128(float64, float64, float64, float64), cache=True)
 def flat_bath_retarded(w: float, e0: float, D: float, gamma: float) -> complex:
     """Retarded Green's function with a flat band density of states.
 

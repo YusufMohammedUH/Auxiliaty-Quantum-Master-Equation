@@ -17,16 +17,19 @@ class DMFT_GW(dmft_base.DMFTBase):
         DMFT calculations.
     """
 
-    def __init__(self, parameters: Dict,
+    def __init__(self, parameters: Union[Dict, None] = None,
                  hyb_leads: Union[fg.FrequencyGreen, None] = None,
-                 keldysh_comp: str = "lesser") -> None:
+                 fname: Union[str, None] = None) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
-        super().__init__(parameters, hyb_leads, keldysh_comp)
+        super().__init__(parameters=parameters, hyb_leads=hyb_leads,
+                         fname=fname)
         self.screened_interaction = fg.FrequencyGreen(
-            self.green_sys.freq, fermionic=False, keldysh_comp=keldysh_comp)
+            self.green_sys.freq, fermionic=False,
+            keldysh_comp=self.keldysh_comp)
         self.polarizability = fg.FrequencyGreen(
-            self.green_sys.freq, fermionic=False, keldysh_comp=keldysh_comp)
+            self.green_sys.freq, fermionic=False,
+            keldysh_comp=self.keldysh_comp)
         self.time = np.linspace(self.parameters['time']['time_min'],
                                 self.parameters['time']['time_max'],
                                 self.parameters['time']['N_time'],)

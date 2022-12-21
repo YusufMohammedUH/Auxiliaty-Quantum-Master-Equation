@@ -21,7 +21,7 @@ Us = [0, 1, 2, 3, 4]
 for U in Us:
     print("U: ", U)
     v = 1.0
-    sys_param = {"e0": 0, 'v': v, 'U': U}
+    sys_param = {"e0": 0, 'v': v, 'U': U, 'keldysh_comp': 'lesser'}
 
     # Parameters of the auxiliary system
     Nb = 1
@@ -37,7 +37,7 @@ for U in Us:
 
     # ##################### Initializing Lindblad class #######################
 
-    dmft_gw = dmft.DMFT_GW(params, hyb_leads=None, keldysh_comp="lesser")
+    dmft_gw = dmft.DMFT_GW(params, hyb_leads=None)
     dmft_gw.hyb_leads = dmft_gw.get_bath()
     dmft_gw.solve()
     i_min = np.where(dmft_gw.green_sys.freq > -10.03)[0][0]

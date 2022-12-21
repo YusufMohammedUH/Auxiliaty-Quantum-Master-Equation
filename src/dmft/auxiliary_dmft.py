@@ -8,7 +8,6 @@ import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
 import src.dmft.dmft_base as dmft_base
 import src.util.hdf5_util as hd5
-import matplotlib.pyplot as plt
 
 
 class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
@@ -177,7 +176,6 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
         self.green_sys.dyson(self_energy=(
             self.hyb_dmft + self.hyb_leads + self.self_energy_int),
             e_tot=epsilon + U * (self.n - 0.5))
-        plt.plot(self.green_sys.freq, self.green_sys.retarded.real)
         return optimization_options, x_start
 
     def solve(self, optimization_options: Dict = {
@@ -254,7 +252,7 @@ if __name__ == "__main__":
 
     U = 0.0
     v = 1.0
-    keldysh_comp = 'lesser'
+    keldysh_comp = 'keldysh'
     sys_param = {'keldysh_comp': keldysh_comp, 'e0': 0, 'v': v, 'U': U}
 
     # Parameters of the auxiliary system
