@@ -364,6 +364,17 @@ class FrequencyGreen:
         """
         return -1j * self.get_spectral_func() + self.keldysh
 
+    def get_time_ordered(self) -> np.ndarray:
+        """ Return the time ordered Green's function
+        """
+        return 0.5 * (self.retarded + self.get_advanced() + self.get_keldysh())
+
+    def get_anti_time_ordered(self) -> np.ndarray:
+        """ Return the anti-time ordered Green's function
+        """
+        return 0.5 * (self.get_keldysh() - (self.retarded + self.get_advanced()
+                                            ))
+
     def get_keldysh(self) -> np.ndarray:
         """Return the keldysh component
         """
@@ -578,13 +589,13 @@ def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem, keldysh_comp: str
     function is constructed and its self-engergy/hybridization function
     returned
 
-    [extended_summary]
-
     Parameters
     ----------
     auxsys : auxiliary_system_parameter.AuxiliarySystem
             Auxiliary system parameters class
 
+    keldysh_comp: str, 'lesser' or 'keldysh'
+                Specify which keldysh component is desired
     Returns
     -------
     out : FrequencyGreen
