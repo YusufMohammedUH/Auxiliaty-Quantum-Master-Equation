@@ -501,7 +501,8 @@ class AuxiliaryDualGW:
         self.compute_polarization_aux()
         self.compute_green_bare_dual()
         self.compute_bare_dual_screened_interaction()
-        sigma_dual_tmp = fg.FrequencyGreen(self.green_aux.freq)
+        sigma_dual_tmp = fg.FrequencyGreen(self.green_aux.freq,
+                                           keldysh_comp=self.keldysh_comp)
         for ii in range(iter_max):
             if ii == 0:
                 self.compute_polarization_dual(self.green_bare_dual)
@@ -517,6 +518,8 @@ class AuxiliaryDualGW:
             self.err_iterations_gw.append(opt.cost_function(self.sigma_dual,
                                                             sigma_dual_tmp,
                                                             normalize=False))
+            if ii == 1:
+                plt.plot((self.sigma_dual - sigma_dual_tmp).retarded.imag)
             sigma_dual_tmp = fg.FrequencyGreen(
                 self.green_aux.freq,
                 retarded=self.sigma_dual.retarded,
@@ -724,7 +727,7 @@ if __name__ == '__main__':
         fname='auxiliaryDMFT.h5')
     U = aux_qme_dmft.parameters['system']['U']
     U_trilex = {'ch': U / 2, 'x': -U / 2, 'y': -U / 2, 'z': -U / 2}
-    time_param = {'time_min': -10, 'time_max': 10, 'N_time': 2001}
+    time_param = {'time_min': -10, 'time_max': 10, 'N_time': 1001}
     aux_dual_GW = AuxiliaryDualGW(time_param=time_param, U_trilex=U_trilex,
                                   green_aux=aux_qme_dmft.green_aux,
                                   hyb_sys=(aux_qme_dmft.hyb_leads
@@ -735,7 +738,7 @@ if __name__ == '__main__':
                                       'system']['keldysh_comp'])
 
 if __name__ == '__main__':
-    aux_dual_GW.solve_selfconsistent_dual_gw(iter_max=1)
+    aux_dual_GW.solve_selfconsistent_dual_gw(iter_max=10, err_tol=1e-10)
 
 # %%
 if __name__ == '__main__':

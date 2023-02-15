@@ -280,7 +280,7 @@ if __name__ == "__main__":
         result_nb1 = optimization_ph_symmertry(
             Nb, hybridization, options=options)
         aux_nb1 = get_aux(result_nb1.x, Nb, freq)
-        hyb_aux_nb1 = fg.get_hyb_from_aux(aux_nb1)
+        hyb_aux_nb1 = fg.get_hyb_from_aux(aux_nb1, keldysh_comp='keldysh')
     except ValueError:
         print(f"Minimization for Nb = {Nb}, not converged.")
 
@@ -290,7 +290,7 @@ if __name__ == "__main__":
         result_nb2 = optimization_ph_symmertry(
             Nb, hybridization, options=options)
         aux_nb2 = get_aux(result_nb2.x, Nb, freq)
-        hyb_aux_nb2 = fg.get_hyb_from_aux(aux_nb2)
+        hyb_aux_nb2 = fg.get_hyb_from_aux(aux_nb2, keldysh_comp='keldysh')
     except ValueError:
         print(f"Minimization for Nb = {Nb}, not converged.")
 
