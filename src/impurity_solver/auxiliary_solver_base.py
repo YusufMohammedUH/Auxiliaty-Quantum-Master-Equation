@@ -501,7 +501,6 @@ class AuxiliaryDualSolverBase:
                                 Gamma2=self.correlators.Lindbladian.Gamma2)
         if load_input_param:
             grid = hd5.read_attrs(fname, '/')
-            print(grid)
             try:
                 freq = np.linspace(
                     grid['freq_min'], grid['freq_max'],
