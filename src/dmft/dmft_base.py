@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from typing import Dict, Union, Callable, Tuple
 import numpy as np
 from scipy.integrate import simps
@@ -225,7 +224,6 @@ class DMFTBase:
             self.green_sys.keldysh * (self.parameters['system']['v']**2),
             keldysh_comp=self.keldysh_comp)
 
-    @abstractmethod
     def impurity_solver(self, args: Tuple) -> None:
         pass
 
