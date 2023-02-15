@@ -543,7 +543,7 @@ class Correlators:
                                permutation_sign: Tuple = (-1 +
                                                           0j, 1 + 0j, 1 + 0j),
                                prefactor: complex = -1 + 0j,
-                               return_: bool = False) -> Union[None, Dict]:
+                               return_: bool = False) -> Dict:
         """Return the single particle green's function for the desired contour
         component 'component' for given spin, site and frequency grid.
         Parameters
@@ -577,30 +577,173 @@ class Correlators:
 
         Returns
         -------
-        out: Union[None,Dict]
+        out: Dict
             return the three point vertex of desired spin and site and all
             components
         """
 
-        if not return_:
-            for component in self.correlators[3][spin]:
-                self.correlators[3][spin][component] = \
-                    self.get_three_point_vertex_components(
-                    component=component, freq=freq, sites=sites, spin=spin,
-                    permutation_sign=permutation_sign,
-                    prefactor=prefactor)
-        else:
-            three_point_vertex = np.zeros(
-                (freq.shape[0], freq.shape[0], 2, 2, 2),
-                dtype=np.complex128)
-            for i, j, k in self.correlators[3][
-                    ("up", "up", 'ch')]:
-                three_point_vertex[:, :, i, j, k] = \
-                    self.get_three_point_vertex_components(
-                    component=(i, j, k), freq=freq, sites=sites, spin=spin,
-                    permutation_sign=permutation_sign, prefactor=prefactor)
+        for component in self.correlators[3][spin]:
+            self.correlators[3][spin][component] = \
+                self.get_three_point_vertex_components(
+                component=component, freq=freq, sites=sites, spin=spin,
+                permutation_sign=permutation_sign,
+                prefactor=prefactor)
 
-            return three_point_vertex
+        if return_:
+            return self.correlators[3][spin]
+
+    def get_vertex_green_convolution(self, green: fg.FrequencyGreen,
+                                     component: Tuple, spin: Tuple,
+                                     position_freq: Tuple,
+                                     ) -> np.ndarray:
+        """calculate the product of the green's function and the three point
+        vertex in frequency domain for a given contour component 'component'.
+
+        Parameters
+        ----------
+        green : fg.FrequencyGreen
+            single particle greens function
+
+        vertex : Union[np.ndarray, None]
+            three point vertex, if None the vertex of the object is used
+
+        component : Tuple
+            desired contour component (0,0,0) or (0,1,0) etc, of the
+            calculated object
+
+        spin: Tuple
+            spin of the vertex
+
+        position_freq : Tuple
+            position and frequency dependence of the green's function. The
+            first index corresponds to the position 0=left, 1=right from the
+            vertex. The second term corresponds to the frequency dependence of
+            the green's function. The vertex depends on w_0 and w_1. If freq=0
+            than the green's function depends on w_0. If freq=1 the green's
+            function depends on w_1. If freq=2 the green's function depends on
+            -(w_1+w_2).
+
+        Returns
+        -------
+        np.ndarray
+            product of the green's function and the vertex in frequency domain
+        """
+    # XXX: works only in the single orbital/site case, so if dim(green[i])=1
+        #  multiply greens function from the left with the vertex
+        if position_freq[0] == 0:
+            if position_freq[1] == 0:
+                if component[0] == 0:
+                    tmp = ((green.get_time_ordered() * self.correlators[3][
+                        spin][(0, *component[1:])].T).T
+                        - (green.get_lesser() * self.correlators[3][spin][
+                            (1, *component[1:])].T).T)
+                elif component[0] == 1:
+                    tmp = ((green.get_greater() * self.correlators[3][spin][
+                        (0, *component[1:])].T).T
+                        - (green.get_anti_time_ordered() * self.correlators[3][
+                            spin][
+                            (1, *component[1:])].T).T)
+                else:
+                    raise ValueError('component[0] has to be 0 or 1')
+
+            elif position_freq[1] == 1:
+                if component[1] == 0:
+                    tmp = ((green.get_time_ordered().T * self.correlators[3][
+                        spin][(component[0], 0, component[-1])]).T
+                        - (green.get_lesser().T * self.correlators[3][spin][
+                            (component[0], 1, component[-1])]).T)
+                elif component[1] == 1:
+                    tmp = ((green.get_greater().T * self.correlators[3][spin][
+                        (component[0], 0, component[-1])]).T
+                        - (green.get_anti_time_ordered().T * self.correlators[
+                            3][spin][(component[0], 1, component[-1])]).T)
+                else:
+                    raise ValueError('component[0] has to be 0 or 1')
+            else:
+                raise ValueError('position_freq[1] has to be 0 or 1')
+        # multiply greens function from the right with the vertex
+        elif position_freq[0] == 1:
+            if position_freq[1] == 0:
+                if component[0] == 0:
+                    tmp = ((green.get_time_ordered() * self.correlators[3][
+                        spin][(0, *component[1:])].T).T
+                        - (green.get_greater() * self.correlators[3][spin][
+                            (1, *component[1:])].T).T)
+                elif component[0] == 1:
+                    tmp = ((green.get_lesser() * self.correlators[3][spin][
+                        (0, *component[1:])].T).T
+                        - (green.get_anti_time_ordered() * self.correlators[3][
+                            spin][
+                            (1, *component[1:])].T).T)
+                else:
+                    raise ValueError('component[0] has to be 0 or 1')
+
+            elif position_freq[1] == 1:
+                if component[1] == 0:
+                    tmp = ((green.get_time_ordered().T * self.correlators[3][
+                        spin][(component[0], 0, component[-1])]).T
+                        - (green.get_greater().T * self.correlators[3][spin][
+                            (component[0], 1, component[-1])]).T)
+                elif component[1] == 1:
+                    tmp = ((green.get_lesser().T * self.correlators[3][spin][
+                        (component[0], 0, component[-1])]).T
+                        - (green.get_anti_time_ordered().T * self.correlators[
+                            3][spin][
+                            (component[0], 1, component[-1])]).T)
+                else:
+                    raise ValueError('component[0] has to be 0 or 1')
+
+            elif position_freq[1] == 2:
+                tmp = np.zeros_like(self.correlators[3][spin][component].shape)
+                for ii in np.nditer(green.freq):
+                    for jj in np.nditer(green.freq):
+                        w1 = green.freq[ii]
+                        w2 = green.freq[jj]
+                        w3 = -(w1 + w2)
+                        if w3 in green.freq:
+                            w3_idx = np.where(green.freq == w3)[0][0]
+                            g_w3_time_ordered = green.get_time_ordered()[
+                                w3_idx]
+                            g_w3_lesser = green.get_lesser()[w3_idx]
+                            g_w3_greater = green.get_greater()[w3_idx]
+                            g_w3_anti_time_ordered = \
+                                green.get_anti_time_ordered()[w3_idx]
+                        else:
+                            if w3_idx < green.freq[0]:
+                                g_w3_time_ordered = green.get_time_ordered(
+                                )[0]
+                                g_w3_lesser = green.get_lesser()[0]
+                                g_w3_greater = green.get_greater()[0]
+                                g_w3_anti_time_ordered = \
+                                    green.get_anti_time_ordered()[0]
+
+                            elif w3_idx > green.freq[-1]:
+                                g_w3_time_ordered = green.get_time_ordered(
+                                )[-1]
+                                g_w3_lesser = green.get_lesser()[-1]
+                                g_w3_greater = green.get_greater()[-1]
+                                g_w3_anti_time_ordered = \
+                                    green.get_anti_time_ordered()[-1]
+
+                        if component[2] == 0:
+                            tmp[ii, jj] = self.correlators[
+                                3][spin][(*component[:-1], 0)][ii, jj]\
+                                * g_w3_time_ordered\
+                                - self.correlators[
+                                3][spin][(*component[:-1], 1)][ii, jj]\
+                                * g_w3_greater
+                        elif component[2] == 1:
+                            tmp[ii, jj] = self.correlators[
+                                3][spin][(*component[:-1], 0)][ii, jj]\
+                                * g_w3_lesser\
+                                - self.correlators[
+                                3][spin][(*component[:-1], 1)][ii, jj]\
+                                * g_w3_anti_time_ordered
+                        else:
+                            raise ValueError('component[0] has to be 0 or 1')
+            else:
+                raise ValueError('position_freq[1] has to be 0,1 or 2')
+        return tmp
 
     def set_contour_symmetries(self, n_correlators: Dict,
                                trilex: bool = False) -> None:
