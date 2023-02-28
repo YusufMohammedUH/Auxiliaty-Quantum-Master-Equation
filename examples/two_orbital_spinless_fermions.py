@@ -55,11 +55,12 @@ times = np.linspace(t_min, t_max, N)
 rho = ed_lind.time_propagation_all_times_exact_diagonalization(
     times, rho0.reshape((dim**2, 1)), vals, vec_l, vec_r)
 
-plt.title("Unitary Population Dynamics")
-plt.xlabel("t")
-plt.plot(times, rho[10].real)
-plt.plot(times, rho[5].real)
-
+plt.title("Population Dynamics")
+plt.xlabel(r"$t$")
+plt.ylabel(r"$n(t)$")
+plt.plot(times, rho[10].real, label=r"$n_1(t)$")
+plt.plot(times, rho[5].real, label=r"$n_2(t)$")
+plt.legend()
 plt.show()
 
 # ########################## Spontaneous emission ###########################
