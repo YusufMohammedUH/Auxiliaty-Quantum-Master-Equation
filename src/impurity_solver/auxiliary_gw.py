@@ -289,9 +289,9 @@ class AuxiliaryDualGW(aux_base.AuxiliaryDualSolverBase):
     def save(self, fname: str, dir_: str, dataname: str,
              save_input_param: bool = True, save_aux_data: bool = False
              ) -> None:
-        super().save(fname=fname, dir_=dir_, dataname=dataname,
-                     save_input_param=save_input_param,
-                     save_aux_data=save_aux_data)
+        self.__save__(fname=fname, dir_=dir_, dataname=dataname,
+                      save_input_param=save_input_param,
+                      save_aux_data=save_aux_data)
 
         freq = {'freq_min': self.hyb_aux.freq[0],
                 'freq_max': self.hyb_aux.freq[-1],
@@ -305,9 +305,9 @@ class AuxiliaryDualGW(aux_base.AuxiliaryDualSolverBase):
     def load(self, fname: str, dir_: str, dataname: str,
              load_input_param: bool = True, load_aux_data: bool = False
              ) -> None:
-        super().load(fname=fname, dir_=dir_, dataname=dataname,
-                     load_input_param=load_input_param,
-                     load_aux_data=load_aux_data)
+        self.__load__(fname=fname, dir_=dir_, dataname=dataname,
+                      load_input_param=load_input_param,
+                      load_aux_data=load_aux_data)
 
         if load_input_param:
             grid = hd5.read_attrs(fname, '/')

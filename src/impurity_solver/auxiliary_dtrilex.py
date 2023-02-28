@@ -3,10 +3,9 @@ from typing import Dict, Optional
 import matplotlib.pyplot as plt
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.correlation_functions as corr
+import src.impurity_solver.auxiliary_solver_base as aux_base
 import src.util.hdf5_util as hd5
 
-import src.impurity_solver.auxiliary_solver_base as aux_base
-import src.dmft.auxiliary_dmft as aux_dmft
 
 # Dual TRILEX solver:
 #  [X] 1. inherit from AuxiliaryDualSolverBase:
@@ -22,8 +21,11 @@ import src.dmft.auxiliary_dmft as aux_dmft
 #              until convergence
 #       [X] 10. calculate the system Green's function
 #  [X] 2. calculate three point vertex
-#  [X] 2. calculate dual polarization
-#  [X] 3. calculate dual self-energy
+#  [ ] 3. convolute three point vertex
+#         and store the vertex such that I have a efficient
+#         representation
+#  [ ] 2. calculate dual polarization
+#  [ ] 3. calculate dual self-energy
 
 
 class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
@@ -192,9 +194,9 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
              save_input_param: bool = True, save_aux_data: bool = False
              ) -> None:
 
-        super().save(fname=fname, dir_=dir_, dataname=dataname,
-                     save_input_param=save_input_param,
-                     save_aux_data=save_aux_data)
+        self.__save__(fname=fname, dir_=dir_, dataname=dataname,
+                      save_input_param=save_input_param,
+                      save_aux_data=save_aux_data)
 
         hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'three_point_vertex',
                           self.three_point_vertex)
@@ -205,9 +207,9 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
              load_input_param: bool = True, load_aux_data: bool = False
              ) -> None:
 
-        super().load(fname=fname, dir_=dir_, dataname=dataname,
-                     load_input_param=load_input_param,
-                     load_aux_data=load_aux_data)
+        self.__load__(fname=fname, dir_=dir_, dataname=dataname,
+                      load_input_param=load_input_param,
+                      load_aux_data=load_aux_data)
 
         temp = hd5.read_dict_data(
             fname, f"{dir_}/{dataname}", 'three_point_vertex')

@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 import numpy as np
+from abc import ABC, abstractmethod
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.frequency_greens_function as fg
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
@@ -24,7 +25,7 @@ import matplotlib.pyplot as plt
 #  [X] 3. calculate dual self-energy (abstract function)
 
 
-class AuxiliaryDualSolverBase:
+class AuxiliaryDualSolverBase(ABC):
     """This is the base clase to facilitate the calculation of the system
     Green's function by using a auxiliary system as a starting point.
 
@@ -315,6 +316,7 @@ class AuxiliaryDualSolverBase:
                    * self.U_trilex[channel[0]] +
                    0.5) * self.polarization_aux[channel]
 
+    @abstractmethod
     def compute_polarization_dual(self, green: "fg.FrequencyGreen" = None
                                   ) -> None:
         pass
@@ -331,6 +333,7 @@ class AuxiliaryDualSolverBase:
             #     self.bare_dual_screened_interaction[channel]
             #     * self.polarization_dual * (-1) + 1.).inverse()
 
+    @abstractmethod
     def compute_sigma_dual(self, green: "fg.FrequencyGreen" = None) -> None:
         pass
 
@@ -386,9 +389,38 @@ class AuxiliaryDualSolverBase:
                 break
         self.compute_green_system()
 
+    @abstractmethod
     def save(self, fname: str, dir_: str, dataname: str,
              save_input_param: bool = True, save_aux_data: bool = False
              ) -> None:
+        """Save the dual and auxiliary quantities to file.
+        The auxilary Green's function and hybridization are passed to the
+        class and therefore not saved.
+
+        Parameters
+        ----------
+        fname : str
+            File name to store data too.
+
+        dir_ : str
+            Group/Directory to save data too
+
+        dataname : str
+            Name under which to save T-DTRILEX data.
+
+         save_input_param : str
+            Save input parameters like green_aux, hyb_sys, etc, by default
+            True.
+
+        save_aux_data : bool, optional
+            Save auxiliary objects calculated here like auxiliary polarization
+            etc., by default False
+        """
+        pass
+
+    def __save__(self, fname: str, dir_: str, dataname: str,
+                 save_input_param: bool = True, save_aux_data: bool = False
+                 ) -> None:
         """Save the dual and auxiliary quantities to file.
         The auxilary Green's function and hybridization are passed to the
         class and therefore not saved.
@@ -455,9 +487,38 @@ class AuxiliaryDualSolverBase:
                     fname, f"{dir_}/{dataname}/susceptibility_aux",
                     f"{channel}", savefreq=False)
 
+    @abstractmethod
     def load(self, fname: str, dir_: str, dataname: str,
              load_input_param: bool = True, load_aux_data: bool = False
              ) -> None:
+        """Load the dual and auxiliary quantities from file.
+        The auxilary Green's function and hybridization are passed to the
+        class and therefore not saved.
+
+        Parameters
+        ----------
+        fname : str
+            File name to store data too.
+
+        dir_ : str
+            Group/Directory to save data too.
+
+        dataname : str
+            Name under which to save T-DTRILEX data.
+
+        load_input_param : bool, optional
+            Load input parameters like green_aux, hyb_sys, etc, by default
+            True.
+
+        load_aux_data : bool, optional
+            Load auxiliary objects calculated here like auxiliary polarization
+            etc., by default False
+        """
+        pass
+
+    def __load__(self, fname: str, dir_: str, dataname: str,
+                 load_input_param: bool = True, load_aux_data: bool = False
+                 ) -> None:
         """Load the dual and auxiliary quantities from file.
         The auxilary Green's function and hybridization are passed to the
         class and therefore not saved.
