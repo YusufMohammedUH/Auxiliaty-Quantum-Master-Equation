@@ -426,6 +426,66 @@ class FrequencyGreen:
                               fermionic=self.fermionic,
                               keldysh_comp=self.keldysh_comp)
 
+    def get_inverse_no_keldysh_rot(self, component: Tuple):
+        """return the inverse green's function component of
+        green's function without the keldysh rotation, e.g.
+
+        | G^{T} G^{<}      |
+        | G^{>} G^{\bar{T}}|
+
+        using
+                                | d   -b |
+        A^{-1} = \frac{1}{ad-bc}| -c   a |
+
+        Parameters
+        ----------
+        component : Tuple
+            (00): time-ordered ,(01): lesser, (10): greater,
+            (11): anti-time-ordered
+        """
+        assert component in [(0, 0), (0, 1), (1, 0), (1, 1)]
+        # XXX: We assume the
+        if self.orbitals > 1:
+            tmps = np.array([time_ord.dot(anti_time) - les.dot(great)
+                            for time_ord, les, great, anti_time in
+                            zip(self.get_time_ordered(),
+                                self.get_lesser(),
+                                self.get_greater(),
+                                self.get_anti_time_ordered())],
+                            dtype=np.complex128)
+            tmps = np.array(list(map(np.linalg.inv, tmps)))
+            if component == (0, 0):
+                green_inv = np.array([tmp.dot(anti_time) for anti_time, tmp in
+                                      zip(self.get_anti_time_ordered(), tmps)],
+                                     dtype=np.complex128)
+            elif component == (0, 1):
+                green_inv = np.array([-1. * tmp.dot(les) for les, tmp in
+                                      zip(self.get_lesser(), tmps)],
+                                     dtype=np.complex128)
+            elif component == (1, 0):
+                green_inv = np.array([-1. * tmp.dot(great) for great, tmp in
+                                      zip(self.get_great(), tmps)],
+                                     dtype=np.complex128)
+            elif component == (1, 0):
+                green_inv = np.array([tmp.dot(time_ord) for time_ord, tmp in
+                                      zip(self.get_time_ordered(), tmps)],
+                                     dtype=np.complex128)
+        else:
+            tmps = (self.get_time_ordered() * self.get_anti_time_ordered()
+                    - self.get_lesser() * self.get_greater())
+            tmps = np.array([1. / tmp if np.abs(tmp) != np.inf
+                            else 0 for tmp in tmps],
+                            dtype=np.complex128)
+            if component == (0, 0):
+                green_inv = tmps * self.get_anti_time_ordered()
+            elif component == (0, 1):
+                green_inv = -1. * tmps * self.get_lesser()
+            elif component == (1, 0):
+                green_inv = -1. * tmps * self.get_greater()
+            elif component == (1, 1):
+                green_inv = tmps * self.get_time_ordered()
+            return green_inv
+
     def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
               g0_inv: Union[np.ndarray, None] = None,
               g0: Optional[np.ndarray] = None) -> None:
