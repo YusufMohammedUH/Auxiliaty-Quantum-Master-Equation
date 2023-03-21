@@ -30,9 +30,6 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
     hyb_leads : Union[fg.FrequencyGreen, None], optional
         Hybridization function of the leads, by default None.
 
-    keldysh_comp : str, optional
-        Keldysh component to be used, by default "keldysh".
-
     Attributes
     ----------
     correlators : corr.Correlators
@@ -50,7 +47,7 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
     hyb_aux : fg.FrequencyGreen
         Hybridization function of the auxiliary system.
 
-    keldysh_comp : str, optional
+    keldysh_comp : str,
         Keldysh component to be used, by default "keldysh".
     """
 
@@ -65,9 +62,9 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
         self.U_mat = None
         self.green_aux = None
         self.hyb_aux = None
-
         super().__init__(parameters=parameters, hyb_leads=hyb_leads,
                          fname=fname)
+
 # -------------------------- setup correletor class ------------------------- #
         if fname is None:
             self.correlators = correlators
@@ -85,6 +82,11 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
             self.parameters['aux_sys']['target_sites'] = \
                 self.correlators.Lindbladian.super_fermi_ops.target_sites
         self.set_local_matrix()
+
+        self.aux_hyb = opt.AuxiliaryHybridization(
+            self.parameters['aux_sys']['Nb'],
+            x_start=[0., 0.1, 0.5, -0.1, 0.2],
+            U_mat=self.U_mat)
 
     def set_local_matrix(self, T_mat: Tuple[np.ndarray, None] = None,
                          U_mat: Tuple[np.ndarray, None] = None,
@@ -126,6 +128,7 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
             "disp": False, "maxiter": 500, 'ftol': 1e-5},
             x_start: List = [0., 0.1, 0.5, -0.1, 0.2]) -> None:
         # Optimization for determining the auxiliary hybridization function
+
         hyb_tot = None
         if not ((self.hyb_leads.keldysh_comp == self.hyb_dmft.keldysh_comp)
                 and (self.hyb_leads.keldysh_comp == self.keldysh_comp)):
@@ -140,28 +143,18 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
         elif self.keldysh_comp == "keldysh":
             hyb_tot = self.hyb_leads + self.hyb_dmft
 
-        optimal_param = opt.optimization_ph_symmertry(
-            self.parameters['aux_sys']['Nb'], hybridization=hyb_tot,
-            x_start=x_start,
-            options=optimization_options
-        )
-        x_start = np.copy(optimal_param.x)
+        # update the auxiliary hybridization function and the auxiliary
+        # parameters
+        self.hyb_aux = self.aux_hyb.update(
+            hyb_tot, options=optimization_options,
+            keldysh_comp=self.keldysh_comp)
 
-        aux_sys = opt.get_aux(
-            optimal_param.x, self.parameters['aux_sys']['Nb'],
-            self.green_sys.freq)
-
-        self.hyb_aux = fg.get_hyb_from_aux(
-            aux_sys, keldysh_comp=self.keldysh_comp)
         # #### Calculate the auxiliary single particle Green's function ###
-        self.T_mat = aux_sys.E
-        self.T_mat[self.parameters['aux_sys']['Nb'],
-                   self.parameters['aux_sys']['Nb']] -= \
-            self.parameters['system']['U'] / 2.
+        self.T_mat = self.aux_hyb.aux_sys.E
 
         self.correlators.update(T_mat=self.T_mat, U_mat=self.U_mat,
-                                Gamma1=aux_sys.Gamma1,
-                                Gamma2=aux_sys.Gamma2)
+                                Gamma1=self.aux_hyb.aux_sys.Gamma1,
+                                Gamma2=self.aux_hyb.aux_sys.Gamma2)
         self.green_aux = self.correlators.get_single_particle_green_physical(
             self.green_sys.freq, keldysh_comp=self.keldysh_comp)
         # ################### Extract the self-energy  ####################

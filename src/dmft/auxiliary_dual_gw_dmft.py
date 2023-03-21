@@ -11,7 +11,7 @@ import src.dmft.dmft_base as dmft_base
 import src.util.hdf5_util as hd5
 
 
-class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase, gw.AuxiliaryDualGW):
+class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase):
     """Auxiliary master equation dynamical mean field theory solver class.
     The clase is derived from the DMFTBase class and implements the
     auxiliary master equation DMFT imputiy_solver.
@@ -61,14 +61,18 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase, gw.AuxiliaryDualGW):
                  fname: Union[str, None] = None) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
-        U = parameters['system']['U']
-        self.U_trilex = {'ch': U / 2, 'x': -U / 2, 'y': -U / 2, 'z': -U / 2}
+        try:
+            self.U_trilex = parameters['system']['U_trilex']
+        except KeyError:
+            U = parameters['system']['U']
+            self.U_trilex = {'ch': U / 2, 'x': -
+                             U / 2, 'y': -U / 2, 'z': -U / 2}
 
         self.T_mat = None
         self.U_mat = None
         self.green_aux = None
         self.hyb_aux = None
-
+        self.aux_dual_gw = None
         dmft_base.DMFTBase.__init__(self, parameters=parameters,
                                     hyb_leads=hyb_leads, fname=fname)
 # -------------------------- setup correletor class ------------------------- #
@@ -88,6 +92,11 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase, gw.AuxiliaryDualGW):
             self.parameters['aux_sys']['target_sites'] = \
                 self.correlators.Lindbladian.super_fermi_ops.target_sites
         self.set_local_matrix()
+
+        self.aux_hyb = opt.AuxiliaryHybridization(
+            self.parameters['aux_sys']['Nb'],
+            x_start=[0., 0.1, 0.5, -0.1, 0.2],
+            U_mat=self.U_mat)
 
     def set_local_matrix(self, T_mat: Tuple[np.ndarray, None] = None,
                          U_mat: Tuple[np.ndarray, None] = None,
@@ -130,6 +139,12 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase, gw.AuxiliaryDualGW):
             x_start: List = [0., 0.1, 0.5, -0.1, 0.2]) -> None:
         # Optimization for determining the auxiliary hybridization function
         hyb_tot = None
+        if not ((self.hyb_leads.keldysh_comp == self.hyb_dmft.keldysh_comp)
+                and (self.hyb_leads.keldysh_comp == self.keldysh_comp)
+                and (self.green_sys.keldysh_comp == self.keldysh_comp)):
+            raise ValueError("ERROR: keldysh_comp of the leads and DMFT"
+                             + " have to be the same as the"
+                             + f" self.keldysh_comp: {self.keldysh_comp}")
         if self.keldysh_comp == "lesser":
             hyb_tot = self.hyb_leads + self.hyb_dmft
             hyb_tot.keldysh_comp = "keldysh"
@@ -138,51 +153,32 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase, gw.AuxiliaryDualGW):
         elif self.keldysh_comp == "keldysh":
             hyb_tot = self.hyb_leads + self.hyb_dmft
 
-        optimal_param = opt.optimization_ph_symmertry(
-            self.parameters['aux_sys']['Nb'], hybridization=hyb_tot,
-            x_start=x_start,
-            options=optimization_options
-        )
-        x_start = np.copy(optimal_param.x)
-
-        aux_sys = opt.get_aux(
-            optimal_param.x, self.parameters['aux_sys']['Nb'],
-            self.green_sys.freq)
-        self.hyb_aux = fg.get_hyb_from_aux(aux_sys, self.keldysh_comp)
-
-        if (self.keldysh_comp == "lesser"
-                and hyb_tot.keldysh_comp == 'keldysh'):
-            hyb_tot.keldysh_comp = "lesser"
-            hyb_keldysh = hyb_tot.get_lesser()
-            hyb_tot.keldysh = hyb_keldysh
+        self.hyb_aux = self.aux_hyb.update(
+            hyb_tot, options=optimization_options,
+            keldysh_comp=self.keldysh_comp)
 
         # #### Calculate the auxiliary single particle Green's function ###
-        self.T_mat = aux_sys.E
-        self.T_mat[self.parameters['aux_sys']['Nb'],
-                   self.parameters['aux_sys']['Nb']] -= \
-            self.parameters['system']['U'] / 2.
+        self.T_mat = self.aux_hyb.aux_sys.E
 
         self.correlators.update(T_mat=self.T_mat, U_mat=self.U_mat,
-                                Gamma1=aux_sys.Gamma1,
-                                Gamma2=aux_sys.Gamma2)
+                                Gamma1=self.aux_hyb.aux_sys.Gamma1,
+                                Gamma2=self.aux_hyb.aux_sys.Gamma2)
 
         self.green_aux = self.correlators.get_single_particle_green_physical(
-            self.green_sys.freq)
-        if self.keldysh_comp == "lesser":
-            self.green_aux.keldysh = self.green_aux.get_lesser()
-            self.green_aux.keldysh_comp = "lesser"
+            self.green_sys.freq, keldysh_comp=self.keldysh_comp)
 
-        gw.AuxiliaryDualGW.__init__(
-            self, time_param=self.parameters['time'],
+        self.aux_dual_gw = gw.AuxiliaryDualGW(
+            time_param=self.parameters['time'],
             U_trilex=self.U_trilex, green_aux=self.green_aux,
             hyb_sys=hyb_tot, hyb_aux=self.hyb_aux,
             correlators=self.correlators, keldysh_comp=self.keldysh_comp)
-        self.solve_selfconsistent_dual_gw(
+
+        self.aux_dual_gw.solve(
             self.parameters['dual_GW']['err_tol'],
             self.parameters['dual_GW']['iter_max'])
         # ################### Extract the self-energy  ####################
 
-        self.self_energy_int = self.green_aux.get_self_enerqy() \
+        self.self_energy_int = self.aux_dual_gw.green_sys.get_self_enerqy() \
             - self.hyb_aux
         return optimization_options, x_start
 
@@ -242,7 +238,7 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase, gw.AuxiliaryDualGW):
 if __name__ == "__main__":
     #  Frequency grid
     N_freq = 1000
-    freq_max = 20
+    freq_max = 5
 
     N_time = 1000
     time_max = 20
@@ -263,14 +259,16 @@ if __name__ == "__main__":
 
     U = 3.0
     v = 1.0
-    sys_param = {'v': v, 'U': U, 'spinless': spinless,
-                 'tilde_conjugation': tilde_conjugationrule_phase,
-                 'keldysh_comp': 'lesser'}
+    keldysh_comp = 'keldysh'
+    sys_param = {'keldysh_comp': keldysh_comp, 'v': v, 'U': U}
 
     # Parameters of the auxiliary system
     Nb = 1
     nsite = 2 * Nb + 1
-    aux_param = {'Nb': Nb, 'nsite': nsite}
+    aux_param = {'Nb': Nb, 'nsite': nsite, 'spinless': spinless,
+                 'tilde_conjugationrule_phase': tilde_conjugationrule_phase,
+                 'spin_sector_max': spin_sector_max}
+
     dual_GW = {'err_tol': 1e-7, 'iter_max': 50}
     params = {'time': {"time_min": -time_max, "time_max": time_max,
                        'N_time': N_time},

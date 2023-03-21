@@ -246,6 +246,45 @@ def get_aux(res: np.ndarray, Nb: int, freq: np.ndarray
     return aux
 
 
+class AuxiliaryHybridization():
+    # XXX: This class only works for single orbital and site impurities
+    def __init__(self, Nb: int, x_start: Union[None, np.ndarray] = None,
+                 U_mat: Union[np.ndarray, None] = None,
+                 half_filling: bool = True) -> None:
+        self.Nb = Nb
+        self.x_start = x_start
+        self.aux_sys = None
+        if U_mat.shape == (2 * Nb + 1, ):
+            self.U_diag = U_mat
+        elif U_mat.shape == (2 * Nb + 1, 2 * Nb + 1):
+            self.U_diag = np.diag(U_mat)
+        elif U_mat.shape == (2 * Nb + 1, 2 * Nb + 1, 2 * Nb + 1, 2 * Nb + 1):
+            self.U_diag = np.diag(np.einsum('ijji->ij', U_mat))
+        else:
+            raise ValueError("U_mat has wrong shape")
+        self.half_filling = half_filling
+
+    def update(self, hyb: fg.FrequencyGreen,
+               options: Union[None, Dict] = None, keldysh_comp='keldysh'
+               ) -> fg.FrequencyGreen:
+
+        if 2 * self.Nb + 1 != self.U_diag.shape[0]:
+            raise ValueError("U_diag and E have wrong shape")
+
+        optimal_param = optimization_ph_symmertry(Nb=self.Nb,
+                                                  hybridization=hyb,
+                                                  x_start=self.x_start,
+                                                  options=options)
+        self.x_start = np.copy(optimal_param.x)
+        self.aux_sys = get_aux(self.x_start, self.Nb, hyb.freq)
+        hyb_aux = fg.get_hyb_from_aux(self.aux_sys, keldysh_comp)
+
+        if self.half_filling:
+            self.aux_sys.E -= np.diag(self.U_diag / 1.0)
+
+        return hyb_aux
+
+
 if __name__ == "__main__":
     # Setting target hybridization
     e0 = 0
