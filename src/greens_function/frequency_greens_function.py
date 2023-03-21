@@ -507,14 +507,16 @@ class FrequencyGreen:
         if g0 is not None:
             if self.orbitals > 1:
                 retarded_inv = np.array(
-                    list(map(np.linalg.inv, (1. - (g0 * self_energy).retarded))
-                         ))
+                    list(map(np.linalg.inv, (
+                        1. - g0.retarded * self_energy.retarded))
+                    ))
             else:
                 retarded_inv = np.array([1. / ret if np.abs(ret) != np.inf
                                          else 0 for ret
-                                         in (1. - (g0 * self_energy).retarded)
-                                         ], dtype=np.complex128)
-            self.retarded = retarded_inv * g0.retarded
+                                         in (
+                    1. - g0.retarded * self_energy.retarded)
+                ], dtype=np.complex128)
+                self.retarded = retarded_inv * g0.retarded
         else:
             if g0_inv is None:
                 g0_inv = self.freq - e_tot
