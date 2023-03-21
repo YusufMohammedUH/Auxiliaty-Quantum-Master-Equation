@@ -8,21 +8,9 @@ import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
 import src.util.hdf5_util as hd5
 import matplotlib.pyplot as plt
-
-# Dual Base Solver:
-#  [X] 0. get g_aux, hyb_sys, hyb_aux
-#  [X] 1. calculate auxiliary susceptibility
-#  [X] 2. calculate auxiliary polarization
-#  [X] 3. calculate non-interacting dual Green's function and bosonic
-#         propagator
-#
-#  [X] 4. calculate the dressed dual bosonic propagator
-#  [X] 5. calculate the dressed dual Green's function
-#   (optional) update self-consistently 6. with dressed dual Green's function
-#              until convergence
-#  [X] 6. calculate the system Green's function
-#  [X] 2. calculate dual polarization (abstract function)
-#  [X] 3. calculate dual self-energy (abstract function)
+# TODO: AuxiliaryDualSolverBase can be generalized to DualSolverBase
+#       if a Interface class to obtain the auxiliary/refrence Green's function
+#       is implemented. Or the correlators object can be both.
 
 
 class AuxiliaryDualSolverBase(ABC):
@@ -111,7 +99,7 @@ class AuxiliaryDualSolverBase(ABC):
     ------
     ValueError
         'Either all or none of the following arguments must be given: filename,
-        dir_, dataname. If nonn are given, U_trilex, green_aux, hyb_sys,
+        dir_, dataname. If non are given, U_trilex, green_aux, hyb_sys,
         hyb_aux and correlators are required.'
     """
 
@@ -309,12 +297,19 @@ class AuxiliaryDualSolverBase(ABC):
         """Calculate the bare bosonic dual Green's function.
         """
         for channel in self.bare_dual_screened_interaction:
-            self.bare_dual_screened_interaction[channel] = (
-                self.polarization_aux[channel]
-                * self.U_trilex[channel[0]]) \
-                * (self.susceptibility_aux[channel]
-                   * self.U_trilex[channel[0]] +
-                   0.5) * self.polarization_aux[channel]
+            # XXX: for single orbital only
+            self.bare_dual_screened_interaction[channel] =  \
+                (self.susceptibility_aux[channel]
+                 * self.U_trilex[channel[0]] +
+                 0.5) * self.U_trilex[channel[0]]
+
+        # for channel in self.bare_dual_screened_interaction:
+        #     self.bare_dual_screened_interaction[channel] = (
+        #         self.polarization_aux[channel]
+        #         * self.U_trilex[channel[0]]) \
+        #         * (self.susceptibility_aux[channel]
+        #            * self.U_trilex[channel[0]] +
+        #            0.5) * self.polarization_aux[channel]
 
     @abstractmethod
     def compute_polarization_dual(self, green: "fg.FrequencyGreen" = None
@@ -328,6 +323,7 @@ class AuxiliaryDualSolverBase(ABC):
             self.dual_screened_interaction[channel].dyson(
                 self_energy=self.polarization_dual,
                 g0=self.bare_dual_screened_interaction[channel])
+
             # self.dual_screened_interaction[channel] = \
             #     self.bare_dual_screened_interaction[channel] * (
             #     self.bare_dual_screened_interaction[channel]
@@ -340,8 +336,9 @@ class AuxiliaryDualSolverBase(ABC):
     def compute_green_dual(self) -> None:
         """Calculate the fermionic dual Green's function.
         """
-        self.green_dual = (self.green_bare_dual.inverse() -
-                           self.sigma_dual).inverse()
+        self.green_dual = (self.green_bare_dual.inverse()
+                           - self.sigma_dual).inverse()
+        #   - self.sigma_hartree
 
     def compute_green_system(self) -> None:
         """Calculate the system Green's function.
@@ -355,8 +352,8 @@ class AuxiliaryDualSolverBase(ABC):
         self.compute_polarization_aux()
         self.compute_green_bare_dual()
         self.compute_bare_dual_screened_interaction()
-        sigma_dual_tmp = fg.FrequencyGreen(self.green_aux.freq,
-                                           keldysh_comp=self.keldysh_comp)
+        green_sys_tmp = fg.FrequencyGreen(self.green_aux.freq,
+                                          keldysh_comp=self.keldysh_comp)
         for ii in range(iter_max):
             if ii == 0:
                 self.compute_polarization_dual(self.green_bare_dual)
@@ -368,16 +365,17 @@ class AuxiliaryDualSolverBase(ABC):
             else:
                 self.compute_sigma_dual()
             self.compute_green_dual()
+            self.compute_green_system()
 
-            self.err_iterations_aux.append(opt.cost_function(self.sigma_dual,
-                                                             sigma_dual_tmp,
+            self.err_iterations_aux.append(opt.cost_function(self.green_sys,
+                                                             green_sys_tmp,
                                                              normalize=False))
-            if ii == 1:
-                plt.plot((self.sigma_dual - sigma_dual_tmp).retarded.imag)
-            sigma_dual_tmp = fg.FrequencyGreen(
+            # if ii == 1:
+            # plt.plot((self.sigma_dual - sigma_dual_tmp).retarded.imag)
+            green_sys_tmp = fg.FrequencyGreen(
                 self.green_aux.freq,
-                retarded=self.sigma_dual.retarded,
-                keldysh=self.sigma_dual.keldysh,
+                retarded=self.green_sys.retarded,
+                keldysh=self.green_sys.keldysh,
                 keldysh_comp=self.keldysh_comp)
 
             err_iter_print = round(self.err_iterations_aux[-1], int(
@@ -387,7 +385,6 @@ class AuxiliaryDualSolverBase(ABC):
             if self.err_iterations_aux[-1]  \
                     < err_tol:
                 break
-        self.compute_green_system()
 
     @abstractmethod
     def save(self, fname: str, dir_: str, dataname: str,
