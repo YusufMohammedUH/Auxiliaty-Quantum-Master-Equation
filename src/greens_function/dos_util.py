@@ -44,6 +44,41 @@ def flat_bath_retarded(w: float, e0: float, D: float, gamma: float) -> complex:
     return complex(real_part, imag_part)
 
 
+def semi_circular_bath_retarded(w: float, e0: float, D: float, gamma: float) -> complex:
+    """Retarded Green's function with a semi circular density of states.
+
+    Parameters
+    ----------
+    w : float
+        Frequency.
+
+    e0 : float
+        On-site potential
+
+    D : float
+        Coupling within the bath.
+
+    gamma : float
+        broadening of the semi circular dos
+
+    Returns
+    -------
+    out: complex
+        Retarded Green's function at frequency 'w'.
+    """
+
+    nominator = (w - e0 + 1.j * gamma)
+
+    if w - e0 <= 2 * abs(D):
+        hyb = nominator / (abs(D)**2) - (2.j / (abs(D))) * \
+            np.sqrt(1. - ((nominator**2) / (4 * abs(D)**2)))
+    else:
+        hyb = nominator / (abs(D)**2) - (2. / (abs(D))) * \
+            np.sqrt(((nominator**2) / (4 * abs(D)**2)) - 1)
+
+    return hyb * 0.5
+
+
 @njit(complex128(float64, float64, float64, float64), cache=True)
 def lorenzian_bath_retarded(w: float, e0: float, gamma: float,
                             v: float = 1.0) -> complex:
