@@ -28,7 +28,8 @@ tilde_conjugationrule_phase = True
 
 v = 1.0
 sys_param = {'e0': 0, 'v': v, 'spinless': spinless,
-             'tilde_conjugation': tilde_conjugationrule_phase}
+             'tilde_conjugation': tilde_conjugationrule_phase, 'keldysh_comp':
+             'lesser'}
 
 # Parameters of the auxiliary system
 Nb = 1
@@ -52,8 +53,7 @@ err_U = {}
 for U in [0., 1., 2., 3., 4.]:
     print(f"Runnig auxiliary DMFT with U = {U}")
     params['system']['U'] = U
-    auxiliaryDMFT = aux_dmft.AuxiliaryMaserEquationDMFT(params, corr_cls,
-                                                        keldysh_comp='lesser')
+    auxiliaryDMFT = aux_dmft.AuxiliaryMaserEquationDMFT(params, corr_cls)
     auxiliaryDMFT.hyb_leads = auxiliaryDMFT.get_bath()
     auxiliaryDMFT.set_local_matrix()
     auxiliaryDMFT.solve()
