@@ -1,7 +1,7 @@
 # %%
 import matplotlib.pyplot as plt
 import numpy as np
-import src.dmft.dmft_GW as dmft
+import src.dmft.dmft_gw as dmft
 
 N_grid = 2001
 freq_max = 30
@@ -22,7 +22,7 @@ for U in Us:
     print("U: ", U)
     v = 1.0
     sys_param = {"e0": 0, 'v': v, 'U': U,
-                 'orbitals': 1, 'keldysh_comp': 'keldysh'}
+                 'orbitals': 1, 'keldysh_comp': 'lesser'}
 
     # Parameters of the auxiliary system
     Nb = 1
