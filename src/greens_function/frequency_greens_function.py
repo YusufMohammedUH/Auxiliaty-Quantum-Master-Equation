@@ -201,7 +201,41 @@ class FrequencyGreen:
         return FrequencyGreen(self.freq, self.retarded.copy(),
                               self.keldysh.copy(),
                               fermionic=self.fermionic,
+                              orbitals=self.orbitals,
                               keldysh_comp=self.keldysh_comp)
+
+    def get_changed_keldysh_comp(self, keldysh_comp: str) -> "FrequencyGreen":
+        """Return a copy of the object with changed keldysh_comp.
+
+        Parameters
+        ----------
+        keldysh_comp : str
+            New keldysh_comp
+
+        Returns
+        -------
+        out: FrequencyGreen
+        """
+        if self.keldysh_comp == keldysh_comp:
+            return self.copy()
+        elif keldysh_comp == 'lesser':
+
+            return FrequencyGreen(freq=self.freq,
+                                  retarded=self.retarded.copy(),
+                                  keldysh=self.get_lesser().copy(),
+                                  fermionic=self.fermionic,
+                                  orbitals=self.orbitals,
+                                  keldysh_comp=keldysh_comp)
+        elif keldysh_comp == 'keldysh':
+            return FrequencyGreen(freq=self.freq,
+                                  retarded=self.retarded.copy(),
+                                  keldysh=self.get_keldysh().copy(),
+                                  fermionic=self.fermionic,
+                                  keldysh_comp=keldysh_comp,
+                                  orbitals=self.orbitals)
+        else:
+            raise ValueError("Error: keldysh_comp has to be either 'lesser'" +
+                             " or 'keldysh'")
 
     def __add__(self, other: Union["FrequencyGreen", "kid.KeldyshIdentity",
                                    int, float, complex]) -> "FrequencyGreen":
@@ -233,16 +267,24 @@ class FrequencyGreen:
             if self.orbitals != other.orbitals:
                 raise ValueError("Error: orbitals has to be the same for " +
                                  "both objects")
-            return FrequencyGreen(self.freq, self.retarded + other.retarded,
-                                  self.keldysh + other.keldysh,
-                                  fermionic=self.fermionic,
-                                  keldysh_comp=self.keldysh_comp)
+            if self.orbitals == 1:
+                return FrequencyGreen(freq=self.freq,
+                                      retarded=self.retarded + other.retarded,
+                                      keldysh=self.keldysh + other.keldysh,
+                                      fermionic=self.fermionic,
+                                      keldysh_comp=self.keldysh_comp,
+                                      orbitals=self.orbitals)
+            else:
+                raise ValueError("Error: addition of Green's functions" +
+                                 " with orbitals > 1 not implemented yet")
         elif (isinstance(other, int) or isinstance(other, float)
               or isinstance(other, complex)):
-            return FrequencyGreen(self.freq, self.retarded + other,
-                                  self.keldysh,
+            return FrequencyGreen(freq=self.freq,
+                                  retarded=self.retarded + other,
+                                  keldysh=self.keldysh,
                                   fermionic=self.fermionic,
-                                  keldysh_comp=self.keldysh_comp)
+                                  keldysh_comp=self.keldysh_comp,
+                                  orbitals=self.orbitals)
         elif isinstance(other, kid.KeldyshIdentity):
             return other + self
 
@@ -276,16 +318,23 @@ class FrequencyGreen:
             if self.orbitals != other.orbitals:
                 raise ValueError("Error: orbitals has to be the same for " +
                                  "both objects")
-            return FrequencyGreen(self.freq, self.retarded - other.retarded,
-                                  self.keldysh - other.keldysh,
-                                  fermionic=self.fermionic,
-                                  keldysh_comp=self.keldysh_comp)
+            if self.orbitals == 1:
+                return FrequencyGreen(freq=self.freq,
+                                      retarded=self.retarded - other.retarded,
+                                      keldysh=self.keldysh - other.keldysh,
+                                      fermionic=self.fermionic,
+                                      keldysh_comp=self.keldysh_comp,
+                                      orbitals=self.orbitals)
+            else:
+                raise ValueError("Error: subtraction of Green's functions" +
+                                 " with orbitals > 1 not implemented yet")
         elif (isinstance(other, int) or isinstance(other, float)
               or isinstance(other, complex)):
             return FrequencyGreen(self.freq, self.retarded - other,
                                   self.keldysh,
                                   fermionic=self.fermionic,
-                                  keldysh_comp=self.keldysh_comp)
+                                  keldysh_comp=self.keldysh_comp,
+                                  orbitals=self.orbitals)
         elif isinstance(other, kid.KeldyshIdentity):
             return (other - self) * (-1)
 
@@ -322,18 +371,28 @@ class FrequencyGreen:
             if self.orbitals != other.orbitals:
                 raise ValueError("Error: orbitals has to be the same for " +
                                  "both objects")
-            return FrequencyGreen(self.freq, retarded=(
-                self.retarded * other.retarded), keldysh=(
-                self.retarded * other.keldysh +
-                self.keldysh * other.retarded.conj()),
-                fermionic=self.fermionic,
-                keldysh_comp=self.keldysh_comp)
+            if self.orbitals == 1:
+                return FrequencyGreen(freq=self.freq,
+                                      retarded=(
+                                          self.retarded * other.retarded),
+                                      keldysh=(
+                                          self.retarded * other.keldysh +
+                                          self.keldysh * other.retarded.conj()
+                                      ),
+                                      fermionic=self.fermionic,
+                                      keldysh_comp=self.keldysh_comp,
+                                      orbitals=self.orbitals)
+            else:
+                raise ValueError("Error: multiplication of Green's functions" +
+                                 " with orbitals > 1 not implemented yet")
         elif (isinstance(other, int) or isinstance(other, float)
               or isinstance(other, complex)):
-            return FrequencyGreen(self.freq, self.retarded * other,
-                                  self.keldysh * other,
+            return FrequencyGreen(freq=self.freq,
+                                  retarded=self.retarded * other,
+                                  keldysh=self.keldysh * other,
                                   fermionic=self.fermionic,
-                                  keldysh_comp=self.keldysh_comp)
+                                  keldysh_comp=self.keldysh_comp,
+                                  orbitals=self.orbitals)
         elif isinstance(other, kid.KeldyshIdentity):
             return self
 
@@ -362,7 +421,7 @@ class FrequencyGreen:
     def get_greater(self) -> np.ndarray:
         """Return greater component
         """
-        return -1j * self.get_spectral_func() + self.keldysh
+        return self.get_keldysh() - self.get_lesser()
 
     def get_time_ordered(self) -> np.ndarray:
         """ Return the time ordered Green's function
@@ -421,10 +480,12 @@ class FrequencyGreen:
                                 else 0 for ret, kel, adv in zip(
             retarded_inv, self.keldysh, advanced_inv)],
             dtype=np.complex128)
-        return FrequencyGreen(self.freq, retarded=retarded_inv,
+        return FrequencyGreen(freq=self.freq,
+                              retarded=retarded_inv,
                               keldysh=keldysh_inv,
                               fermionic=self.fermionic,
-                              keldysh_comp=self.keldysh_comp)
+                              keldysh_comp=self.keldysh_comp,
+                              orbitals=self.orbitals)
 
     def get_inverse_no_keldysh_rot(self, component: Tuple):
         """return the inverse green's function component of
@@ -504,6 +565,13 @@ class FrequencyGreen:
         g0_inv: np.array, optional
             Inverse non-interacting Green's function, by default None
         """
+        if self.keldysh_comp != self_energy.keldysh_comp:
+            raise ValueError("Keldysh components of Green's function and "
+                             "self-energy are not equal.")
+
+        if self.fermionic != self_energy.fermionic:
+            raise ValueError("Fermionicity of Green's function and "
+                             "self-energy are not equal.")
         if g0 is not None:
             if self.orbitals > 1:
                 retarded_inv = np.array(
@@ -589,9 +657,12 @@ class FrequencyGreen:
                     np.imag(sigma[0][s]))
                 sigma[1][s] = 0
 
-        return FrequencyGreen(self.freq, sigma[0], sigma[1],
+        return FrequencyGreen(freq=self.freq,
+                              retarded=sigma[0],
+                              keldysh=sigma[1],
                               fermionic=self.fermionic,
-                              keldysh_comp=self.keldysh_comp)
+                              keldysh_comp=self.keldysh_comp,
+                              orbitals=self.orbitals)
 
     def save(self, fname: str, dir_: str, dataname: str,
              savefreq: bool = True) -> None:
@@ -663,7 +734,7 @@ def get_hyb_from_aux(auxsys: auxp.AuxiliarySystem, keldysh_comp: str
     out : FrequencyGreen
         self-energy of given Green's functions
     """
-    green = FrequencyGreen(auxsys.ws, keldysh_comp=keldysh_comp)
+    green = FrequencyGreen(freq=auxsys.ws, keldysh_comp=keldysh_comp)
     green.set_green_from_auxiliary(auxsys)
     return green.get_self_enerqy()
 
