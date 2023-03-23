@@ -7,7 +7,6 @@ import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
 import src.greens_function.correlation_functions as corr
 import src.util.hdf5_util as hd5
-import matplotlib.pyplot as plt
 # TODO: AuxiliaryDualSolverBase can be generalized to DualSolverBase
 #       if a Interface class to obtain the auxiliary/refrence Green's function
 #       is implemented. Or the correlators object can be both.

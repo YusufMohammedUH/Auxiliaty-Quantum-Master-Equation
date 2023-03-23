@@ -44,7 +44,8 @@ def flat_bath_retarded(w: float, e0: float, D: float, gamma: float) -> complex:
     return complex(real_part, imag_part)
 
 
-def semi_circular_bath_retarded(w: float, e0: float, D: float, gamma: float) -> complex:
+def semi_circular_bath_retarded(w: float, e0: float, D: float, gamma: float
+                                ) -> complex:
     """Retarded Green's function with a semi circular density of states.
 
     Parameters
