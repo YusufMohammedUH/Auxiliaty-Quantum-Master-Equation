@@ -65,13 +65,23 @@ class DMFT_GW(dmft_base.DMFTBase):
                 * green_lesser_time.conj() \
                 - 1j * green_lesser_time * green_retarded_time.conj()
 
-            self.polarizability = fg.FrequencyGreen(
+            polarizability_tmp = fg.FrequencyGreen(
                 freq=self.green_sys.freq,
                 retarded=dft.dft(polarizability_retarded_time, self.time,
                                  self.green_sys.freq, sign=1),
                 keldysh=dft.dft(polarizability_lesser_time,
                                 self.time, self.green_sys.freq, sign=1),
-                fermionic=False, keldysh_comp=self.keldysh_comp)
+                fermionic=False, keldysh_comp='lesser')
+
+            if self.keldysh_comp == 'lesser':
+                self.polarizability = polarizability_tmp
+            elif self.keldysh_comp == 'keldysh':
+                self.polarizability = fg.FrequencyGreen(
+                    freq=self.green_sys.freq,
+                    retarded=polarizability_tmp.retarded,
+                    keldysh=polarizability_tmp.get_keldysh(),
+                    fermionic=False,
+                    keldysh_comp=self.keldysh_comp)
 # ---------------------------- screened interaction ------------------------- #
             polarizability_tmp = fg.FrequencyGreen(
                 freq=self.polarizability.freq,
@@ -127,12 +137,18 @@ class DMFT_GW(dmft_base.DMFTBase):
             sigma_retarded_freq = dft.dft(
                 sigma_retarded_time2, self.time, self.green_sys.freq, sign=1)
             sigma = fg.FrequencyGreen(
-                self.green_sys.freq, retarded=sigma_retarded_freq,
-                keldysh=sigma_lesser_freq)
+                self.green_sys.freq,
+                retarded=sigma_retarded_freq,
+                keldysh=sigma_lesser_freq,
+                fermionic=True,
+                keldysh_comp='lesser')
+
             if self.keldysh_comp == "keldysh":
                 self.self_energy_int = fg.FrequencyGreen(
                     sigma.freq, retarded=sigma.retarded,
-                    keldysh=sigma.get_keldysh())
+                    keldysh=sigma.get_keldysh(),
+                    fermionic=True,
+                    keldysh_comp='keldysh')
             elif self.keldysh_comp == "lesser":
                 self.self_energy_int = sigma
 

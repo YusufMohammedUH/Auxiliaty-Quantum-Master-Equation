@@ -260,5 +260,7 @@ def set_hybridization(freq: np.ndarray, retarded_function: Callable,
     """
     retarded, keldysh = _set_hybridization(
         freq, retarded_function, args, keldysh_comp)
-    return fg.FrequencyGreen(freq=freq, retarded=retarded, keldysh=keldysh,
+    return fg.FrequencyGreen(freq=freq,
+                             retarded=retarded,
+                             keldysh=keldysh,
                              keldysh_comp=keldysh_comp)

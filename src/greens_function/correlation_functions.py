@@ -355,26 +355,13 @@ class Correlators:
         green_aux_R = green_greater_plus - green_lesser_plus
         green_aux_K = green_greater_plus + green_greater_minus \
             + green_lesser_plus + green_lesser_minus
-        green_tmp = fg.FrequencyGreen(freq, retarded=green_aux_R,
+        green_tmp = fg.FrequencyGreen(freq=freq,
+                                      retarded=green_aux_R,
                                       keldysh=green_aux_K,
                                       keldysh_comp='keldysh')
         if keldysh_comp == 'lesser':
-            green_tmp.keldysh = green_tmp.get_lesser()
-            green_tmp.keldysh_comp = 'lesser'
+            return green_tmp.get_changed_keldysh_comp('lesser')
         return green_tmp
-        # XXX: upper code converges better than lower one in the absence of a
-        #      screened interaction
-        #        - the retarded and lesser greens function are the same tough
-
-        # if keldysh_comp == "keldysh":
-        #     green_aux_K = green_greater_plus + green_greater_minus \
-        #         + green_lesser_plus + green_lesser_minus
-        # elif keldysh_comp == 'lesser':
-        #     green_aux_K = green_lesser_plus + green_lesser_minus
-        #     green_aux_K *= (1. / (2. * np.pi))
-        # return fg.FrequencyGreen(
-        #     freq, retarded=green_aux_R, keldysh=green_aux_K,
-        #     keldysh_comp=keldysh_comp)
 
     def get_susceptibility(self, freq: np.ndarray, component: Tuple[int, int],
                            channels: Tuple[str, str],
@@ -846,7 +833,9 @@ if __name__ == "__main__":
     G_R = G_greater_plus - G_lesser_plus
     G_K = G_greater_plus + G_greater_minus + G_lesser_plus + G_lesser_minus
 
-    G_aux_full = fg.FrequencyGreen(sys.ws, retarded=G_R, keldysh=G_K,
+    G_aux_full = fg.FrequencyGreen(sys.ws,
+                                   retarded=G_R,
+                                   keldysh=G_K,
                                    keldysh_comp='keldysh')
     sigma = G_aux_full.get_self_enerqy() - hyb_aux
 

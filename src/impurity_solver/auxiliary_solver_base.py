@@ -133,13 +133,15 @@ class AuxiliaryDualSolverBase(ABC):
             else:
                 if self.keldysh_comp == 'keldysh':
                     self.green_aux = fg.FrequencyGreen(
-                        freq=green_aux.freq, retarded=green_aux.retarded,
+                        freq=green_aux.freq,
+                        retarded=green_aux.retarded,
                         keldysh=green_aux.get_keldysh(),
                         keldysh_comp=self.keldysh_comp,
                         orbitals=green_aux.orbitals)
                 elif self.keldysh_comp == 'lesser':
                     self.green_aux = fg.FrequencyGreen(
-                        freq=green_aux.freq, retarded=green_aux.retarded,
+                        freq=green_aux.freq,
+                        retarded=green_aux.retarded,
                         keldysh=green_aux.get_lesser(),
                         keldysh_comp=self.keldysh_comp,
                         orbitals=green_aux.orbitals)
@@ -148,13 +150,15 @@ class AuxiliaryDualSolverBase(ABC):
             else:
                 if self.keldysh_comp == 'keldysh':
                     self.hyb_sys = fg.FrequencyGreen(
-                        freq=hyb_sys.freq, retarded=hyb_sys.retarded,
+                        freq=hyb_sys.freq,
+                        retarded=hyb_sys.retarded,
                         keldysh=hyb_sys.get_keldysh(),
                         keldysh_comp=self.keldysh_comp,
                         orbitals=hyb_sys.orbitals)
                 elif self.keldysh_comp == 'lesser':
                     self.hyb_sys = fg.FrequencyGreen(
-                        freq=hyb_sys.freq, retarded=hyb_sys.retarded,
+                        freq=hyb_sys.freq,
+                        retarded=hyb_sys.retarded,
                         keldysh=hyb_sys.get_lesser(),
                         keldysh_comp=self.keldysh_comp,
                         orbitals=hyb_sys.orbitals)
@@ -163,13 +167,15 @@ class AuxiliaryDualSolverBase(ABC):
             else:
                 if self.keldysh_comp == 'keldysh':
                     self.hyb_aux = fg.FrequencyGreen(
-                        freq=hyb_aux.freq, retarded=hyb_aux.retarded,
+                        freq=hyb_aux.freq,
+                        retarded=hyb_aux.retarded,
                         keldysh=hyb_aux.get_keldysh(),
                         keldysh_comp=self.keldysh_comp,
                         orbitals=hyb_aux.orbitals)
                 elif self.keldysh_comp == 'lesser':
                     self.hyb_aux = fg.FrequencyGreen(
-                        freq=hyb_aux.freq, retarded=hyb_aux.retarded,
+                        freq=hyb_aux.freq,
+                        retarded=hyb_aux.retarded,
                         keldysh=hyb_aux.get_lesser(),
                         keldysh_comp=self.keldysh_comp,
                         orbitals=hyb_aux.orbitals)
@@ -191,7 +197,6 @@ class AuxiliaryDualSolverBase(ABC):
                 orbitals=green_aux.orbitals)
             self.sigma_dual = fg.FrequencyGreen(
                 freq=self.hyb_aux.freq,
-                fermionic=True,
                 keldysh_comp=self.keldysh_comp,
                 orbitals=green_aux.orbitals)
 
@@ -226,7 +231,8 @@ class AuxiliaryDualSolverBase(ABC):
                     freq=self.hyb_aux.freq,
                     fermionic=False,
                     keldysh_comp=self.keldysh_comp,
-                    orbitals=green_aux.orbitals)}
+                    orbitals=green_aux.orbitals)
+            }
             # It seams as if (x,y) and -(y,x) are the same channels
             # In paramagnetic case (z,ch) = (ch,z) = 0
 
@@ -352,7 +358,7 @@ class AuxiliaryDualSolverBase(ABC):
         self.compute_polarization_aux()
         self.compute_green_bare_dual()
         self.compute_bare_dual_screened_interaction()
-        green_sys_tmp = fg.FrequencyGreen(self.green_aux.freq,
+        green_sys_tmp = fg.FrequencyGreen(freq=self.green_aux.freq,
                                           keldysh_comp=self.keldysh_comp)
         for ii in range(iter_max):
             if ii == 0:
@@ -370,10 +376,9 @@ class AuxiliaryDualSolverBase(ABC):
             self.err_iterations_aux.append(opt.cost_function(self.green_sys,
                                                              green_sys_tmp,
                                                              normalize=False))
-            # if ii == 1:
-            # plt.plot((self.sigma_dual - sigma_dual_tmp).retarded.imag)
+
             green_sys_tmp = fg.FrequencyGreen(
-                self.green_aux.freq,
+                freq=self.green_aux.freq,
                 retarded=self.green_sys.retarded,
                 keldysh=self.green_sys.keldysh,
                 keldysh_comp=self.keldysh_comp)

@@ -85,23 +85,37 @@ class DMFTBase:
                                    parameters['freq']['N_freq'])
                 freq.flags.writeable = False
                 self.hyb_leads = fg.FrequencyGreen(
-                    freq, keldysh_comp=self.keldysh_comp)
+                    freq=freq,
+                    orbitals=self.parameters['system']['orbitals'],
+                    keldysh_comp=self.keldysh_comp)
                 self.hyb_dmft = fg.FrequencyGreen(
-                    freq, keldysh_comp=self.keldysh_comp)
+                    freq=freq,
+                    orbitals=self.parameters['system']['orbitals'],
+                    keldysh_comp=self.keldysh_comp)
 
                 self.green_sys = fg.FrequencyGreen(
-                    freq, keldysh_comp=self.keldysh_comp)
+                    freq=freq,
+                    orbitals=self.parameters['system']['orbitals'],
+                    keldysh_comp=self.keldysh_comp)
                 self.self_energy_int = fg.FrequencyGreen(
-                    freq, keldysh_comp=self.keldysh_comp)
+                    freq=freq,
+                    orbitals=self.parameters['system']['orbitals'],
+                    keldysh_comp=self.keldysh_comp)
             else:
                 self.hyb_leads = hyb_leads
                 self.hyb_dmft = fg.FrequencyGreen(
-                    self.hyb_leads.freq, keldysh_comp=self.keldysh_comp)
+                    freq=self.hyb_leads.freq,
+                    orbitals=self.hyb_leads.orbitals,
+                    keldysh_comp=self.keldysh_comp)
 
                 self.green_sys = fg.FrequencyGreen(
-                    self.hyb_leads.freq, keldysh_comp=self.keldysh_comp)
+                    freq=self.hyb_leads.freq,
+                    orbitals=self.hyb_leads.orbitals,
+                    keldysh_comp=self.keldysh_comp)
                 self.self_energy_int = fg.FrequencyGreen(
-                    self.hyb_leads.freq, keldysh_comp=self.keldysh_comp)
+                    freq=self.hyb_leads.freq,
+                    orbitals=self.hyb_leads.orbitals,
+                    keldysh_comp=self.keldysh_comp)
         else:
             self.hyb_leads = None
             self.hyb_dmft = None
@@ -168,34 +182,42 @@ class DMFTBase:
                          self.parameters['leads']['beta'], 1.0, 1.0],
                         dtype=np.float64)
         green_tmp = du.set_hybridization(
-            self.green_sys.freq, du.lorenzian_bath_retarded, args,
-            self.keldysh_comp)
+            freq=self.green_sys.freq,
+            retarded_function=du.lorenzian_bath_retarded,
+            args=args,
+            keldysh_comp=self.keldysh_comp)
         self.green_sys.dyson(self_energy=green_tmp)
+
         for ii in range(self.parameters['selfconsistency']['max_iter']):
 
             # -------------- Update hybridization --------------------------- #
             self.hyb_dmft = fg.FrequencyGreen(
-                self.hyb_leads.freq, green_tmp.retarded *
+                freq=self.hyb_leads.freq,
+                retarded=green_tmp.retarded *
                 (self.parameters['system']['v']**2),
-                green_tmp.keldysh * (self.parameters['system']['v']**2),
+                keldysh=green_tmp.keldysh * (self.parameters['system']['v']**2
+                                             ),
+                orbitals=self.hyb_leads.orbitals,
                 keldysh_comp=self.keldysh_comp)
+
 # -------------------------- Calculate occupation --------------------------- #
             self.n = simps(self.green_sys.get_lesser().imag,
                            self.green_sys.freq)
-
 # -------------------- New Green's function from solver --------------------- #
             solver_parameters = self.impurity_solver(*solver_parameters)
-
 # ------------------------- Update Geen's function -------------------------- #
-            green_tmp = fg.FrequencyGreen(self.green_sys.freq, retarded=(
-                (1.0 - self.parameters['selfconsistency']['mixing'])
-                * self.green_sys.retarded
-                + self.parameters['selfconsistency']['mixing']
-                * green_tmp.retarded),
+            green_tmp = fg.FrequencyGreen(
+                freq=self.green_sys.freq,
+                retarded=(
+                    (1.0 - self.parameters['selfconsistency']['mixing'])
+                    * self.green_sys.retarded
+                    + self.parameters['selfconsistency']['mixing']
+                    * green_tmp.retarded),
                 keldysh=((1.0 - self.parameters['selfconsistency']['mixing'])
                          * self.green_sys.keldysh
                          + self.parameters['selfconsistency']['mixing']
                          * green_tmp.keldysh),
+                orbitals=self.hyb_leads.orbitals,
                 keldysh_comp=self.keldysh_comp)
 # ------------------------- print values of interest ------------------------ #
             spectral_weight = round((-1 / np.pi) * simps(
@@ -219,9 +241,12 @@ class DMFTBase:
 
 # ---------------- update dmft hybridization to last iteration -------------- #
         self.hyb_dmft = fg.FrequencyGreen(
-            self.hyb_leads.freq, self.green_sys.retarded *
+            freq=self.hyb_leads.freq,
+            retarded=self.green_sys.retarded *
             (self.parameters['system']['v']**2),
-            self.green_sys.keldysh * (self.parameters['system']['v']**2),
+            keldysh=self.green_sys.keldysh *
+            (self.parameters['system']['v']**2),
+            orbitals=self.hyb_leads.orbitals,
             keldysh_comp=self.keldysh_comp)
 
     def impurity_solver(self, args: Tuple) -> None:
