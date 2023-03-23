@@ -265,19 +265,24 @@ class AuxiliaryHybridization():
         self.half_filling = half_filling
 
     def update(self, hyb: fg.FrequencyGreen,
-               options: Union[None, Dict] = None, keldysh_comp='keldysh'
+               options: Union[None, Dict] = None
                ) -> fg.FrequencyGreen:
-
         if 2 * self.Nb + 1 != self.U_diag.shape[0]:
             raise ValueError("U_diag and E have wrong shape")
-
+        if hyb.keldysh_comp == 'keldysh':
+            hyb_tmp = hyb
+        else:
+            hyb_tmp = fg.FrequencyGreen(freq=hyb.freq,
+                                        retarded=hyb.retarded,
+                                        keldysh=hyb.get_keldysh(),
+                                        keldysh_comp="keldysh")
         optimal_param = optimization_ph_symmertry(Nb=self.Nb,
-                                                  hybridization=hyb,
+                                                  hybridization=hyb_tmp,
                                                   x_start=self.x_start,
                                                   options=options)
         self.x_start = np.copy(optimal_param.x)
         self.aux_sys = get_aux(self.x_start, self.Nb, hyb.freq)
-        hyb_aux = fg.get_hyb_from_aux(self.aux_sys, keldysh_comp)
+        hyb_aux = fg.get_hyb_from_aux(self.aux_sys, hyb.keldysh_comp)
 
         if self.half_filling:
             self.aux_sys.E -= np.diag(self.U_diag / 1.0)
