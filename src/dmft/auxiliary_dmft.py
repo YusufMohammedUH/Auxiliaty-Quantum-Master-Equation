@@ -135,19 +135,13 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
             raise ValueError("ERROR: keldysh_comp of the leads and DMFT"
                              + " have to be the same as the"
                              + f" self.keldysh_comp: {self.keldysh_comp}")
-        if self.keldysh_comp == "lesser":
-            hyb_tot = self.hyb_leads + self.hyb_dmft
-            hyb_keldysh = hyb_tot.get_keldysh()
-            hyb_tot.keldysh = hyb_keldysh
-            hyb_tot.keldysh_comp = "keldysh"
-        elif self.keldysh_comp == "keldysh":
-            hyb_tot = self.hyb_leads + self.hyb_dmft
+
+        hyb_tot = self.hyb_leads + self.hyb_dmft
 
         # update the auxiliary hybridization function and the auxiliary
         # parameters
         self.hyb_aux = self.aux_hyb.update(
-            hyb_tot, options=optimization_options,
-            keldysh_comp=self.keldysh_comp)
+            hyb_tot, options=optimization_options)
 
         # #### Calculate the auxiliary single particle Green's function ###
         self.T_mat = self.aux_hyb.aux_sys.E

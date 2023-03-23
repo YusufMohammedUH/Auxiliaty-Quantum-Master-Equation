@@ -9,7 +9,7 @@ import src.greens_function.correlation_functions as corr
 import src.dmft.auxiliary_dmft as aux_dmft
 # ############################### Parameters ##################################
 #  Frequency grid
-N_freq = 400
+N_freq = 401
 freq_max = 10
 
 selfconsist_param = {'max_iter': 50, 'err_tol': 1e-7, 'mixing': 0.2}
@@ -27,9 +27,11 @@ spin_sector_max = 2
 tilde_conjugationrule_phase = True
 
 v = 1.0
-sys_param = {'e0': 0, 'v': v, 'spinless': spinless,
-             'tilde_conjugation': tilde_conjugationrule_phase, 'keldysh_comp':
-             'lesser'}
+sys_param = {'e0': 0, 'v': v,
+             'orbitals': 1,
+             'spinless': spinless,
+             'tilde_conjugation': tilde_conjugationrule_phase,
+             'keldysh_comp': 'keldysh'}
 
 # Parameters of the auxiliary system
 Nb = 1
@@ -64,7 +66,7 @@ plt.legend([r"$U = 0$", r"$U = 1$", r"$U = 2$", r"$U = 3$", r"$U = 4$"])
 plt.ylabel(r"$A(\omega)$")
 plt.xlabel(r"$\omega$")
 plt.show()
-# ################################## Plots ####################################
+# ################################# Plots ####################################
 
 plt.figure()
 for U in [0., 1., 2., 3., 4.]:
