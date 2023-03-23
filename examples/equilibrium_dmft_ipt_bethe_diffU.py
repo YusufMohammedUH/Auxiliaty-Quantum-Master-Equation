@@ -6,7 +6,7 @@ import src.dmft.dmft_ipt as dmft
 N_grid = 2001
 freq_max = 15
 time_max = 20
-selfconsist_param = {'max_iter': 100, 'err_tol': 1e-6, 'mixing': 0.3}
+selfconsist_param = {'max_iter': 40, 'err_tol': 1e-6, 'mixing': 0.3}
 
 e0 = 0
 mu = 0
@@ -21,7 +21,8 @@ Us = [0, 3, 5, 7, 9]
 for U in Us:
     print("U: ", U)
     v = 1.0
-    sys_param = {"e0": 0, 'v': v, 'U': U}
+    sys_param = {"e0": 0, 'v': v, 'U': U,
+                 'orbitals': 1, 'keldysh_comp': 'lesser'}
 
     # Parameters of the auxiliary system
     Nb = 1

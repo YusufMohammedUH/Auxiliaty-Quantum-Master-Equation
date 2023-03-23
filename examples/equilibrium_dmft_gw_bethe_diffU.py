@@ -21,7 +21,8 @@ Us = [0, 1, 2, 3, 4]
 for U in Us:
     print("U: ", U)
     v = 1.0
-    sys_param = {"e0": 0, 'v': v, 'U': U, 'keldysh_comp': 'lesser'}
+    sys_param = {"e0": 0, 'v': v, 'U': U,
+                 'orbitals': 1, 'keldysh_comp': 'keldysh'}
 
     # Parameters of the auxiliary system
     Nb = 1
