@@ -136,13 +136,12 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
                              + " have to be the same as the"
                              + f" self.keldysh_comp: {self.keldysh_comp}")
 
-        hyb_tot = self.hyb_leads + self.hyb_dmft
-
         # update the auxiliary hybridization function and the auxiliary
         # parameters
-        self.hyb_aux = self.aux_hyb.update(
-            hyb_tot, options=optimization_options)
+        hyb_tot = self.hyb_leads + self.hyb_dmft
 
+        self.hyb_aux = self.aux_hyb.update(
+            hyb=hyb_tot, options=optimization_options)
         # #### Calculate the auxiliary single particle Green's function ###
         self.T_mat = self.aux_hyb.aux_sys.E
 
@@ -237,10 +236,11 @@ if __name__ == "__main__":
     spin_sector_max = 2
     tilde_conjugationrule_phase = True
 
-    U = 0.0
+    U = 3.0
     v = 1.0
     keldysh_comp = 'keldysh'
-    sys_param = {'keldysh_comp': keldysh_comp, 'e0': 0, 'v': v, 'U': U}
+    sys_param = {'keldysh_comp': keldysh_comp, 'e0': 0, 'v': v, 'U': U,
+                 'orbitals': 1}
 
     # Parameters of the auxiliary system
     Nb = 1
