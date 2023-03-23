@@ -285,7 +285,7 @@ class AuxiliaryHybridization():
         hyb_aux = fg.get_hyb_from_aux(self.aux_sys, hyb.keldysh_comp)
 
         if self.half_filling:
-            self.aux_sys.E -= np.diag(self.U_diag / 1.0)
+            self.aux_sys.E -= np.diag(self.U_diag / 2.0)
 
         return hyb_aux
 
