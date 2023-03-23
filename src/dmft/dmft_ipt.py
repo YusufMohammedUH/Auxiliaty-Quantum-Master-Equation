@@ -18,13 +18,13 @@ class DMFT_IPT(dmft.DMFTBase):
     """
 
     def __init__(self, parameters: Dict,
-                 hyb_leads: Union[fg.FrequencyGreen, None] = None,
-                 keldysh_comp: str = "lesser") -> None:
+                 hyb_leads: Union[fg.FrequencyGreen, None] = None
+                 ) -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
-        super().__init__(parameters, hyb_leads, keldysh_comp)
+        super().__init__(parameters, hyb_leads)
         self.weiss_green = fg.FrequencyGreen(self.green_sys.freq,
-                                             keldysh_comp=keldysh_comp)
+                                             keldysh_comp=self.keldysh_comp)
         self.time = np.linspace(self.parameters['time']['time_min'],
                                 self.parameters['time']['time_max'],
                                 self.parameters['time']['N_time'],)
@@ -77,8 +77,10 @@ class DMFT_IPT(dmft.DMFTBase):
             keldysh=sigma_lesser_freq, keldysh_comp='lesser')
         if self.keldysh_comp == "keldysh":
             self.self_energy_int = fg.FrequencyGreen(
-                sigma.freq, retarded=sigma.retarded,
-                keldysh=sigma.get_keldysh(), keldysh_comp='keldysh')
+                freq=sigma.freq,
+                retarded=sigma.retarded,
+                keldysh=sigma.get_keldysh(),
+                keldysh_comp='keldysh')
         elif self.keldysh_comp == "lesser":
             self.self_energy_int = sigma
 # ------------------------- update Green's function ------------------------- #
