@@ -1,5 +1,5 @@
 # %%
-from typing import Tuple, Union, Optional
+from typing import Tuple, Union
 import numpy as np
 from numba import njit
 import matplotlib.pyplot as plt
@@ -525,9 +525,9 @@ class FrequencyGreen:
                                      dtype=np.complex128)
             elif component == (1, 0):
                 green_inv = np.array([-1. * tmp.dot(great) for great, tmp in
-                                      zip(self.get_great(), tmps)],
+                                      zip(self.get_greater(), tmps)],
                                      dtype=np.complex128)
-            elif component == (1, 0):
+            elif component == (1, 1):
                 green_inv = np.array([tmp.dot(time_ord) for time_ord, tmp in
                                       zip(self.get_time_ordered(), tmps)],
                                      dtype=np.complex128)
@@ -548,8 +548,8 @@ class FrequencyGreen:
             return green_inv
 
     def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
-              g0_inv: Union[np.ndarray, None] = None,
-              g0: Optional[np.ndarray] = None) -> None:
+              g0_inv: Union["FrequencyGreen", np.ndarray, None] = None,
+              g0: Union["FrequencyGreen", np.ndarray, None] = None) -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma.
 
@@ -572,28 +572,107 @@ class FrequencyGreen:
         if self.fermionic != self_energy.fermionic:
             raise ValueError("Fermionicity of Green's function and "
                              "self-energy are not equal.")
-        if g0 is not None:
+        if self.orbitals != self_energy.orbitals:
+            raise ValueError("Number of orbitals of Green's function and "
+                             "self-energy are not equal.")
+
+        if (g0 is not None) and (g0_inv is None):
+            if isinstance(g0, FrequencyGreen):
+                if self.orbitals != g0.orbitals:
+                    raise ValueError("Orbitals of Green's function and"
+                                     " non-interacting Green's function"
+                                     " are not equal.")
+                if self.keldysh_comp != g0.keldysh_comp:
+                    raise ValueError("Keldysh components of Green's function"
+                                     " and non-interacting Green's function"
+                                     " are not equal.")
+                if self.fermionic != g0.fermionic:
+                    raise ValueError("Fermionicity of Green's function and"
+                                     " non-interacting Green's function"
+                                     " are not equal.")
+                g0_mul_sigma_ret_tmp = g0.retarded * self_energy.retarded
+                g0_ret_tmp = g0.retarded
+            elif isinstance(g0, np.ndarray):
+                # TODO: waring should be implemented
+                #       it can't be checked if array is fermionic or
+                #       bosonic
+
+                # g0 is now really g0.retarded
+                if len(g0[0]) != self.orbitals:
+                    raise ValueError("Orbitals of Green's function and"
+                                     " g0 are not equal.")
+                g0_mul_sigma_ret_tmp = g0 * self_energy.retarded
+                g0_ret_tmp = g0
+            else:
+                raise TypeError("g0 has to by of type numpy.nparray,"
+                                " FrequencyGreen or None")
+
             if self.orbitals > 1:
-                retarded_inv = np.array(
+                retarded = np.array(
                     list(map(np.linalg.inv, (
-                        1. - g0.retarded * self_energy.retarded))
+                        1. - g0_mul_sigma_ret_tmp))
                     ))
             else:
-                retarded_inv = np.array([1. / ret if np.abs(ret) != np.inf
-                                         else 0 for ret
-                                         in (
-                    1. - g0.retarded * self_energy.retarded)
+                retarded = np.array([1. / ret if np.abs(ret) != np.inf
+                                     else 0 for ret
+                                     in (
+                    1. - g0_mul_sigma_ret_tmp)
                 ], dtype=np.complex128)
-                self.retarded = retarded_inv * g0.retarded
-        else:
-            if g0_inv is None:
+            self.retarded = retarded * g0_ret_tmp
+        elif (g0_inv is not None) and (g0 is None):
+            if isinstance(g0_inv, np.ndarray):
+                if len(g0_inv[0]) != self.orbitals:
+                    raise ValueError("Orbitals of Green's function and"
+                                     " g0_inv are not equal.")
+                g0_inv_min_sigma_ret_tmp = g0_inv - self_energy.retarded
+            elif isinstance(g0_inv, FrequencyGreen):
+                if self.orbitals != g0_inv.orbitals:
+                    raise ValueError("Orbitals of Green's function and"
+                                     " inverse non-interacting Green's"
+                                     " function are not equal.")
+                if self.keldysh_comp != g0_inv.keldysh_comp:
+                    raise ValueError("Keldysh components of Green's"
+                                     " function and inverse"
+                                     " non-interacting Green's function"
+                                     " are not equal.")
+                if self.fermionic != g0_inv.fermionic:
+                    raise ValueError("Fermionicity of Green's function and"
+                                     " inverse non-interacting Green's"
+                                     " function are not equal.")
+                g0_inv_min_sigma_ret_tmp = g0_inv.retarded \
+                    - self_energy.retarded
+            else:
+                raise TypeError("g0_inv has to by of type numpy.nparray,"
+                                " FrequencyGreen or None")
+            if self.orbitals > 1:
+                retarded = np.array(
+                    list(map(np.linalg.inv, (
+                        g0_inv_min_sigma_ret_tmp))
+                    ))
+            else:
+                retarded = np.array([
+                    1. / ret if np.abs(ret) != np.inf else 0 for ret
+                    in (g0_inv_min_sigma_ret_tmp)
+                ], dtype=np.complex128)
+
+            self.retarded = retarded
+        elif (g0 is None) and (g0_inv is None):
+            if self.orbitals > 1:
+                identity_mat = np.eye(self.orbitals)
+                g0_inv = np.array(
+                    [w * identity_mat - e_tot for w in self.freq])
+                self.retarded = np.array(
+                    list(map(np.linalg.inv, (
+                        g0_inv - self_energy.retarded))
+                    ))
+            else:
                 g0_inv = self.freq - e_tot
-
-            self.retarded = np.array([1. / ret if np.abs(ret) != np.inf
-                                      else 0 for ret
-                                      in (g0_inv - self_energy.retarded)],
-                                     dtype=np.complex128)
-
+                self.retarded = np.array([
+                    1. / ret if np.abs(ret) != np.inf else 0 for ret
+                    in (self.freq - e_tot - self_energy.retarded)],
+                    dtype=np.complex128)
+        else:
+            raise TypeError("input of g0 and go_inv are exclusive.")
         self.keldysh = (self.retarded * self_energy.keldysh *
                         self.get_advanced())
 
