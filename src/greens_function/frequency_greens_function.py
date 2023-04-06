@@ -549,9 +549,12 @@ class FrequencyGreen:
 
     def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
               g0_inv: Union["FrequencyGreen", np.ndarray, None] = None,
-              g0: Union["FrequencyGreen", np.ndarray, None] = None) -> None:
+              g0: Union["FrequencyGreen", np.ndarray, None] = None,
+              scalar_mat: Union[np.matrix, complex, float, None] = None) -> None:
         """Calculate and set the the frequency Green's function, through the
-        Dyson equation for given self-energy sigma.
+        Dyson equation for given self-energy sigma and optional
+        non-interacting and inverse non-interacting Green's function,or on-site
+        potential.
 
         Parameters
         ----------
@@ -560,10 +563,48 @@ class FrequencyGreen:
             and/or include the interacting self-energy
 
         e_tot : float, optional
-            Onsite energie, by default 0
+            _Onsite energie, by default 0
 
-        g0_inv: np.array, optional
+        g0_inv : Union[&quot;FrequencyGreen&quot;, np.ndarray, None], optional
             Inverse non-interacting Green's function, by default None
+
+        g0 : Union[&quot;FrequencyGreen&quot;, np.ndarray, None], optional
+            Non-interacting Green's function, by default None
+
+        scalar_mat : Union[np.matrix,complex,float, None], optional
+            Scalar or matrix which is placed in place of g0, by default None
+
+        Raises
+        ------
+        ValueError
+            Keldysh components of Green's function and self-energy are not
+            equal.
+
+        ValueError
+            Number of orbitals of Green's function and self-energy are not
+            equal.
+
+        ValueError
+            Number of orbitals of Green's function and self-energy are not
+            equal.
+        ValueError
+            Orbitals of Green's function and non-interacting Green's function
+            are not equal.
+        ValueError
+            Keldysh components of Green's function and non-interacting Green's
+            function are not equal.
+        ValueError
+            Fermionicity of Green's function and non-interacting Green's
+            function  are not equal.
+        ValueError
+            Orbitals of Green's function and inverse non-interacting Green's
+            function are not equal.
+        TypeError
+            Keldysh components of Green's function and inverse non-interacting
+            Green's function are not equal.
+        ValueError
+            Fermionicity of Green's function and inverse non-interacting
+            Green's function  are not equal.
         """
         if self.keldysh_comp != self_energy.keldysh_comp:
             raise ValueError("Keldysh components of Green's function and "
@@ -576,7 +617,7 @@ class FrequencyGreen:
             raise ValueError("Number of orbitals of Green's function and "
                              "self-energy are not equal.")
 
-        if (g0 is not None) and (g0_inv is None):
+        if (g0 is not None) and (g0_inv is None) and (scalar_mat is None):
             if isinstance(g0, FrequencyGreen):
                 if self.orbitals != g0.orbitals:
                     raise ValueError("Orbitals of Green's function and"
@@ -590,7 +631,7 @@ class FrequencyGreen:
                     raise ValueError("Fermionicity of Green's function and"
                                      " non-interacting Green's function"
                                      " are not equal.")
-                g0_mul_sigma_ret_tmp = g0.retarded * self_energy.retarded
+                sigma_ret_tmp = self_energy.retarded
                 g0_ret_tmp = g0.retarded
             elif isinstance(g0, np.ndarray):
                 # TODO: waring should be implemented
@@ -601,25 +642,29 @@ class FrequencyGreen:
                 if len(g0[0]) != self.orbitals:
                     raise ValueError("Orbitals of Green's function and"
                                      " g0 are not equal.")
-                g0_mul_sigma_ret_tmp = g0 * self_energy.retarded
+                sigma_ret_tmp = self_energy.retarded
                 g0_ret_tmp = g0
             else:
                 raise TypeError("g0 has to by of type numpy.nparray,"
                                 " FrequencyGreen or None")
 
             if self.orbitals > 1:
+                g0_mul_sigma_tmp = np.array([g0_ret.dot(sig_ret) for g0_ret, sig_ret in zip(
+                    g0_ret_tmp, sigma_ret_tmp)])
                 retarded = np.array(
                     list(map(np.linalg.inv, (
-                        1. - g0_mul_sigma_ret_tmp))
+                        1. - g0_mul_sigma_tmp))
                     ))
+                self.retarded = np.array([g0_sig.dot(g0_) for g0_sig, g0_ in
+                                          zip(g0_mul_sigma_tmp, g0_ret_tmp)])
             else:
                 retarded = np.array([1. / ret if np.abs(ret) != np.inf
                                      else 0 for ret
                                      in (
-                    1. - g0_mul_sigma_ret_tmp)
+                    1. - g0_ret_tmp * sigma_ret_tmp)
                 ], dtype=np.complex128)
-            self.retarded = retarded * g0_ret_tmp
-        elif (g0_inv is not None) and (g0 is None):
+                self.retarded = retarded * g0_ret_tmp
+        elif (g0_inv is not None) and (g0 is None) and (scalar_mat is None):
             if isinstance(g0_inv, np.ndarray):
                 if len(g0_inv[0]) != self.orbitals:
                     raise ValueError("Orbitals of Green's function and"
@@ -656,7 +701,24 @@ class FrequencyGreen:
                 ], dtype=np.complex128)
 
             self.retarded = retarded
-        elif (g0 is None) and (g0_inv is None):
+        elif (scalar_mat is not None) and (g0 is None) and (g0_inv is None):
+            if isinstance(scalar_mat, np.matrix):
+                if self.orbitals != scalar_mat.shape[0]:
+                    raise ValueError(f"scalar_mat (shape {scalar_mat.shape})"
+                                     f" must have shape ({self.orbitals},"
+                                     f" {self.orbitals})")
+
+                g0_min_sigma_tmp = np.array([scalar_mat - sigma for sigma in
+                                             self_energy.retarded])
+                retarded = np.array(list(map(np.linalg.inv, g0_min_sigma_tmp)))
+            else:
+                retarded = np.array([
+                    1. / ret if np.abs(ret) != np.inf else 0 for ret
+                    in (scalar_mat - self_energy.retarded)
+                ], dtype=np.complex128)
+
+            self.retarded = retarded
+        elif (g0 is None) and (g0_inv is None) and (scalar_mat is None):
             if self.orbitals > 1:
                 identity_mat = np.eye(self.orbitals)
                 g0_inv = np.array(
@@ -673,8 +735,14 @@ class FrequencyGreen:
                     dtype=np.complex128)
         else:
             raise TypeError("input of g0 and go_inv are exclusive.")
-        self.keldysh = (self.retarded * self_energy.keldysh *
-                        self.get_advanced())
+
+        if self.orbitals > 1:
+            self.keldysh = np.array([
+                ret.dot(s_kel.dot(adv)) for ret, s_kel, adv in zip(
+                    self.retarded, self_energy.keldysh, self.get_advanced())])
+        else:
+            self.keldysh = (self.retarded * self_energy.keldysh *
+                            self.get_advanced())
 
     def set_green_from_auxiliary(self, auxsys: auxp.AuxiliarySystem) -> None:
         """Set the retarded and Keldysh impurity site Green's function

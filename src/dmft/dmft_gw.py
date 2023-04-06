@@ -92,7 +92,7 @@ class DMFT_GW(dmft_base.DMFTBase):
 
             self.screened_interaction.dyson(
                 self_energy=polarizability_tmp,
-                g0_inv=1.)
+                scalar_mat=1.)
             self.screened_interaction.retarded *= U
             self.screened_interaction.keldysh *= U**2
 # ----------------------------- get self energy ----------------------------- #
