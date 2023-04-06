@@ -341,9 +341,15 @@ class AuxiliaryDualSolverBase(ABC):
     def compute_green_dual(self) -> None:
         """Calculate the fermionic dual Green's function.
         """
+        sigma_tmp = fg.FrequencyGreen(freq=self.sigma_dual.freq,
+                                      retarded=(self.sigma_dual.retarded
+                                                + self.sigma_hartree),
+                                      keldysh=self.sigma_dual.keldysh,
+                                      orbitals=self.sigma_dual.orbitals,
+                                      keldysh_comp=self.sigma_dual.keldysh_comp
+                                      )
         self.green_dual = (self.green_bare_dual.inverse()
-                           - self.sigma_dual).inverse()
-        #   - self.sigma_hartree
+                           - sigma_tmp).inverse()
 
     def compute_green_system(self) -> None:
         """Calculate the system Green's function.
