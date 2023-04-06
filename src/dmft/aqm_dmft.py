@@ -161,7 +161,7 @@ class AuxiliaryMaserEquationDMFT(dmft_base.DMFTBase):
 
         self.green_sys.dyson(self_energy=(
             self.hyb_dmft + self.hyb_leads + self.self_energy_int),
-            e_tot=epsilon + U * (self.n - 0.5))
+            e_tot=0)  # epsilon + U * (self.n - 0.5))
         return optimization_options, x_start
 
     def solve(self, optimization_options: Dict = {

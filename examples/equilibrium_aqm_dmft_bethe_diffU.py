@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import src.super_fermionic_space.super_fermionic_subspace as sf_sub
 import src.super_fermionic_space.model_lindbladian as lind
 import src.greens_function.correlation_functions as corr
-import src.dmft.auxiliary_dmft as aux_dmft
+import src.dmft.aqm_dmft as aux_dmft
 # ############################### Parameters ##################################
 #  Frequency grid
 N_freq = 401
@@ -16,7 +16,7 @@ selfconsist_param = {'max_iter': 50, 'err_tol': 1e-7, 'mixing': 0.2}
 
 e0 = 0
 mu = 0
-beta = 100
+beta = 1000
 D = 10
 gamma = 0.05
 

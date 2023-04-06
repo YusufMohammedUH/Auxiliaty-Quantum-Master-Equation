@@ -9,6 +9,7 @@ import src.greens_function.correlation_functions as corr
 import src.impurity_solver.auxiliary_gw as gw
 import src.dmft.dmft_base as dmft_base
 import src.util.hdf5_util as hd5
+import matplotlib.pyplot as plt
 
 
 class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase):
@@ -73,6 +74,7 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase):
         self.green_aux = None
         self.hyb_aux = None
         self.aux_dual_gw = None
+        self.aux_hyb = None
         dmft_base.DMFTBase.__init__(self, parameters=parameters,
                                     hyb_leads=hyb_leads, fname=fname)
 # -------------------------- setup correletor class ------------------------- #
@@ -92,11 +94,6 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase):
             self.parameters['aux_sys']['target_sites'] = \
                 self.correlators.Lindbladian.super_fermi_ops.target_sites
         self.set_local_matrix()
-
-        self.aux_hyb = opt.AuxiliaryHybridization(
-            self.parameters['aux_sys']['Nb'],
-            x_start=[0., 0.1, 0.5, -0.1, 0.2],
-            U_mat=self.U_mat)
 
     def set_local_matrix(self, T_mat: Tuple[np.ndarray, None] = None,
                          U_mat: Tuple[np.ndarray, None] = None,
@@ -134,6 +131,11 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase):
         else:
             self.U_mat = U_mat
 
+        self.aux_hyb = opt.AuxiliaryHybridization(
+            self.parameters['aux_sys']['Nb'],
+            x_start=[0., 0.1, 0.5, -0.1, 0.2],
+            U_mat=self.U_mat)
+
     def impurity_solver(self, optimization_options: Dict = {
             "disp": False, "maxiter": 500, 'ftol': 1e-5},
             x_start: List = [0., 0.1, 0.5, -0.1, 0.2]) -> None:
@@ -160,7 +162,7 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase):
 
         self.green_aux = self.correlators.get_single_particle_green_physical(
             self.green_sys.freq, keldysh_comp=self.keldysh_comp)
-
+        # plt.plot(self.green_aux.freq, self.green_aux.retarded.imag)
         self.aux_dual_gw = gw.AuxiliaryDualGW(
             time_param=self.parameters['time'],
             U_trilex=self.U_trilex, green_aux=self.green_aux,
@@ -171,9 +173,9 @@ class AuxiliaryMaserEquationDualGWDMFT(dmft_base.DMFTBase):
             self.parameters['dual_GW']['err_tol'],
             self.parameters['dual_GW']['iter_max'])
         # ################### Extract the self-energy  ####################
-
-        self.self_energy_int = self.aux_dual_gw.green_sys.get_self_enerqy() \
-            - self.hyb_aux
+        self.green_sys = self.aux_dual_gw.green_sys.copy()
+        self.self_energy_int = self.green_sys.get_self_enerqy() \
+            - hyb_tot
         return optimization_options, x_start
 
     def solve(self, optimization_options: Dict = {

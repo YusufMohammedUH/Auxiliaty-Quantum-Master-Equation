@@ -1,13 +1,13 @@
 # %%
 from typing import Union, Tuple, List, Dict
 import numpy as np
-import src.auxiliary_mapping.auxiliary_system_parameter as auxp
-import src.greens_function.frequency_greens_function as fg
-import src.greens_function.dos_util as du
 from scipy.integrate import simps
 from scipy.optimize import minimize, Bounds
 from scipy.optimize.optimize import OptimizeResult
 import matplotlib.pyplot as plt
+import src.auxiliary_mapping.auxiliary_system_parameter as auxp
+import src.greens_function.frequency_greens_function as fg
+import src.greens_function.dos_util as du
 # TODO: 1. enable complex optimization
 # TODO: 2. use a optimization which converges reliably for NB>2
 #          -> change to more reliable minimization scheme!
