@@ -1,31 +1,31 @@
 # %%
 from typing import Dict, Optional
+import numpy as np
+from scipy.integrate import simps
 import matplotlib.pyplot as plt
 import src.greens_function.frequency_greens_function as fg
 import src.greens_function.correlation_functions as corr
-import src.impurity_solver.auxiliary_solver_base as aux_base
 import src.util.hdf5_util as hd5
+import src.greens_function.dos_util as du
+import src.util.fourier as dft
+import src.impurity_solver.auxiliary_solver_base as aux_base
+# import src.dmft.auxiliary_dmft as aux_dmft
 
-
-# Dual TRILEX solver:
+import src.super_fermionic_space.super_fermionic_subspace as sf_sub
+import src.super_fermionic_space.model_lindbladian as lind
+# Dual TRILEX:
 #  [X] 1. inherit from AuxiliaryDualSolverBase:
-#       [X] 0. get g_aux, hyb_sys, hyb_aux
-#       [X] 1. calculate auxiliary susceptibility
-#       [X] 2. calculate auxiliary polarization
-#       [X] 3. calculate non-interacting dual Green's function and bosonic
-#         propagator
-#
-#       [X] 7. calculate the dressed dual bosonic propagator
-#       [X] 9. calculate the dressed dual Green's function
-#   (optional) update self-consistently 6. with dressed dual Green's function
-#              until convergence
-#       [X] 10. calculate the system Green's function
-#  [X] 2. calculate three point vertex
-#  [ ] 3. convolute three point vertex
-#         and store the vertex such that I have a efficient
-#         representation
-#  [ ] 2. calculate dual polarization
-#  [ ] 3. calculate dual self-energy
+#  [X] 2. copy from AuxiliaryDualTRILEX
+#  [X] 3. calculate the three point correlator
+#  [X] 4. calculate convolution of three point correlator with green's function
+#         and obtain three point vertex
+#  [X] 5. calculate "mirrored" three point vertex
+#  [ ] 6. calculate polarization:
+#           [ ]- first derive convolution for the polarization
+#           [ ]- then calculate the polarization
+#  [ ] 7. calculate self-energy
+#           [ ]- first derive convolution for the self-energy
+#           [ ]- then calculate the self-energy
 
 
 class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
@@ -97,12 +97,6 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
     sigma_dual : fg.FrequencyGreen
         Dual fermionic self-energy
 
-    three_point_vertex : fg.FrequencyGreen
-        Dual four-point vertex
-
-    four_point_vertex : fg.FrequencyGreen
-        Dual four-point vertex
-
     bare_dual_screened_interaction : Dict
         Bare bosonic dual Green's function
 
@@ -131,6 +125,7 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
                  dataname: Optional[str] = None,
                  load_input_param: bool = True,
                  load_aux_data: bool = False,
+                 time_param: Optional[Dict] = None,
                  U_trilex: Optional[Dict] = None,
                  green_aux: Optional[fg.FrequencyGreen] = None,
                  hyb_sys: Optional[fg.FrequencyGreen] = None,
@@ -139,6 +134,18 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
                  keldysh_comp: str = 'keldysh') -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
+        self.time = np.linspace(time_param['time_min'],
+                                time_param['time_max'],
+                                time_param['N_time'])
+        self.contour_components = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1),
+                                   (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+
+        self.three_point_vertex = {('up', 'up', 'ch'): None,
+                                   ('up', 'do', 'x'): None,
+                                   ('up', 'do', 'y'): None,
+                                   ('up', 'up', 'z'): None}
+        self.four_point_vertex = {}
+
         super().__init__(filename=filename, dir_=dir_, dataname=dataname,
                          load_input_param=load_input_param,
                          load_aux_data=load_aux_data,
@@ -149,43 +156,60 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
                          correlators=correlators,
                          keldysh_comp=keldysh_comp)
 
-        if (filename is None) and (dir_ is None) and (dataname is None):
-            self.three_point_vertex = {('up', 'up', 'ch'): None,
-                                       ('up', 'do', 'x'): None,
-                                       ('up', 'do', 'y'): None,
-                                       ('up', 'up', 'z'): None}
-            self.four_point_vertex = {}
-
-    def compute_three_point_vertex(self) -> None:
+    def compute_three_point_correlator(self) -> None:
         """Calculate the three point vertex
         """
         for spins in self.three_point_vertex:
-            self.three_point_vertex = self.correlators.get_three_point_vertex(
-                self.green_aux.freq, spins, return_=True)
+            self.three_point_correlator[spins] = \
+                self.correlators.get_three_point_vertex(
+                freq=self.green_aux.freq, spin=spins, return_=True)
+
+    def get_three_point_vertex(self) -> None:
+        """Calculate the three point vertex, by convoluting the green's
+        functions and susceptibilities.
+        """
+        for con_comp in self.contour_components:
+            for spins in self.three_point_vertex:
+                self.three_point_vertex = \
+                    self.correlators.get_vertex_green_convolution(
+                        green=self.green_aux.inverse(), component=con_comp,
+                        spin=spins, position_freq=(0, 0),
+                        vertex=self.three_point_vertex)
+                self.three_point_vertex = \
+                    self.correlators.get_vertex_green_convolution(
+                        green=self.green_aux.inverse(), component=con_comp,
+                        spin=spins, position_freq=(1, 1),
+                        vertex=self.three_point_vertex)
+                # XXX: function passed should be different from susceptibility
+                self.three_point_vertex = \
+                    self.correlators.get_vertex_green_convolution(
+                        green=self.susceptibility_aux.inverse(), component=con_comp,
+                        spin=spins, position_freq=(1, 2),
+                        vertex=self.three_point_vertex)
+
+    def get_mirrored_three_point_vertex(self, component: tuple, spin: tuple) -> None:
+        # Here we simply implement the symmetry relations written in the
+        # auxiliary dual boson paper of Feng
+        conj_component = (1 - component[0], 1 - component[1], 1 - component[2])
+        return self.three_point_vertex[spin][conj_component].T.conj()
 
     def compute_polarization_dual(self, green: "fg.FrequencyGreen" = None
                                   ) -> None:
         if green is None:
             green = self.green_dual
-        # XXX: Here the polarization is calculated from the dual Green's
-
-        # if self.keldysh_comp == 'lesser':
-        #     self.polarization_dual = polarizability_tmp
-        # elif self.keldysh_comp == 'keldysh':
-        #     self.polarization_dual.retarded = polarizability_tmp.retarded
-        #     self.polarization_dual.keldysh = polarizability_tmp.get_keldysh()
+        # TODO: Polarization
+        #      [ ] 0. write the fourier transform of the convolution.
+        #      [ ] 1. implement convolution of vertex with vertices and green's
+        #             functions
 
     def compute_sigma_dual(self, green: "fg.FrequencyGreen" = None) -> None:
         if green is None:
             green = self.green_dual
-        # XXX: Here the polarization is calculated from the dual Green's
 
-        # if self.keldysh_comp == "lesser":
-        #     self.sigma_dual = sigma_dual_tmp
-        # elif self.keldysh_comp == "keldysh":
-        #     self.sigma_dual.retarded = sigma_dual_tmp.retarded
-        #     self.sigma_dual.keldysh = sigma_dual_tmp.get_keldysh()
-        # plt.plot(self.sigma_dual.retarded.imag)
+        # TODO: sigma
+        #      [ ] 0. write the foutier transform of the convolutions.
+        #      [ ] 1. implement convolution of vertex with vertices and green's
+        #             functions
 
     def solve(self, err_tol=1e-7, iter_max=100):
         self.__solve__(err_tol=err_tol, iter_max=iter_max)
@@ -193,10 +217,18 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
     def save(self, fname: str, dir_: str, dataname: str,
              save_input_param: bool = True, save_aux_data: bool = False
              ) -> None:
-
         self.__save__(fname=fname, dir_=dir_, dataname=dataname,
                       save_input_param=save_input_param,
                       save_aux_data=save_aux_data)
+
+        freq = {'freq_min': self.hyb_aux.freq[0],
+                'freq_max': self.hyb_aux.freq[-1],
+                'N_freq': len(self.hyb_aux.freq)}
+
+        time = {'time_min': self.time[0],
+                'time_max': self.time[-1],
+                'N_time': len(self.time)}
+        hd5.add_attrs(fname, "/", {'freq': freq, 'time': time})
 
         hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'three_point_vertex',
                           self.three_point_vertex)
@@ -206,11 +238,20 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
     def load(self, fname: str, dir_: str, dataname: str,
              load_input_param: bool = True, load_aux_data: bool = False
              ) -> None:
-
+        print('bla')
         self.__load__(fname=fname, dir_=dir_, dataname=dataname,
                       load_input_param=load_input_param,
                       load_aux_data=load_aux_data)
 
+        if load_input_param:
+
+            grid = hd5.read_attrs(fname, '/')
+            try:
+                self.time = np.linspace(
+                    grid['time']['time_min'], grid['time']['time_max'],
+                    grid['time']['N_time'])
+            except KeyError:
+                print(KeyError)
         temp = hd5.read_dict_data(
             fname, f"{dir_}/{dataname}", 'three_point_vertex')
         for key in self.three_point_vertex:
@@ -222,9 +263,12 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
             self.four_point_vertex[key] = temp[f"{key}"]
 
 
+# %%
 if __name__ == '__main__':
+    time_param = {'time_min': -10, 'time_max': 10, 'N_time': 1001}
     auxTrilex = AuxiliaryDualTRILEX(
-        filename='ForAuxTrilex.h5', dir_='', dataname='trilex')
+        filename='ForAuxTrilex.h5', dir_='', dataname='trilex',
+        time_param=time_param)
 # %%
 if __name__ == '__main__':
     import src.util.figure as fu
