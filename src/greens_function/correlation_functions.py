@@ -531,13 +531,11 @@ class Correlators:
                                                           0j, 1 + 0j, 1 + 0j),
                                prefactor: complex = -1 + 0j,
                                return_: bool = False) -> Dict:
-        """Return the single particle green's function for the desired contour
-        component 'component' for given spin, site and frequency grid.
+        """Return the three point vertex for given spin, site and
+        frequency grid.
+
         Parameters
         ----------
-        component : Tuple[int, int, int]
-            Contour component, e.g. (0,0,0) or (0, 1,0). 1 for th backward
-            and 0 for the forward branch.
 
         freq : np.ndarray
             Frequency grid
@@ -582,6 +580,7 @@ class Correlators:
     def get_vertex_green_convolution(self, green: fg.FrequencyGreen,
                                      component: Tuple, spin: Tuple,
                                      position_freq: Tuple,
+                                     vertex: Union[None, Dict] = None
                                      ) -> np.ndarray:
         """calculate the product of the green's function and the three point
         vertex in frequency domain for a given contour component 'component'.
@@ -617,17 +616,19 @@ class Correlators:
         """
     # XXX: works only in the single orbital/site case, so if dim(green[i])=1
         #  multiply greens function from the left with the vertex
+        if vertex is None:
+            vertex = self.correlators[3]
         if position_freq[0] == 0:
             if position_freq[1] == 0:
                 if component[0] == 0:
-                    tmp = ((green.get_time_ordered() * self.correlators[3][
+                    tmp = ((green.get_time_ordered() * vertex[
                         spin][(0, *component[1:])].T).T
-                        - (green.get_lesser() * self.correlators[3][spin][
+                        - (green.get_lesser() * vertex[spin][
                             (1, *component[1:])].T).T)
                 elif component[0] == 1:
-                    tmp = ((green.get_greater() * self.correlators[3][spin][
+                    tmp = ((green.get_greater() * vertex[spin][
                         (0, *component[1:])].T).T
-                        - (green.get_anti_time_ordered() * self.correlators[3][
+                        - (green.get_anti_time_ordered() * vertex[
                             spin][
                             (1, *component[1:])].T).T)
                 else:
@@ -635,12 +636,12 @@ class Correlators:
 
             elif position_freq[1] == 1:
                 if component[1] == 0:
-                    tmp = ((green.get_time_ordered().T * self.correlators[3][
+                    tmp = ((green.get_time_ordered().T * vertex[
                         spin][(component[0], 0, component[-1])]).T
-                        - (green.get_lesser().T * self.correlators[3][spin][
+                        - (green.get_lesser().T * vertex[spin][
                             (component[0], 1, component[-1])]).T)
                 elif component[1] == 1:
-                    tmp = ((green.get_greater().T * self.correlators[3][spin][
+                    tmp = ((green.get_greater().T * vertex[spin][
                         (component[0], 0, component[-1])]).T
                         - (green.get_anti_time_ordered().T * self.correlators[
                             3][spin][(component[0], 1, component[-1])]).T)
@@ -652,14 +653,14 @@ class Correlators:
         elif position_freq[0] == 1:
             if position_freq[1] == 0:
                 if component[0] == 0:
-                    tmp = ((green.get_time_ordered() * self.correlators[3][
+                    tmp = ((green.get_time_ordered() * vertex[
                         spin][(0, *component[1:])].T).T
-                        - (green.get_greater() * self.correlators[3][spin][
+                        - (green.get_greater() * vertex[spin][
                             (1, *component[1:])].T).T)
                 elif component[0] == 1:
-                    tmp = ((green.get_lesser() * self.correlators[3][spin][
+                    tmp = ((green.get_lesser() * vertex[spin][
                         (0, *component[1:])].T).T
-                        - (green.get_anti_time_ordered() * self.correlators[3][
+                        - (green.get_anti_time_ordered() * vertex[
                             spin][
                             (1, *component[1:])].T).T)
                 else:
@@ -667,12 +668,12 @@ class Correlators:
 
             elif position_freq[1] == 1:
                 if component[1] == 0:
-                    tmp = ((green.get_time_ordered().T * self.correlators[3][
+                    tmp = ((green.get_time_ordered().T * vertex[
                         spin][(component[0], 0, component[-1])]).T
-                        - (green.get_greater().T * self.correlators[3][spin][
+                        - (green.get_greater().T * vertex[spin][
                             (component[0], 1, component[-1])]).T)
                 elif component[1] == 1:
-                    tmp = ((green.get_lesser().T * self.correlators[3][spin][
+                    tmp = ((green.get_lesser().T * vertex[spin][
                         (component[0], 0, component[-1])]).T
                         - (green.get_anti_time_ordered().T * self.correlators[
                             3][spin][
@@ -681,7 +682,7 @@ class Correlators:
                     raise ValueError('component[0] has to be 0 or 1')
 
             elif position_freq[1] == 2:
-                tmp = np.zeros_like(self.correlators[3][spin][component].shape)
+                tmp = np.zeros_like(vertex[spin][component].shape)
                 for ii in np.nditer(green.freq):
                     for jj in np.nditer(green.freq):
                         w1 = green.freq[ii]
@@ -713,18 +714,16 @@ class Correlators:
                                     green.get_anti_time_ordered()[-1]
 
                         if component[2] == 0:
-                            tmp[ii, jj] = self.correlators[
-                                3][spin][(*component[:-1], 0)][ii, jj]\
+                            tmp[ii, jj] = vertex[spin][
+                                (*component[:-1], 0)][ii, jj]\
                                 * g_w3_time_ordered\
-                                - self.correlators[
-                                3][spin][(*component[:-1], 1)][ii, jj]\
+                                - vertex[spin][(*component[:-1], 1)][ii, jj]\
                                 * g_w3_greater
                         elif component[2] == 1:
-                            tmp[ii, jj] = self.correlators[
-                                3][spin][(*component[:-1], 0)][ii, jj]\
+                            tmp[ii, jj] = vertex[
+                                spin][(*component[:-1], 0)][ii, jj]\
                                 * g_w3_lesser\
-                                - self.correlators[
-                                3][spin][(*component[:-1], 1)][ii, jj]\
+                                - vertex[spin][(*component[:-1], 1)][ii, jj]\
                                 * g_w3_anti_time_ordered
                         else:
                             raise ValueError('component[0] has to be 0 or 1')
