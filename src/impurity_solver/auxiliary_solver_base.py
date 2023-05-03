@@ -115,6 +115,28 @@ class AuxiliaryDualSolverBase(ABC):
                  keldysh_comp: str = 'keldysh') -> None:
         """Initialize self.  See help(type(self)) for accurate signature.
         """
+        self.init(filename=filename, dir_=dir_, dataname=dataname,
+                  load_input_param=load_input_param,
+                  load_aux_data=load_aux_data,
+                  U_trilex=U_trilex, green_aux=green_aux,
+                  hyb_sys=hyb_sys, hyb_aux=hyb_aux,
+                  correlators=correlators, keldysh_comp=keldysh_comp)
+
+    def init(self, *, filename: Optional[str] = None,
+             dir_: Optional[str] = None,
+             dataname: Optional[str] = None,
+             load_input_param: bool = True,
+             load_aux_data: bool = False,
+             U_trilex: Optional[Dict] = None,
+             green_aux: Optional[fg.FrequencyGreen] = None,
+             hyb_sys: Optional[fg.FrequencyGreen] = None,
+             hyb_aux: Optional[fg.FrequencyGreen] = None,
+             correlators: Optional[corr.Correlators] = None,
+             keldysh_comp: str = 'keldysh') -> None:
+        """Initialization of object helper function.
+        this is nacessary to allow the initialization of a child of this class
+        by calling the parent's (this class) load function.
+        """
 
         self.correlators = correlators
         if (filename is None) and (dir_ is None) and (dataname is None):
@@ -126,6 +148,7 @@ class AuxiliaryDualSolverBase(ABC):
             self.U_trilex = U_trilex
             self.keldysh_comp = keldysh_comp
             self.err_iterations_aux = []
+            self.sigma_hartree = 0
 
             if self.keldysh_comp == green_aux.keldysh_comp:
                 self.green_aux = green_aux
@@ -600,10 +623,9 @@ class AuxiliaryDualSolverBase(ABC):
             else:
                 self.hyb_sys.load(fname, '/system', 'hyb_sys', readfreq=False)
             self.delta_hyb = self.hyb_aux - self.hyb_sys
-            self.__init__(U_trilex=self.U_trilex, green_aux=self.green_aux,
-                          hyb_sys=self.hyb_sys, hyb_aux=self.hyb_aux,
-                          correlators=self.correlators)
-
+            self.init(U_trilex=self.U_trilex, green_aux=self.green_aux,
+                      hyb_sys=self.hyb_sys, hyb_aux=self.hyb_aux,
+                      correlators=self.correlators)
         self.green_bare_dual.load(fname, f"{dir_}/{dataname}",
                                   "green_bare_dual",
                                   readfreq=False)
