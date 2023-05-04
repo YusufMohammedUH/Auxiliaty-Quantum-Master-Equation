@@ -1,6 +1,6 @@
-numpy
-numba
-scipy
+numpy>=1.23.0
+numba>=0.56.0, <0.57.0
+scipy==1.10.0
 flake8
 pytest
 matplotlib
