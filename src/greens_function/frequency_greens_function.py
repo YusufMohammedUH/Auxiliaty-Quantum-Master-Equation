@@ -434,6 +434,44 @@ class FrequencyGreen:
         return 0.5 * (self.get_keldysh() - (self.retarded + self.get_advanced()
                                             ))
 
+    def get_contour_greens(self, contour_1, contour_2) -> "FrequencyGreen":
+        """Given the branch 0 (forward) or 1 (backward)
+        g(t_{contour_1},T_{contour_2})
+
+        Parameters
+        ----------
+        contour_1 : int
+            Branch of the first time
+
+        contour_2 : int
+            Branch of the second time
+
+        Returns
+        -------
+        FrequencyGreen
+            Green's function for the given branches
+
+        Raises
+        ------
+        ValueError
+            contour can take only value 0(forward) and 1(backward).
+        """
+        if contour_1 not in [0, 1] or contour_2 not in [0, 1]:
+            raise ValueError("contour can take only value 0(forward) and" +
+                             " 1(backward).")
+
+        if contour_1 == 0:
+            if contour_2 == 0:
+                return self.get_time_ordered()
+            elif contour_2 == 1:
+                return self.get_lesser()
+
+        elif contour_1 == 1:
+            if contour_2 == 0:
+                return self.get_greater()
+            elif contour_2 == 1:
+                return self.get_anti_time_ordered()
+
     def get_keldysh(self) -> np.ndarray:
         """Return the keldysh component
         """
@@ -550,7 +588,8 @@ class FrequencyGreen:
     def dyson(self, self_energy: "FrequencyGreen", e_tot: float = 0,
               g0_inv: Union["FrequencyGreen", np.ndarray, None] = None,
               g0: Union["FrequencyGreen", np.ndarray, None] = None,
-              scalar_mat: Union[np.matrix, complex, float, None] = None) -> None:
+              scalar_mat: Union[np.matrix, complex, float, None] = None
+              ) -> None:
         """Calculate and set the the frequency Green's function, through the
         Dyson equation for given self-energy sigma and optional
         non-interacting and inverse non-interacting Green's function,or on-site
@@ -649,8 +688,9 @@ class FrequencyGreen:
                                 " FrequencyGreen or None")
 
             if self.orbitals > 1:
-                g0_mul_sigma_tmp = np.array([g0_ret.dot(sig_ret) for g0_ret, sig_ret in zip(
-                    g0_ret_tmp, sigma_ret_tmp)])
+                g0_mul_sigma_tmp = np.array([
+                    g0_ret.dot(sig_ret) for g0_ret, sig_ret in zip(
+                        g0_ret_tmp, sigma_ret_tmp)])
                 retarded = np.array(
                     list(map(np.linalg.inv, (
                         1. - g0_mul_sigma_tmp))
