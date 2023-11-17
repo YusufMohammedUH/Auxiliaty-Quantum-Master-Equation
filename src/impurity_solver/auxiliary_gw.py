@@ -407,21 +407,21 @@ if __name__ == '__main__':
     plt.plot(freq, aux_dual_GW.green_sys.retarded.imag, label='aqm-gw')
     plt.legend()
     plt.show()
-# # %%
-# if __name__ == '__main__':
-#     aux_qme_dmft = aux_dmft.AuxiliaryMaserEquationDMFT(
-#         fname='auxiliaryDMFT.h5')
-#     U = aux_qme_dmft.parameters['system']['U']
-#     U_trilex = {'ch': U / 2, 'x': -U / 2, 'y': -U / 2, 'z': -U / 2}
-#     time_param = {'time_min': -10, 'time_max': 10, 'N_time': 1000}
-#     aux_dual_GW2 = AuxiliaryDualGW(time_param=time_param, U_trilex=U_trilex,
-#                                    green_aux=aux_qme_dmft.green_aux,
-#                                    hyb_sys=(aux_qme_dmft.hyb_leads
-#                                             + aux_qme_dmft.hyb_dmft),
-#                                    hyb_aux=aux_qme_dmft.hyb_aux,
-#                                    correlators=aux_qme_dmft.correlators,
-#                                    keldysh_comp=aux_qme_dmft.parameters[
-#                                        'system']['keldysh_comp'])
+# %%
+if __name__ == '__main__':
+    aux_qme_dmft = aux_dmft.AuxiliaryMaserEquationDMFT(
+        fname='auxiliaryDMFT.h5')
+    U = aux_qme_dmft.parameters['system']['U']
+    U_trilex = {'ch': U / 2, 'x': -U / 2, 'y': -U / 2, 'z': -U / 2}
+    time_param = {'time_min': -10, 'time_max': 10, 'N_time': 1000}
+    aux_dual_GW2 = AuxiliaryDualGW(time_param=time_param, U_trilex=U_trilex,
+                                   green_aux=aux_qme_dmft.green_aux,
+                                   hyb_sys=(aux_qme_dmft.hyb_leads
+                                            + aux_qme_dmft.hyb_dmft),
+                                   hyb_aux=aux_qme_dmft.hyb_aux,
+                                   correlators=aux_qme_dmft.correlators,
+                                   keldysh_comp=aux_qme_dmft.parameters[
+                                       'system']['keldysh_comp'])
 
 # if __name__ == '__main__':
 #     aux_dual_GW2.solve(iter_max=10, err_tol=1e-10)

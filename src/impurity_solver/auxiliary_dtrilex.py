@@ -12,21 +12,8 @@ import src.util.hdf5_util as hd5
 import src.impurity_solver.auxiliary_solver_base as aux_base
 # import src.dmft.auxiliary_dmft as aux_dmft
 
-# import src.super_fermionic_space.super_fermionic_subspace as sf_sub
-# import src.super_fermionic_space.model_lindbladian as lind
-# Dual TRILEX:
-#  [X] 1. inherit from AuxiliaryDualSolverBase:
-#  [X] 2. copy from AuxiliaryDualTRILEX
-#  [X] 3. calculate the three point correlator
-#  [X] 4. calculate convolution of three point correlator with green's function
-#         and obtain three point vertex
-#  [X] 5. calculate "mirrored" three point vertex
-#  [X] 6. calculate polarization:
-#           [X]- first derive convolution for the polarization
-#           [X]- then calculate the polarization
-#  [X] 7. calculate self-energy
-#           [X]- first derive convolution for the self-energy
-#           [X]- then calculate the self-energy
+import src.super_fermionic_space.super_fermionic_subspace as sf_sub
+import src.super_fermionic_space.model_lindbladian as lind
 
 
 @njit(cache=True)
@@ -518,11 +505,19 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
                 'time_max': self.time[-1],
                 'N_time': len(self.time)}
         hd5.add_attrs(fname, "/", {'freq': freq, 'time': time})
-
-        hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'three_point_vertex',
-                          self.three_point_vertex)
-        hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'four_point_vertex',
-                          self.four_point_vertex)
+        try:
+            hd5.add_dict_data(fname, f"{dir_}/{dataname}",
+                              'three_point_correlator',
+                              self.three_point_correlator)
+        except KeyError:
+            print(KeyError)
+            print('three_point_correlator not found. ' +
+                  'Loading three_point_vertex.')
+            hd5.add_dict_data(fname, f"{dir_}/{dataname}",
+                              'three_point_vertex',
+                              self.three_point_vertex)
+        # hd5.add_dict_data(fname, f"{dir_}/{dataname}", 'four_point_vertex',
+        #                   self.four_point_vertex)
 
     def load(self, fname: str, dir_: str, dataname: str,
              load_input_param: bool = True, load_aux_data: bool = False
@@ -541,17 +536,108 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
                     grid['time']['N_time'])
             except KeyError:
                 print(KeyError)
-        temp = hd5.read_dict_data(
-            fname, f"{dir_}/{dataname}", 'three_point_vertex')
-        for key in self.three_point_vertex:
-            self.three_point_vertex[key] = temp[f"{key}"]
 
-        temp = hd5.read_dict_data(
-            fname, f"{dir_}/{dataname}", 'four_point_vertex')
+        try:
+            temp = hd5.read_dict_data(
+                fname, f"{dir_}/{dataname}", 'three_point_correlator')
+            for key in self.three_point_vertex:
+                self.three_point_correlator[key] = temp[f"{key}"]
+        except KeyError:
+            print(KeyError)
+            print('three_point_correlator not found. ' +
+                  'Loading three_point_vertex.')
+            temp = hd5.read_dict_data(
+                fname, f"{dir_}/{dataname}", 'three_point_vertex')
+            for key in self.three_point_vertex:
+                self.three_point_vertex[key] = temp[f"{key}"]
+
+        # temp = hd5.read_dict_data(
+        #     fname, f"{dir_}/{dataname}", 'four_point_vertex')
         # for key in self.four_point_vertex.keys():
         #     self.four_point_vertex[key] = temp[f"{key}"]
 
 
+if __name__ == '__main__':
+    import src.greens_function.dos_util as dos
+    import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
+    # freq
+    w_max = 10
+    w_n = 1001
+    freq = np.linspace(-w_max, w_max, w_n)
+    # bath
+    e0 = 0
+    mu = 0
+    beta = 100
+    D = 1
+    gamma = 0
+    # auxiliary sites
+    Nb = 1
+    nsite = 2 * Nb + 1
+    keldysh_comp = 'keldysh'
+    U = 5.0
+    Us = np.array([0., U, 0], dtype=np.complex128)
+    hyb_sys = dos.set_hybridization(
+        freq=freq,
+        retarded_function=dos.semi_circular_bath_retarded,
+        args=[e0, mu, beta, D, gamma], keldysh_comp=keldysh_comp)
+
+    aux_hyb = opt.AuxiliaryHybridization(
+        Nb=Nb,
+        x_start=[0., 0.1, 0.5, -0.1, 0.2],
+        U_mat=Us)
+
+    hyb_aux = aux_hyb.update(hyb=hyb_sys)
+    green_aux = fg.FrequencyGreen(freq=freq,
+                                  keldysh_comp=keldysh_comp)
+    green_aux.dyson(hyb_aux)
+
+    U_charge = U / 2
+    U_spin = -U / 2
+    U_trilex = {'ch': U_charge, 'x': U_spin, 'y': U_spin, 'z': U_spin}
+    time_param = {'time_min': -10, 'time_max': 10, 'N_time': 1001}
+    # correlator
+    spinless = False
+    spin_sector_max = 2
+    tilde_conjugationrule_phase = True
+
+    super_fermi_ops = sf_sub.SpinSectorDecomposition(
+        nsite, spin_sector_max, spinless=spinless,
+        tilde_conjugationrule_phase=tilde_conjugationrule_phase)
+    L = lind.Lindbladian(super_fermi_ops=super_fermi_ops)
+
+    # Setup a correlator object
+    corr_cls = corr.Correlators(Lindbladian=L, trilex=True)
+    corr_cls.update(T_mat=aux_hyb.aux_sys.E, U_mat=Us,
+                    Gamma1=aux_hyb.aux_sys.Gamma1,
+                    Gamma2=aux_hyb.aux_sys.Gamma2)
+
+    aux_dual_trilex = AuxiliaryDualTRILEX(time_param=time_param, U_trilex=U_trilex,
+                                          green_aux=green_aux,
+                                          hyb_sys=hyb_sys,
+                                          hyb_aux=hyb_aux,
+                                          correlators=corr_cls,
+                                          keldysh_comp=keldysh_comp)
+
+if __name__ == '__main__':
+    aux_dual_trilex.solve(iter_max=1, err_tol=1e-10)
+
+#  %%
+if __name__ == '__main__':
+    # plt.plot(freq, aux_dual_trilex.hyb_sys.keldysh.imag, label='original')
+    plt.plot(freq, aux_dual_trilex.polarization_aux[(
+        'ch', 'ch')].keldysh.imag, label='aqm')
+    plt.legend()
+    plt.show()
+
+    plt.plot(freq, aux_dual_trilex.hyb_sys.retarded.imag, label='original')
+    # plt.plot(freq, aux_dual_trilex.green_aux.retarded.imag, label='aqm')
+    # plt.plot(freq, aux_dual_trilex.green_sys.retarded.imag, label='aqm-gw')
+    plt.legend()
+    plt.show()
+
+    plt.plot(freq, np.pi * aux_dual_trilex.green_sys.keldysh.imag, label='aqm-gw')
+    plt.legend()
+    plt.show()
 # %%
 if __name__ == '__main__':
     import colorcet as cc
