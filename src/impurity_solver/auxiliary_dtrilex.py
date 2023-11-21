@@ -611,7 +611,8 @@ if __name__ == '__main__':
                     Gamma1=aux_hyb.aux_sys.Gamma1,
                     Gamma2=aux_hyb.aux_sys.Gamma2)
 
-    aux_dual_trilex = AuxiliaryDualTRILEX(time_param=time_param, U_trilex=U_trilex,
+    aux_dual_trilex = AuxiliaryDualTRILEX(time_param=time_param,
+                                          U_trilex=U_trilex,
                                           green_aux=green_aux,
                                           hyb_sys=hyb_sys,
                                           hyb_aux=hyb_aux,
@@ -620,36 +621,41 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     aux_dual_trilex.solve(iter_max=1, err_tol=1e-10)
+    aux_dual_trilex.save('/afs/physnet.uni-hamburg.de/users/th1_li/ymohamme' +
+                         '/workspace/code/python/test_data_auxtrilex' +
+                         '/auxtrilex.h5',
+                         dir_='/', dataname='trilex', save_aux_data=True)
 
-#  %%
-if __name__ == '__main__':
-    # plt.plot(freq, aux_dual_trilex.hyb_sys.keldysh.imag, label='original')
-    plt.plot(freq, aux_dual_trilex.polarization_aux[(
-        'ch', 'ch')].keldysh.imag, label='aqm')
-    plt.legend()
-    plt.show()
+# #  %%
+# if __name__ == '__main__':
+#     # plt.plot(freq, aux_dual_trilex.hyb_sys.keldysh.imag, label='original')
+#     plt.plot(freq, aux_dual_trilex.polarization_aux[(
+#         'ch', 'ch')].keldysh.imag, label='aqm')
+#     plt.legend()
+#     plt.show()
 
-    plt.plot(freq, aux_dual_trilex.hyb_sys.retarded.imag, label='original')
-    # plt.plot(freq, aux_dual_trilex.green_aux.retarded.imag, label='aqm')
-    # plt.plot(freq, aux_dual_trilex.green_sys.retarded.imag, label='aqm-gw')
-    plt.legend()
-    plt.show()
+#     plt.plot(freq, aux_dual_trilex.hyb_sys.retarded.imag, label='original')
+#     # plt.plot(freq, aux_dual_trilex.green_aux.retarded.imag, label='aqm')
+#     # plt.plot(freq, aux_dual_trilex.green_sys.retarded.imag, label='aqm-gw')
+#     plt.legend()
+#     plt.show()
 
-    plt.plot(freq, np.pi * aux_dual_trilex.green_sys.keldysh.imag, label='aqm-gw')
-    plt.legend()
-    plt.show()
-# %%
-if __name__ == '__main__':
-    import colorcet as cc
+#     plt.plot(freq, np.pi * aux_dual_trilex.green_sys.keldysh.imag,
+#              label='aqm-gw')
+#     plt.legend()
+#     plt.show()
+# # %%
+# if __name__ == '__main__':
+#     import colorcet as cc
 
-    time_param = {'time_min': -10, 'time_max': 10, 'N_time': 1001}
-    auxTrilex = AuxiliaryDualTRILEX(
-        filename='ForAuxTrilex.h5', dir_='', dataname='trilex',
-        time_param=time_param)
+#     time_param = {'time_min': -10, 'time_max': 10, 'N_time': 1001}
+#     auxTrilex = AuxiliaryDualTRILEX(
+#         filename='ForAuxTrilex.h5', dir_='', dataname='trilex',
+#         time_param=time_param)
 
-    plt.imshow(auxTrilex.three_point_vertex[
-        ('up', 'do', 'x')][:, :, 0, 0, 0].imag, cmap=cc.cm.bgy)
-    plt.colorbar()
-    plt.show()
+#     plt.imshow(auxTrilex.three_point_vertex[
+#         ('up', 'do', 'x')][:, :, 0, 0, 0].imag, cmap=cc.cm.bgy)
+#     plt.colorbar()
+#     plt.show()
 
 # %%

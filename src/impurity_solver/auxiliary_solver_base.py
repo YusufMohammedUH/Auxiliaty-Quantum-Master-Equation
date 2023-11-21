@@ -393,31 +393,31 @@ class AuxiliaryDualSolverBase(ABC):
                 self.compute_polarization_dual(self.green_bare_dual)
             else:
                 self.compute_polarization_dual()
-            self.compute_dual_screened_interaction()
-            if ii == 0:
-                self.compute_sigma_dual(self.green_bare_dual)
-            else:
-                self.compute_sigma_dual()
-            self.compute_green_dual()
-            self.compute_green_system()
+            # self.compute_dual_screened_interaction()
+            # if ii == 0:
+            #     self.compute_sigma_dual(self.green_bare_dual)
+            # else:
+            #     self.compute_sigma_dual()
+            # self.compute_green_dual()
+            # self.compute_green_system()
 
-            self.err_iterations_aux.append(opt.cost_function(self.green_sys,
-                                                             green_sys_tmp,
-                                                             normalize=False))
+            # self.err_iterations_aux.append(opt.cost_function(self.green_sys,
+            #                                                  green_sys_tmp,
+            #                                                  normalize=False))
 
-            green_sys_tmp = fg.FrequencyGreen(
-                freq=self.green_aux.freq,
-                retarded=self.green_sys.retarded,
-                keldysh=self.green_sys.keldysh,
-                keldysh_comp=self.keldysh_comp)
+            # green_sys_tmp = fg.FrequencyGreen(
+            #     freq=self.green_aux.freq,
+            #     retarded=self.green_sys.retarded,
+            #     keldysh=self.green_sys.keldysh,
+            #     keldysh_comp=self.keldysh_comp)
 
-            err_iter_print = round(self.err_iterations_aux[-1], int(
-                15 - np.log10(err_tol)))
-            print(f'aux QME GW iter: {ii}\t|\tError:'
-                  + f' {err_iter_print}')
-            if self.err_iterations_aux[-1]  \
-                    < err_tol:
-                break
+            # err_iter_print = round(self.err_iterations_aux[-1], int(
+            #     15 - np.log10(err_tol)))
+            # print(f'aux QME GW iter: {ii}\t|\tError:'
+            #       + f' {err_iter_print}')
+            # if self.err_iterations_aux[-1]  \
+            #         < err_tol:
+            #     break
 
     @abstractmethod
     def save(self, fname: str, dir_: str, dataname: str,

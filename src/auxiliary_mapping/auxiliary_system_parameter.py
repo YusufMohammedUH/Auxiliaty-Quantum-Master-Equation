@@ -129,8 +129,8 @@ class AuxiliarySystem:
         return get_gamma_from_upper_tiagonal(Gamma)
 
     def get_gamma2_ph_symmetric(self, Gamma1: np.ndarray) -> np.ndarray:
-        """Returns the Gamma2 matrix calculated from Gamma1 in the particle-hole
-        symmetric case
+        """Returns the Gamma2 matrix calculated from Gamma1 in the
+        particle-hole symmetric case
 
         Parameters
         ----------
