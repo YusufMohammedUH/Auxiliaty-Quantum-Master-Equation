@@ -266,15 +266,25 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
         self.contour_components = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1),
                                    (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)]
 
-        self.three_point_correlator = {('up', 'up', 'ch'): None,
-                                       ('up', 'do', 'x'): None,
-                                       ('up', 'do', 'y'): None,
-                                       ('up', 'up', 'z'): None}
+        self.three_point_correlator = {
+            ('up', 'up', 'ch'):
+                {con_comp: None for con_comp in self.contour_components},
+            ('up', 'do', 'x'):
+                {con_comp: None for con_comp in self.contour_components},
+            ('up', 'do', 'y'):
+                {con_comp: None for con_comp in self.contour_components},
+            ('up', 'up', 'z'):
+                {con_comp: None for con_comp in self.contour_components}}
 
-        self.three_point_vertex = {('up', 'up', 'ch'): None,
-                                   ('up', 'do', 'x'): None,
-                                   ('up', 'do', 'y'): None,
-                                   ('up', 'up', 'z'): None}
+        self.three_point_vertex = {
+            ('up', 'up', 'ch'):
+                {con_comp: None for con_comp in self.contour_components},
+            ('up', 'do', 'x'):
+                {con_comp: None for con_comp in self.contour_components},
+            ('up', 'do', 'y'):
+                {con_comp: None for con_comp in self.contour_components},
+            ('up', 'up', 'z'):
+                {con_comp: None for con_comp in self.contour_components}}
         # self.four_point_vertex = {}
 
         super().__init__(filename=filename, dir_=dir_, dataname=dataname,
@@ -370,7 +380,9 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
         """
         if green is None:
             green = self.green_dual
+        print('Calculting three point correlator')
         self.compute_three_point_correlator()
+        print('Calculting three point vertex')
         self.compute_three_point_vertex()
         polarization_dual_contour_comp = np.zeros((2, 2,
                                                    len(self.green_aux.freq)),
@@ -380,6 +392,7 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
         # while Zhenya's notes introduce a screened interaction with two
         # channel indices. which would lead to the assumption that the
         # polarization could include two different vertices.
+        print('Calculting polarization dual')
         for spins in self.three_point_vertex.keys():
             for c1 in [0, 1]:
                 for c2 in [0, 1]:
@@ -557,6 +570,7 @@ class AuxiliaryDualTRILEX(aux_base.AuxiliaryDualSolverBase):
         #     self.four_point_vertex[key] = temp[f"{key}"]
 
 
+# %%
 if __name__ == '__main__':
     import src.greens_function.dos_util as dos
     import src.auxiliary_mapping.optimization_auxiliary_hybridization as opt
@@ -618,7 +632,7 @@ if __name__ == '__main__':
                                           hyb_aux=hyb_aux,
                                           correlators=corr_cls,
                                           keldysh_comp=keldysh_comp)
-
+# %%
 if __name__ == '__main__':
     aux_dual_trilex.solve(iter_max=1, err_tol=1e-10)
     aux_dual_trilex.save('/afs/physnet.uni-hamburg.de/users/th1_li/ymohamme' +
